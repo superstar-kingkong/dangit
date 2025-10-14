@@ -143,7 +143,7 @@ export function AddScreen({
       console.log('Analyzing content...', { contentType, userId });
 
       // Call backend for analysis only (you may need to create this endpoint)
-      const response = await fetch('${API_URL}/api/process-content', {
+      const response = await fetch(`${API_URL}/api/process-content`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
