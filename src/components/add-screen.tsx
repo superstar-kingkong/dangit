@@ -5,23 +5,20 @@ import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles } from
 interface AddContentScreenProps {
   userId: string;
   onClose: () => void;
-  darkMode?: boolean;
 }
 
 export function AddContentScreen({ 
   userId,
-  onClose,
-  darkMode = false
+  onClose
 }: AddContentScreenProps) {
   const [activeTab, setActiveTab] = useState<'url' | 'screenshot' | 'voice' | 'manual'>('url');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [url, setUrl] = useState('');
   const [manualTitle, setManualTitle] = useState('');
   const [manualContent, setManualContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,8 +26,8 @@ export function AddContentScreen({
   const tabs = [
     { id: 'url', label: 'Link', icon: Link },
     { id: 'screenshot', label: 'Image', icon: Camera },
-    { id: 'voice', label: 'Voice', icon: Mic },
-    { id: 'manual', label: 'Note', icon: FileText }
+    { id: 'manual', label: 'Note', icon: FileText },
+    { id: 'voice', label: 'Voice', icon: Mic }
   ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,6 +36,11 @@ export function AddContentScreen({
       setSelectedFile(file);
       setErrorMessage('');
       setAnalysisResult(null);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => setPreviewUrl(e.target?.result as string);
+      reader.readAsDataURL(file);
     } else {
       setErrorMessage('Please select an image file');
     }
@@ -53,15 +55,9 @@ export function AddContentScreen({
     });
   };
 
-  const clearMessages = () => {
-    setSuccessMessage('');
+  const handleSave = async () => {
+    setIsProcessing(true);
     setErrorMessage('');
-    setAnalysisResult(null);
-  };
-
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true);
-    clearMessages();
 
     try {
       let content = '';
@@ -71,7 +67,7 @@ export function AddContentScreen({
         case 'url':
           if (!url.trim()) {
             setErrorMessage('Please enter a URL');
-            setIsAnalyzing(false);
+            setIsProcessing(false);
             return;
           }
           content = url.trim();
@@ -80,8 +76,8 @@ export function AddContentScreen({
 
         case 'screenshot':
           if (!selectedFile) {
-            setErrorMessage('Please select an image file');
-            setIsAnalyzing(false);
+            setErrorMessage('Please select an image');
+            setIsProcessing(false);
             return;
           }
           content = await fileToBase64(selectedFile);
@@ -90,8 +86,8 @@ export function AddContentScreen({
 
         case 'manual':
           if (!manualTitle.trim() && !manualContent.trim()) {
-            setErrorMessage('Please enter a title or content');
-            setIsAnalyzing(false);
+            setErrorMessage('Please enter some content');
+            setIsProcessing(false);
             return;
           }
           content = (manualTitle.trim() ? manualTitle.trim() + '\n\n' : '') + manualContent.trim();
@@ -99,12 +95,8 @@ export function AddContentScreen({
           break;
 
         case 'voice':
-          setErrorMessage('Voice recording not implemented yet');
-          setIsAnalyzing(false);
-          return;
-
-        default:
-          setIsAnalyzing(false);
+          setErrorMessage('Voice recording coming soon');
+          setIsProcessing(false);
           return;
       }
 
@@ -128,24 +120,21 @@ export function AddContentScreen({
           summary: result.data.ai_summary,
           category: result.data.ai_category,
           tags: result.data.ai_tags,
-          content,
-          contentType
         });
-        setSuccessMessage('Content saved successfully!');
         
-        // Auto-close after 2 seconds
+        // Auto-close after showing success
         setTimeout(() => {
           onClose();
         }, 2000);
       } else {
-        throw new Error(result.error || 'Failed to analyze content');
+        throw new Error(result.error || 'Failed to save');
       }
 
     } catch (error) {
-      console.error('Error analyzing content:', error);
-      setErrorMessage(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Error saving:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save content');
     } finally {
-      setIsAnalyzing(false);
+      setIsProcessing(false);
     }
   };
 
@@ -154,7 +143,6 @@ export function AddContentScreen({
       case 'url': return url.trim().length > 0;
       case 'screenshot': return selectedFile !== null;
       case 'manual': return manualTitle.trim().length > 0 || manualContent.trim().length > 0;
-      case 'voice': return false;
       default: return false;
     }
   };
@@ -177,22 +165,13 @@ export function AddContentScreen({
         </div>
       </div>
 
-      {/* Success/Error Messages */}
-      {successMessage && (
-        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-2">
-          <div className="bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
-            <Check className="w-5 h-5" />
-            <span className="font-semibold">{successMessage}</span>
-          </div>
-        </div>
-      )}
-
+      {/* Error Message */}
       {errorMessage && (
-        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-2">
-          <div className="bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
-            <X className="w-5 h-5" />
-            <span className="font-semibold">{errorMessage}</span>
-            <button onClick={clearMessages} className="ml-2 hover:bg-red-600 rounded p-1">
+        <div className="absolute top-16 left-4 right-4 z-50 animate-in slide-in-from-top-2">
+          <div className="bg-red-500 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
+            <X className="w-5 h-5 flex-shrink-0" />
+            <span className="font-semibold flex-1">{errorMessage}</span>
+            <button onClick={() => setErrorMessage('')} className="p-1 hover:bg-red-600 rounded">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -203,24 +182,24 @@ export function AddContentScreen({
       <div className="px-6 pt-4 pb-6 flex-shrink-0">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">
+            <h1 className="text-3xl font-black text-gray-900">
               Add Content
             </h1>
             <p className="text-gray-600 mt-1 font-medium">
-              Save anything, find it instantly
+              Save anything, organized automatically
             </p>
           </div>
           
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+            className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 bg-gray-100 rounded-2xl p-1.5">
+        <div className="grid grid-cols-4 gap-2 bg-gray-100 rounded-2xl p-1.5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -228,12 +207,13 @@ export function AddContentScreen({
                 key={tab.id}
                 onClick={() => {
                   setActiveTab(tab.id as any);
-                  clearMessages();
+                  setErrorMessage('');
+                  setAnalysisResult(null);
                 }}
-                className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all ${
+                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all ${
                   activeTab === tab.id
-                    ? 'bg-white shadow-sm text-indigo-600 scale-105'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white shadow-sm text-indigo-600'
+                    : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
                 <Icon className="w-5 h-5" strokeWidth={2.5} />
@@ -244,52 +224,49 @@ export function AddContentScreen({
         </div>
       </div>
 
-      {/* Main Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto px-6 pb-32">
+      {/* Main Content - Scrollable with extra padding for button */}
+      <div className="flex-1 overflow-y-auto px-6 pb-40">
         
         {/* URL Tab */}
         {activeTab === 'url' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-gray-700 mb-2 font-semibold text-sm">
-                Website URL
+              <label className="block text-gray-900 mb-2 font-bold text-sm">
+                Paste any link
               </label>
               <input
                 type="url"
                 placeholder="https://example.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
+                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-all text-base"
+                autoFocus
               />
+              <p className="text-sm text-gray-500 mt-2">
+                Save articles, videos, tweets, or any webpage
+              </p>
             </div>
 
             {analysisResult && (
-              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 space-y-3">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-white" strokeWidth={3} />
                   </div>
-                  <span className="font-bold text-green-900">Saved Successfully!</span>
+                  <span className="font-black text-green-900 text-lg">Saved!</span>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-semibold text-gray-600">Title: </span>
-                    <span className="text-gray-900">{analysisResult.title}</span>
+                <div className="space-y-2.5">
+                  <div className="bg-white/60 rounded-lg p-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Title</span>
+                    <p className="text-gray-900 font-semibold mt-1">{analysisResult.title}</p>
                   </div>
-                  <div>
-                    <span className="font-semibold text-gray-600">Category: </span>
-                    <span className="text-indigo-600 font-semibold">{analysisResult.category}</span>
+                  <div className="bg-white/60 rounded-lg p-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Category</span>
+                    <p className="text-indigo-600 font-bold mt-1">{analysisResult.category}</p>
                   </div>
-                  <div>
-                    <span className="font-semibold text-gray-600">Summary: </span>
-                    <span className="text-gray-700">{analysisResult.summary}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {analysisResult.tags?.map((tag: string) => (
-                      <span key={tag} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium">
-                        #{tag}
-                      </span>
-                    ))}
+                  <div className="bg-white/60 rounded-lg p-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Summary</span>
+                    <p className="text-gray-700 mt-1 leading-relaxed">{analysisResult.summary}</p>
                   </div>
                 </div>
               </div>
@@ -299,7 +276,7 @@ export function AddContentScreen({
 
         {/* Screenshot Tab */}
         {activeTab === 'screenshot' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <input
               ref={fileInputRef}
               type="file"
@@ -310,49 +287,54 @@ export function AddContentScreen({
             
             {selectedFile ? (
               <div className="space-y-4">
-                <div className="border-2 border-gray-200 rounded-2xl p-4 bg-gray-50">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
-                        <Camera className="w-6 h-6 text-indigo-600" />
-                      </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">{selectedFile.name}</div>
-                        <div className="text-sm text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</div>
-                      </div>
+                <div className="relative rounded-2xl overflow-hidden border-2 border-gray-200">
+                  {previewUrl && (
+                    <img 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      className="w-full h-64 object-cover"
+                    />
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setPreviewUrl(null);
+                      setAnalysisResult(null);
+                    }}
+                    className="absolute top-3 right-3 p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors shadow-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                      <Camera className="w-6 h-6 text-indigo-600" />
                     </div>
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setAnalysisResult(null);
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-red-100 text-red-600 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 truncate">{selectedFile.name}</div>
+                      <div className="text-sm text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</div>
+                    </div>
                   </div>
                 </div>
 
                 {analysisResult && (
-                  <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 space-y-3">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white" />
+                      <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="w-6 h-6 text-white" strokeWidth={3} />
                       </div>
-                      <span className="font-bold text-green-900">Saved Successfully!</span>
+                      <span className="font-black text-green-900 text-lg">Saved!</span>
                     </div>
-                    <div className="space-y-2 text-sm">
-                      <div>
-                        <span className="font-semibold text-gray-600">Title: </span>
-                        <span className="text-gray-900">{analysisResult.title}</span>
+                    <div className="space-y-2.5">
+                      <div className="bg-white/60 rounded-lg p-3">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">What we found</span>
+                        <p className="text-gray-900 font-semibold mt-1">{analysisResult.title}</p>
                       </div>
-                      <div>
-                        <span className="font-semibold text-gray-600">Category: </span>
-                        <span className="text-indigo-600 font-semibold">{analysisResult.category}</span>
-                      </div>
-                      <div>
-                        <span className="font-semibold text-gray-600">Summary: </span>
-                        <span className="text-gray-700">{analysisResult.summary}</span>
+                      <div className="bg-white/60 rounded-lg p-3">
+                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Category</span>
+                        <p className="text-indigo-600 font-bold mt-1">{analysisResult.category}</p>
                       </div>
                     </div>
                   </div>
@@ -362,14 +344,14 @@ export function AddContentScreen({
               <div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gray-300 hover:border-indigo-400 rounded-2xl p-12 text-center transition-colors"
+                  className="w-full border-2 border-dashed border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-2xl p-16 text-center transition-all group"
                 >
-                  <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 font-semibold text-lg mb-2">
+                  <Upload className="w-20 h-20 text-gray-400 group-hover:text-indigo-500 mx-auto mb-4 transition-colors" />
+                  <p className="text-gray-900 font-bold text-xl mb-2">
                     Choose an image
                   </p>
-                  <p className="text-gray-500 text-sm">
-                    or drag and drop here
+                  <p className="text-gray-500">
+                    Screenshots, photos, or any image
                   </p>
                 </button>
               </div>
@@ -377,105 +359,106 @@ export function AddContentScreen({
           </div>
         )}
 
-        {/* Voice Tab */}
-        {activeTab === 'voice' && (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-6">
-              <Mic className="w-12 h-12 text-orange-500" />
-            </div>
-            <h3 className="text-gray-900 font-bold mb-2 text-xl">
-              Voice Recording
-            </h3>
-            <p className="text-gray-600 mb-8">
-              Coming soon!
-            </p>
-          </div>
-        )}
-
         {/* Manual Tab */}
         {activeTab === 'manual' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-gray-700 mb-2 font-semibold text-sm">
+              <label className="block text-gray-900 mb-2 font-bold text-sm">
                 Title (Optional)
               </label>
               <input
                 placeholder="Give it a title..."
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
-                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
+                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-all text-base"
               />
             </div>
             
             <div>
-              <label className="block text-gray-700 mb-2 font-semibold text-sm">
-                Content
+              <label className="block text-gray-900 mb-2 font-bold text-sm">
+                Your note
               </label>
               <textarea
-                placeholder="Write your note, idea, or paste any text..."
+                placeholder="Write anything... ideas, thoughts, reminders"
                 value={manualContent}
                 onChange={(e) => setManualContent(e.target.value)}
-                rows={8}
-                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-colors"
+                rows={10}
+                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-all text-base leading-relaxed"
               />
-              <div className="text-sm text-gray-500 mt-2 text-right">
-                {manualContent.length} characters
+              <div className="flex justify-between items-center mt-2">
+                <p className="text-sm text-gray-500">
+                  AI will organize this for you
+                </p>
+                <span className="text-sm text-gray-500 font-medium">
+                  {manualContent.length} characters
+                </span>
               </div>
             </div>
 
             {analysisResult && (
-              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 space-y-3">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-white" strokeWidth={3} />
                   </div>
-                  <span className="font-bold text-green-900">Saved Successfully!</span>
+                  <span className="font-black text-green-900 text-lg">Saved!</span>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-semibold text-gray-600">Title: </span>
-                    <span className="text-gray-900">{analysisResult.title}</span>
+                <div className="space-y-2.5">
+                  <div className="bg-white/60 rounded-lg p-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Organized as</span>
+                    <p className="text-gray-900 font-semibold mt-1">{analysisResult.title}</p>
                   </div>
-                  <div>
-                    <span className="font-semibold text-gray-600">Category: </span>
-                    <span className="text-indigo-600 font-semibold">{analysisResult.category}</span>
-                  </div>
-                  <div>
-                    <span className="font-semibold text-gray-600">Summary: </span>
-                    <span className="text-gray-700">{analysisResult.summary}</span>
+                  <div className="bg-white/60 rounded-lg p-3">
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Category</span>
+                    <p className="text-indigo-600 font-bold mt-1">{analysisResult.category}</p>
                   </div>
                 </div>
               </div>
             )}
           </div>
         )}
+
+        {/* Voice Tab */}
+        {activeTab === 'voice' && (
+          <div className="text-center py-20">
+            <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-6">
+              <Mic className="w-12 h-12 text-orange-500" />
+            </div>
+            <h3 className="text-gray-900 font-black mb-2 text-2xl">
+              Voice Notes
+            </h3>
+            <p className="text-gray-600 text-lg">
+              Coming soon!
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Fixed Bottom Button - Above Navigation */}
-      <div className="absolute bottom-20 left-0 right-0 px-6 pb-4 bg-gradient-to-t from-white via-white to-transparent pt-6">
+      {/* Fixed Bottom Button */}
+      <div className="absolute bottom-20 left-0 right-0 px-6 pb-6 bg-gradient-to-t from-white via-white to-transparent pt-8 pointer-events-none">
         <button
-          onClick={handleAnalyze}
-          disabled={isAnalyzing || !hasContent() || analysisResult !== null}
-          className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all duration-200 ${
-            isAnalyzing || !hasContent() || analysisResult !== null
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl active:scale-[0.98]'
+          onClick={handleSave}
+          disabled={isProcessing || !hasContent() || analysisResult !== null}
+          className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-lg pointer-events-auto ${
+            isProcessing || !hasContent() || analysisResult !== null
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white hover:shadow-xl active:scale-[0.98]'
           }`}
         >
-          {isAnalyzing ? (
+          {isProcessing ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Analyzing & Saving...</span>
+              <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
+              <span>Saving with AI...</span>
             </>
           ) : analysisResult ? (
             <>
-              <Check className="w-5 h-5" />
+              <Check className="w-6 h-6" strokeWidth={3} />
               <span>Saved!</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
-              <span>Analyze & Save</span>
+              <Sparkles className="w-6 h-6" strokeWidth={2.5} />
+              <span>Save to DANGIT</span>
             </>
           )}
         </button>
