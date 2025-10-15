@@ -1,49 +1,18 @@
 import { API_URL } from '../config';
 import React, { useState, useRef } from 'react';
-import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check } from 'lucide-react';
+import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles } from 'lucide-react';
 
-interface AddScreenProps {
+interface AddContentScreenProps {
+  userId: string;
+  onClose: () => void;
   darkMode?: boolean;
-  currentTime?: Date;
-  onContentSaved?: () => void;
-  userId?: string;
-  onClose?: () => void;
 }
 
-// Simple UI components
-const Button = ({ children, onClick, disabled, className }: any) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-      disabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90 active:scale-95'
-    } ${className}`}
-  >
-    {children}
-  </button>
-);
-
-const Input = ({ className, ...props }: any) => (
-  <input
-    {...props}
-    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${className}`}
-  />
-);
-
-const Textarea = ({ className, ...props }: any) => (
-  <textarea
-    {...props}
-    className={`w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none transition-all ${className}`}
-  />
-);
-
-export function AddScreen({ 
-  darkMode = false, 
-  currentTime, 
-  onContentSaved, 
-  userId = 'user-123',
-  onClose 
-}: AddScreenProps) {
+export function AddContentScreen({ 
+  userId,
+  onClose,
+  darkMode = false
+}: AddContentScreenProps) {
   const [activeTab, setActiveTab] = useState<'url' | 'screenshot' | 'voice' | 'manual'>('url');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -58,10 +27,10 @@ export function AddScreen({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tabs = [
-    { id: 'url', label: 'Save URL', icon: Link },
-    { id: 'screenshot', label: 'Screenshot', icon: Camera },
-    { id: 'voice', label: 'Voice Note', icon: Mic },
-    { id: 'manual', label: 'Quick Note', icon: FileText }
+    { id: 'url', label: 'Link', icon: Link },
+    { id: 'screenshot', label: 'Image', icon: Camera },
+    { id: 'voice', label: 'Voice', icon: Mic },
+    { id: 'manual', label: 'Note', icon: FileText }
   ];
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,7 +67,6 @@ export function AddScreen({
       let content = '';
       let contentType = '';
 
-      // Prepare content for analysis
       switch (activeTab) {
         case 'url':
           if (!url.trim()) {
@@ -140,9 +108,6 @@ export function AddScreen({
           return;
       }
 
-      console.log('Analyzing content...', { contentType, userId });
-
-      // Call backend for analysis only (you may need to create this endpoint)
       const response = await fetch(`${API_URL}/api/process-content`, {
         method: 'POST',
         headers: {
@@ -166,125 +131,67 @@ export function AddScreen({
           content,
           contentType
         });
+        setSuccessMessage('Content saved successfully!');
+        
+        // Auto-close after 2 seconds
+        setTimeout(() => {
+          onClose();
+        }, 2000);
       } else {
         throw new Error(result.error || 'Failed to analyze content');
       }
 
     } catch (error) {
       console.error('Error analyzing content:', error);
-      setErrorMessage(`Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setErrorMessage(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!analysisResult) {
-      setErrorMessage('Please analyze the content first');
-      return;
-    }
-
-    setIsProcessing(true);
-    clearMessages();
-
-    try {
-      console.log('Saving analyzed content...', { analysisResult });
-
-      // Since the content is already processed, just confirm the save
-      setSuccessMessage('Content saved successfully!');
-      
-      // Reset form
-      setUrl('');
-      setManualTitle('');
-      setManualContent('');
-      setSelectedFile(null);
-      setAnalysisResult(null);
-      
-      // Trigger home screen refresh
-      if (onContentSaved) {
-        console.log('Calling onContentSaved callback');
-        setTimeout(() => onContentSaved(), 100);
-      }
-
-      // Also trigger global refresh
-      if ((window as any).refreshHomeScreen) {
-        console.log('Calling global refresh');
-        setTimeout(() => (window as any).refreshHomeScreen(), 100);
-      }
-
-      // Auto close after success
-      setTimeout(() => {
-        setSuccessMessage('');
-        if (onClose) onClose();
-      }, 2000);
-
-    } catch (error) {
-      console.error('Error saving content:', error);
-      setErrorMessage(`Failed to save: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  // Check if form has content to enable analyze button
   const hasContent = () => {
     switch (activeTab) {
       case 'url': return url.trim().length > 0;
       case 'screenshot': return selectedFile !== null;
       case 'manual': return manualTitle.trim().length > 0 || manualContent.trim().length > 0;
-      case 'voice': return false; // Not implemented
+      case 'voice': return false;
       default: return false;
     }
   };
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex flex-col`}>
+    <div className="h-screen flex flex-col bg-white">
+      
       {/* Status Bar */}
-      <div className={`flex justify-between items-center px-5 pt-4 pb-2 ${darkMode 
-        ? 'bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700' 
-        : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50'
-      }`}>
-        <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-          {currentTime ? currentTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: false,
-          }) : new Date().toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: false,
-          })}
-        </span>
-        <div className="flex items-center gap-1">
+      <div className="flex justify-between items-center px-6 pt-4 pb-2 flex-shrink-0">
+        <span className="text-sm font-semibold text-gray-900">9:41</span>
+        <div className="flex items-center gap-2">
           <div className="flex gap-1">
-            <div className={`w-1 h-1 ${darkMode ? 'bg-white' : 'bg-slate-900'} rounded-full`}></div>
-            <div className={`w-1 h-1 ${darkMode ? 'bg-white' : 'bg-slate-900'} rounded-full`}></div>
-            <div className={`w-1 h-1 ${darkMode ? 'bg-white' : 'bg-slate-900'} rounded-full`}></div>
+            {[1,2,3,4].map(i => (
+              <div key={i} className="w-1 h-1 bg-gray-900 rounded-full"></div>
+            ))}
           </div>
-          <div className="ml-2 flex items-center gap-1">
-            <div className={`w-6 h-3 border ${darkMode ? 'border-white' : 'border-slate-900'} rounded-sm relative`}>
-              <div className="absolute inset-0.5 bg-green-500 rounded-sm"></div>
-            </div>
-            <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>100%</span>
+          <div className="w-6 h-3 border-2 border-gray-900 rounded-sm relative">
+            <div className="absolute inset-0.5 bg-gray-900 rounded-[1px]"></div>
           </div>
         </div>
       </div>
 
       {/* Success/Error Messages */}
       {successMessage && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-top-2">
+        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-2">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
             <Check className="w-5 h-5" />
-            {successMessage}
+            <span className="font-semibold">{successMessage}</span>
           </div>
         </div>
       )}
 
       {errorMessage && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 animate-in slide-in-from-top-2">
+        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-50 animate-in slide-in-from-top-2">
+          <div className="bg-red-500 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-2">
             <X className="w-5 h-5" />
-            {errorMessage}
+            <span className="font-semibold">{errorMessage}</span>
             <button onClick={clearMessages} className="ml-2 hover:bg-red-600 rounded p-1">
               <X className="w-4 h-4" />
             </button>
@@ -292,46 +199,28 @@ export function AddScreen({
         </div>
       )}
 
-      {/* Header Section */}
-      <div className={`${darkMode 
-        ? 'bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700' 
-        : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50'
-      } px-5 pt-4 pb-6`}>
-        
+      {/* Header */}
+      <div className="px-6 pt-4 pb-6 flex-shrink-0">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 
-              className={`text-3xl tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`} 
-              style={{ 
-                fontFamily: 'Space Grotesk, system-ui, sans-serif',
-                fontWeight: '700'
-              }}
-            >
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">
               Add Content
-            </h2>
-            <p className={`${darkMode ? 'text-gray-300' : 'text-slate-600'} mt-1 font-medium`}>
-              Save and organize anything
+            </h1>
+            <p className="text-gray-600 mt-1 font-medium">
+              Save anything, find it instantly
             </p>
           </div>
           
-          {onClose && (
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-xl ${darkMode 
-                ? 'bg-gray-600/60 text-gray-300 hover:bg-gray-600' 
-                : 'bg-white/60 text-gray-600 hover:bg-white'
-              } backdrop-blur-sm transition-all duration-200 hover:scale-105`}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Tabs */}
-        <div className={`grid grid-cols-2 gap-2 ${darkMode 
-          ? 'bg-gray-700/60 backdrop-blur-sm' 
-          : 'bg-white/60 backdrop-blur-sm'
-        } rounded-2xl p-2`}>
+        <div className="flex gap-2 bg-gray-100 rounded-2xl p-1.5">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -341,18 +230,14 @@ export function AddScreen({
                   setActiveTab(tab.id as any);
                   clearMessages();
                 }}
-                className={`flex items-center justify-center gap-2 py-3 px-3 rounded-xl transition-all ${
+                className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all ${
                   activeTab === tab.id
-                    ? darkMode 
-                      ? 'bg-gray-600 shadow-sm text-indigo-400 scale-105' 
-                      : 'bg-white shadow-sm text-indigo-600 scale-105'
-                    : darkMode 
-                      ? 'text-gray-300 hover:bg-gray-600/50' 
-                      : 'text-gray-600 hover:bg-white/50'
+                    ? 'bg-white shadow-sm text-indigo-600 scale-105'
+                    : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <Icon className="w-5 h-5" strokeWidth={2.5} />
+                <span className="text-xs font-semibold">{tab.label}</span>
               </button>
             );
           })}
@@ -360,399 +245,240 @@ export function AddScreen({
       </div>
 
       {/* Main Content - Scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <div className={`${darkMode ? 'bg-gray-900' : 'bg-white'} px-5 pt-6 pb-6`}>
-          
-          {/* URL Tab */}
-          {activeTab === 'url' && (
-            <div className="space-y-4">
-              <div>
-                <label className={`block ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3 font-semibold`}>
-                  Website URL
-                </label>
-                <Input
-                  type="url"
-                  placeholder="https://example.com or paste any link..."
-                  value={url}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUrl(e.target.value)}
-                  className={`${darkMode 
-                    ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-indigo-400' 
-                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-indigo-500'
-                  }`}
-                />
-                {url && !analysisResult && (
-                  <Button
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing}
-                    className={`w-full mt-4 ${isAnalyzing 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
-                    } text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200`}
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                        Analyzing URL...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-5 h-5 mr-2" />
-                        Analyze URL
-                      </>
-                    )}
-                  </Button>
-                )}
-                {url && analysisResult && (
-                  <div className={`mt-4 ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-green-50 border-green-200'} border rounded-2xl p-4`}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Check className="w-5 h-5 text-green-500" />
-                      <span className={`font-semibold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                        Analysis Complete
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      <div>
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Title: </span>
-                        <span className={`${darkMode ? 'text-white' : 'text-gray-900'}`}>{analysisResult.title}</span>
-                      </div>
-                      <div>
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Category: </span>
-                        <span className={`${darkMode ? 'text-indigo-400' : 'text-indigo-600'} font-medium`}>{analysisResult.category}</span>
-                      </div>
-                      <div>
-                        <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Summary: </span>
-                        <span className={`${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{analysisResult.summary}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Screenshot Tab */}
-          {activeTab === 'screenshot' && (
-            <div className="space-y-4">
+      <div className="flex-1 overflow-y-auto px-6 pb-32">
+        
+        {/* URL Tab */}
+        {activeTab === 'url' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-gray-700 mb-2 font-semibold text-sm">
+                Website URL
+              </label>
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
+                type="url"
+                placeholder="https://example.com"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
               />
-              
-              {selectedFile ? (
-                <div className="space-y-4">
-                  <div className={`border ${darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-gray-50'} rounded-2xl p-6`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'} font-semibold`}>
-                        Selected Image
+            </div>
+
+            {analysisResult && (
+              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-bold text-green-900">Saved Successfully!</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-semibold text-gray-600">Title: </span>
+                    <span className="text-gray-900">{analysisResult.title}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">Category: </span>
+                    <span className="text-indigo-600 font-semibold">{analysisResult.category}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">Summary: </span>
+                    <span className="text-gray-700">{analysisResult.summary}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {analysisResult.tags?.map((tag: string) => (
+                      <span key={tag} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-xs font-medium">
+                        #{tag}
                       </span>
-                      <button
-                        onClick={() => {
-                          setSelectedFile(null);
-                          setAnalysisResult(null);
-                          clearMessages();
-                        }}
-                        className="text-red-500 hover:text-red-600 p-1 rounded-lg hover:bg-red-50"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-1`}>
-                      {selectedFile.name}
-                    </div>
-                    <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mb-3`}>
-                      {(selectedFile.size / 1024).toFixed(1)} KB
-                    </div>
+                    ))}
                   </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-                  {!analysisResult && (
-                    <Button
-                      onClick={handleAnalyze}
-                      disabled={isAnalyzing}
-                      className={`w-full ${isAnalyzing 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
-                      } text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200`}
-                    >
-                      {isAnalyzing ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                          Analyzing Image...
-                        </>
-                      ) : (
-                        <>
-                          <Camera className="w-5 h-5 mr-2" />
-                          Analyze Image
-                        </>
-                      )}
-                    </Button>
-                  )}
-
-                  {analysisResult && (
-                    <div className={`${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-green-50 border-green-200'} border rounded-2xl p-4`}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Check className="w-5 h-5 text-green-500" />
-                        <span className={`font-semibold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                          Analysis Complete
-                        </span>
+        {/* Screenshot Tab */}
+        {activeTab === 'screenshot' && (
+          <div className="space-y-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            {selectedFile ? (
+              <div className="space-y-4">
+                <div className="border-2 border-gray-200 rounded-2xl p-4 bg-gray-50">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                        <Camera className="w-6 h-6 text-indigo-600" />
                       </div>
-                      <div className="space-y-2">
-                        <div>
-                          <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Title: </span>
-                          <span className={`${darkMode ? 'text-white' : 'text-gray-900'}`}>{analysisResult.title}</span>
-                        </div>
-                        <div>
-                          <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Category: </span>
-                          <span className={`${darkMode ? 'text-indigo-400' : 'text-indigo-600'} font-medium`}>{analysisResult.category}</span>
-                        </div>
-                        <div>
-                          <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Summary: </span>
-                          <span className={`${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{analysisResult.summary}</span>
-                        </div>
+                      <div>
+                        <div className="font-semibold text-gray-900">{selectedFile.name}</div>
+                        <div className="text-sm text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</div>
                       </div>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <div className={`border-2 border-dashed ${darkMode 
-                    ? 'border-gray-600 bg-gray-800/30' 
-                    : 'border-gray-200 bg-gray-50'
-                  } rounded-2xl p-12 text-center cursor-pointer hover:border-indigo-400 transition-all duration-200`}
-                  onClick={() => fileInputRef.current?.click()}>
-                    <Upload className={`w-16 h-16 ${darkMode ? 'text-gray-500' : 'text-gray-400'} mx-auto mb-4`} />
-                    <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-6 font-semibold text-lg`}>
-                      Drop an image here or click to browse
-                    </p>
-                  </div>
-                  
-                  <div className="text-center mt-4">
-                    <Button 
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`${darkMode 
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-700 hover:from-indigo-700 hover:to-purple-800 text-white' 
-                        : 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white'
-                      } px-8 py-4 rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-200`}
+                    <button
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setAnalysisResult(null);
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-red-100 text-red-600 transition-colors"
                     >
-                      <Camera className="w-6 h-6 mr-3" />
-                      Choose Image File
-                    </Button>
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* Voice Tab */}
-          {activeTab === 'voice' && (
-            <div className="text-center py-16">
-              <div className={`w-24 h-24 rounded-full ${darkMode 
-                ? 'bg-orange-900/30' 
-                : 'bg-orange-100'
-              } flex items-center justify-center mx-auto mb-6`}>
-                <Mic className={`w-12 h-12 ${darkMode ? 'text-orange-400' : 'text-orange-500'}`} />
+                {analysisResult && (
+                  <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="font-bold text-green-900">Saved Successfully!</span>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div>
+                        <span className="font-semibold text-gray-600">Title: </span>
+                        <span className="text-gray-900">{analysisResult.title}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-600">Category: </span>
+                        <span className="text-indigo-600 font-semibold">{analysisResult.category}</span>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-600">Summary: </span>
+                        <span className="text-gray-700">{analysisResult.summary}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <h3 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-bold mb-3 text-xl`}>
-                Voice Recording
-              </h3>
-              <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-8 text-lg`}>
-                Voice recording feature coming soon!
-              </p>
-              <Button 
-                disabled
-                className={`${darkMode 
-                  ? 'bg-gray-700 text-gray-400' 
-                  : 'bg-gray-200 text-gray-500'
-                } rounded-2xl px-8 py-3 cursor-not-allowed font-semibold`}
-              >
-                <Mic className="w-5 h-5 mr-2" />
-                Start Recording
-              </Button>
-            </div>
-          )}
-
-          {/* Manual Tab */}
-          {activeTab === 'manual' && (
-            <div className="space-y-6">
+            ) : (
               <div>
-                <label className={`block ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3 font-semibold`}>
-                  Title (Optional)
-                </label>
-                <Input
-                  placeholder="Enter a title for your note..."
-                  value={manualTitle}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualTitle(e.target.value)}
-                  className={`${darkMode 
-                    ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-indigo-400' 
-                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-indigo-500'
-                  }`}
-                />
-              </div>
-              <div>
-                <label className={`block ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-3 font-semibold`}>
-                  Content
-                </label>
-                <Textarea
-                  placeholder="Write your note, idea, or paste any text content here..."
-                  value={manualContent}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setManualContent(e.target.value)}
-                  rows={8}
-                  className={`${darkMode 
-                    ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-indigo-400' 
-                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-indigo-500'
-                  }`}
-                />
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-2 text-right`}>
-                  {manualContent.length} characters
-                </div>
-              </div>
-
-              {(manualTitle.trim() || manualContent.trim()) && !analysisResult && (
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={isAnalyzing}
-                  className={`w-full ${isAnalyzing 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
-                  } text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200`}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-gray-300 hover:border-indigo-400 rounded-2xl p-12 text-center transition-colors"
                 >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                      Analyzing Text...
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-5 h-5 mr-2" />
-                      Analyze Text
-                    </>
-                  )}
-                </Button>
-              )}
+                  <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 font-semibold text-lg mb-2">
+                    Choose an image
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    or drag and drop here
+                  </p>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
-              {analysisResult && (
-                <div className={`${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-green-50 border-green-200'} border rounded-2xl p-4`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Check className="w-5 h-5 text-green-500" />
-                    <span className={`font-semibold ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                      Analysis Complete
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Title: </span>
-                      <span className={`${darkMode ? 'text-white' : 'text-gray-900'}`}>{analysisResult.title}</span>
-                    </div>
-                    <div>
-                      <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Category: </span>
-                      <span className={`${darkMode ? 'text-indigo-400' : 'text-indigo-600'} font-medium`}>{analysisResult.category}</span>
-                    </div>
-                    <div>
-                      <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Summary: </span>
-                      <span className={`${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>{analysisResult.summary}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+        {/* Voice Tab */}
+        {activeTab === 'voice' && (
+          <div className="text-center py-16">
+            <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-6">
+              <Mic className="w-12 h-12 text-orange-500" />
             </div>
-          )}
+            <h3 className="text-gray-900 font-bold mb-2 text-xl">
+              Voice Recording
+            </h3>
+            <p className="text-gray-600 mb-8">
+              Coming soon!
+            </p>
+          </div>
+        )}
 
-          {/* Processing Status */}
-          {(isAnalyzing || isProcessing) && (
-            <div className={`flex items-center justify-center gap-3 py-8 ${darkMode 
-              ? 'bg-gray-800 text-indigo-400' 
-              : 'bg-indigo-50 text-indigo-600'
-            } rounded-2xl mt-6`}>
-              <Loader2 className="w-6 h-6 animate-spin" />
-              <div className="text-center">
-                <div className="font-semibold text-lg">
-                  {isAnalyzing ? 'Analyzing your content...' : 'Saving your content...'}
-                </div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-indigo-500'} mt-1`}>
-                  This usually takes a few seconds
-                </div>
+        {/* Manual Tab */}
+        {activeTab === 'manual' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-gray-700 mb-2 font-semibold text-sm">
+                Title (Optional)
+              </label>
+              <input
+                placeholder="Give it a title..."
+                value={manualTitle}
+                onChange={(e) => setManualTitle(e.target.value)}
+                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-colors"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 mb-2 font-semibold text-sm">
+                Content
+              </label>
+              <textarea
+                placeholder="Write your note, idea, or paste any text..."
+                value={manualContent}
+                onChange={(e) => setManualContent(e.target.value)}
+                rows={8}
+                className="w-full px-4 py-3.5 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-colors"
+              />
+              <div className="text-sm text-gray-500 mt-2 text-right">
+                {manualContent.length} characters
               </div>
             </div>
-          )}
-        </div>
+
+            {analysisResult && (
+              <div className="bg-green-50 border-2 border-green-200 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="font-bold text-green-900">Saved Successfully!</span>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <span className="font-semibold text-gray-600">Title: </span>
+                    <span className="text-gray-900">{analysisResult.title}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">Category: </span>
+                    <span className="text-indigo-600 font-semibold">{analysisResult.category}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-gray-600">Summary: </span>
+                    <span className="text-gray-700">{analysisResult.summary}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Fixed Bottom Action Area */}
-      <div className={`${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} border-t px-5 py-4 space-y-3`}>
-        {!analysisResult ? (
-          // Show Analyze button when no analysis yet
-          <Button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing || !hasContent()}
-            className={`w-full h-14 ${
-              isAnalyzing || !hasContent()
-                ? darkMode 
-                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : darkMode 
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white' 
-                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white'
-            } py-4 rounded-2xl font-bold text-lg transition-all duration-200 ${
-              !isAnalyzing && hasContent() ? 'hover:shadow-lg active:scale-95' : ''
-            }`}
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Check className="w-5 h-5 mr-2" />
-                Analyze Content
-              </>
-            )}
-          </Button>
-        ) : (
-          // Show Save button after analysis
-          <Button
-            onClick={handleSave}
-            disabled={isProcessing}
-            className={`w-full h-14 ${
-              isProcessing
-                ? darkMode 
-                  ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : darkMode 
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 text-white' 
-                  : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
-            } py-4 rounded-2xl font-bold text-lg transition-all duration-200 ${
-              !isProcessing ? 'hover:shadow-lg active:scale-95' : ''
-            }`}
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Check className="w-5 h-5 mr-2" />
-                Save to DANGIT
-              </>
-            )}
-          </Button>
-        )}
-
-        {onClose && (
-          <Button
-            onClick={onClose}
-            disabled={isProcessing || isAnalyzing}
-            className={`w-full ${darkMode 
-              ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
-              : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-            } py-3 rounded-2xl font-semibold transition-all duration-200`}
-          >
-            Cancel
-          </Button>
-        )}
+      {/* Fixed Bottom Button - Above Navigation */}
+      <div className="absolute bottom-20 left-0 right-0 px-6 pb-4 bg-gradient-to-t from-white via-white to-transparent pt-6">
+        <button
+          onClick={handleAnalyze}
+          disabled={isAnalyzing || !hasContent() || analysisResult !== null}
+          className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-2 transition-all duration-200 ${
+            isAnalyzing || !hasContent() || analysisResult !== null
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl active:scale-[0.98]'
+          }`}
+        >
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span>Analyzing & Saving...</span>
+            </>
+          ) : analysisResult ? (
+            <>
+              <Check className="w-5 h-5" />
+              <span>Saved!</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-5 h-5" />
+              <span>Analyze & Save</span>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
