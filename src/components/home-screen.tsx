@@ -3,21 +3,20 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Settings,
-  User,
   X,
   Filter,
   Clock,
   Sparkles,
   TrendingUp,
   RefreshCw,
+  Download,
 } from "lucide-react";
-
 
 interface HomeScreenProps {
   onShowContentDetail: (content: any) => void;
   darkMode?: boolean;
   currentTime?: Date;
-  userId?: string; // Add userId prop
+  userId?: string;
 }
 
 interface ContentItem {
@@ -34,12 +33,12 @@ interface ContentItem {
   aiScore?: number;
 }
 
-// Simple ContentCard component
+// ContentCard component
 const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onToggleComplete) {
-      onToggleComplete(content.id);
+      onToggleComplete(content.id, !content.completed);
     }
   };
 
@@ -56,9 +55,9 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
           <input 
             type="checkbox" 
             checked={content.completed}
-            onChange={() => {}} // Handled by onClick
+            onChange={() => {}}
             onClick={handleCheckboxClick}
-            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500" 
+            className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer" 
           />
           <span className={`text-xs px-2 py-1 rounded-full ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
             {content.category}
@@ -92,7 +91,7 @@ export function HomeScreen({
   onShowContentDetail,
   darkMode = false,
   currentTime: externalCurrentTime,
-  userId // Accept userId prop
+  userId
 }: HomeScreenProps) {
   const [showNotificationBanner, setShowNotificationBanner] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,7 +137,7 @@ export function HomeScreen({
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  // Determine priority based on category and recency
+  // Determine priority
   const determinePriority = (category: string, createdAt: string): 'high' | 'medium' | 'low' => {
     const highPriorityCategories = ['Work', 'Finance', 'Coupons & Deals'];
     const isRecent = new Date().getTime() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
@@ -149,12 +148,11 @@ export function HomeScreen({
     return 'low';
   };
 
-  // Load content from server with real user ID
+  // Load content from server
   const loadContentItems = async (showLoader = true) => {
     if (showLoader) setLoading(true);
     setError(null);
     
-    // Don't make API calls if no userId
     if (!userId) {
       console.warn('No userId provided, skipping content load');
       setContentItems([]);
@@ -165,8 +163,7 @@ export function HomeScreen({
     try {
       console.log('Loading content items for user:', userId);
       
-      // Use real user ID instead of hardcoded 'user-123'
-      const response = await fetch(`${API_URL}/api/saved-items?userId=${encodeURIComponent(userId || 'anonymous-user')}`);
+      const response = await fetch(`${API_URL}/api/saved-items?userId=${encodeURIComponent(userId)}`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -192,11 +189,8 @@ export function HomeScreen({
         
         console.log(`Successfully loaded ${transformedItems.length} items for user:`, userId);
         setContentItems(transformedItems);
-      } else if (result.data && Array.isArray(result.data) && result.data.length === 0) {
-        console.log('No saved items found for user:', userId);
-        setContentItems([]);
       } else {
-        console.warn('Unexpected response format:', result);
+        console.log('No saved items found for user:', userId);
         setContentItems([]);
       }
     } catch (error) {
@@ -207,11 +201,11 @@ export function HomeScreen({
         if (error.message.includes('HTTP 400')) {
           errorMessage = 'Invalid user ID or request format.';
         } else if (error.message.includes('HTTP 404')) {
-          errorMessage = 'API endpoint not found. Check if your server is running.';
+          errorMessage = 'API endpoint not found.';
         } else if (error.message.includes('HTTP 500')) {
           errorMessage = 'Server error. Please try again later.';
         } else if (error.message.includes('fetch')) {
-          errorMessage = 'Cannot connect to server. Check if your backend is running on port 3001.';
+          errorMessage = 'Cannot connect to server.';
         } else {
           errorMessage = error.message;
         }
@@ -227,27 +221,22 @@ export function HomeScreen({
 
   // Manual refresh
   const handleRefresh = async () => {
-    if (!userId) {
-      console.warn('Cannot refresh: no userId provided');
-      return;
-    }
+    if (!userId) return;
     setRefreshing(true);
     await loadContentItems(false);
   };
 
-  // Load data on component mount and when userId changes
+  // Load data on component mount
   useEffect(() => {
     if (userId) {
-      console.log('HomeScreen mounting/updating with userId:', userId);
       loadContentItems();
     } else {
-      console.warn('HomeScreen: No userId provided');
       setLoading(false);
       setError('No user logged in');
     }
   }, [userId]);
 
-  // Auto-refresh every 30 seconds when not loading and user is authenticated
+  // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!loading && userId) {
       const interval = setInterval(() => {
@@ -258,7 +247,7 @@ export function HomeScreen({
     }
   }, [loading, userId]);
 
-  // Expose refresh function globally for add screen
+  // Expose refresh function globally
   useEffect(() => {
     (window as any).refreshHomeScreen = () => {
       console.log('External refresh triggered for user:', userId);
@@ -270,32 +259,32 @@ export function HomeScreen({
     };
   }, [userId]);
 
-  // Handle completion toggle with real API
-  const handleToggleComplete = async (itemId: string) => {
-    const item = contentItems.find(item => item.id === itemId);
-    if (!item || !userId) return;
+  // Handle completion toggle - FIXED
+  const handleToggleComplete = async (itemId: string, newCompletedState: boolean) => {
+    if (!userId) return;
 
     // Optimistic update
     setContentItems(prev => 
       prev.map(item => 
         item.id === itemId 
-          ? { ...item, completed: !item.completed }
+          ? { ...item, completed: newCompletedState }
           : item
       )
     );
 
     try {
-      console.log('Toggling completion for item:', itemId, 'user:', userId);
+      console.log('Toggling completion for item:', itemId, 'to:', newCompletedState);
       
-      // Use your existing API endpoint for toggling completion
-      const response = await fetch(`${API_URL}/api/saved-items/${itemId}`, {
+      // Use correct endpoint: /api/toggle-completion
+      const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          is_completed: !item.completed,
-          userId: userId // Include userId for security
+          itemId: itemId,
+          completed: newCompletedState,
+          userId: userId
         })
       });
 
@@ -303,7 +292,12 @@ export function HomeScreen({
         throw new Error(`HTTP ${response.status}: Failed to update item`);
       }
 
-      console.log('Successfully toggled completion for item:', itemId);
+      const result = await response.json();
+      console.log('Successfully toggled completion:', result);
+      
+      // Refresh list after small delay to ensure backend is updated
+      setTimeout(() => loadContentItems(false), 500);
+      
     } catch (error) {
       console.error('Error toggling completion:', error);
       
@@ -311,16 +305,23 @@ export function HomeScreen({
       setContentItems(prev => 
         prev.map(item => 
           item.id === itemId 
-            ? { ...item, completed: !item.completed }
+            ? { ...item, completed: !newCompletedState }
             : item
         )
       );
+      
+      alert('Failed to update item. Please try again.');
     }
   };
 
-  // Smart filtering and sorting
+  // Filter to show only UNCOMPLETED items on home screen
+  const uncompletedItems = useMemo(() => {
+    return contentItems.filter(item => !item.completed);
+  }, [contentItems]);
+
+  // Smart filtering and sorting (only on uncompleted items)
   const filteredAndSortedItems = useMemo(() => {
-    let filtered = contentItems.filter((item) => {
+    let filtered = uncompletedItems.filter((item) => {
       const matchesSearch = searchQuery === "" ||
         item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -335,14 +336,13 @@ export function HomeScreen({
     });
 
     return filtered.sort((a, b) => {
-      if (a.completed !== b.completed) return a.completed ? 1 : -1;
       if (a.priority !== b.priority) {
         const priorityOrder = { high: 3, medium: 2, low: 1 };
         return (priorityOrder[b.priority!] || 0) - (priorityOrder[a.priority!] || 0);
       }
       return (b.aiScore || 0) - (a.aiScore || 0);
     });
-  }, [contentItems, searchQuery, selectedFilter]);
+  }, [uncompletedItems, searchQuery, selectedFilter]);
 
   const getGreeting = () => {
     const hour = currentTime.getHours();
@@ -369,7 +369,7 @@ export function HomeScreen({
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Loading your content{userId ? ` for ${userId}` : ''}...
+            Loading your content...
           </p>
         </div>
       </div>
@@ -388,11 +388,6 @@ export function HomeScreen({
           <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-4 text-sm`}>
             {error}
           </p>
-          {userId ? (
-            <p className={`${darkMode ? 'text-gray-400' : 'text-gray-500'} text-xs mb-4`}>
-              User: {userId}
-            </p>
-          ) : null}
           <button 
             onClick={() => loadContentItems()}
             disabled={!userId}
@@ -447,14 +442,6 @@ export function HomeScreen({
             ? "bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700"
             : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
         }`}>
-          {/* Background elements */}
-          <div className={`absolute top-0 left-1/4 w-32 h-32 ${
-            darkMode ? "bg-gradient-to-r from-blue-800 to-purple-800" : "bg-gradient-to-r from-blue-200 to-purple-200"
-          } rounded-full opacity-20 animate-pulse`}></div>
-          <div className={`absolute top-8 right-1/4 w-24 h-24 ${
-            darkMode ? "bg-gradient-to-r from-pink-800 to-orange-800" : "bg-gradient-to-r from-pink-200 to-orange-200"
-          } rounded-full opacity-15 animate-bounce`} style={{ animationDuration: "3s" }}></div>
-
           <div className="relative px-5 pt-4 pb-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
@@ -478,14 +465,9 @@ export function HomeScreen({
                   className={`p-2 rounded-xl ${
                     darkMode ? 'bg-gray-700/60 hover:bg-gray-600' : 'bg-white/60 hover:bg-white'
                   } backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
-                  title={userId ? "Refresh" : "No user logged in"}
+                  title="Refresh"
                 >
                   <RefreshCw className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-slate-700'} ${refreshing ? 'animate-spin' : ''}`} />
-                </button>
-                <button className={`p-2 rounded-xl ${
-                  darkMode ? 'bg-gray-700/60 hover:bg-gray-600' : 'bg-white/60 hover:bg-white'
-                } backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105`}>
-                  <User className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-slate-700'}`} />
                 </button>
                 <button className={`p-2 rounded-xl ${
                   darkMode ? 'bg-gray-700/60 hover:bg-gray-600' : 'bg-white/60 hover:bg-white'
@@ -524,17 +506,16 @@ export function HomeScreen({
             </div>
 
             {/* Filter Pills */}
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
               {[
                 { key: "all", label: "All", icon: null },
                 { key: "recent", label: "Recent", icon: Clock },
                 { key: "important", label: `Priority (${stats.highPriority})`, icon: TrendingUp },
-                { key: "pending", label: `Pending (${stats.pending})`, icon: Sparkles },
               ].map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   onClick={() => setSelectedFilter(key as any)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                     selectedFilter === key
                       ? "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
                       : darkMode
@@ -552,33 +533,33 @@ export function HomeScreen({
 
         {/* Main Content */}
         <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
-          {/* Notification Banner */}
+          {/* PWA Install Banner */}
           {showNotificationBanner && (
             <div className={`${
               darkMode
-                ? "bg-gradient-to-r from-blue-900/50 to-indigo-900/50 border border-blue-800"
-                : "bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100"
+                ? "bg-gradient-to-r from-indigo-900/50 to-purple-900/50 border border-indigo-800"
+                : "bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100"
             } rounded-2xl p-4 mb-6 relative shadow-sm`}>
               <button
                 onClick={() => setShowNotificationBanner(false)}
                 className={`absolute top-3 right-3 ${
                   darkMode
-                    ? "text-blue-400 hover:text-blue-300 hover:bg-blue-800/50"
-                    : "text-blue-400 hover:text-blue-600 hover:bg-blue-100"
+                    ? "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-800/50"
+                    : "text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100"
                 } transition-colors p-1 rounded-lg`}
               >
                 <X className="w-4 h-4" />
               </button>
               <div className="flex items-start gap-3 pr-8">
-                <div className={`p-2 ${darkMode ? "bg-blue-800" : "bg-blue-100"} rounded-xl`}>
-                  <Sparkles className={`w-4 h-4 ${darkMode ? "text-blue-400" : "text-blue-600"}`} />
+                <div className={`p-2 ${darkMode ? "bg-indigo-800" : "bg-indigo-100"} rounded-xl`}>
+                  <Download className={`w-4 h-4 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
                 </div>
                 <div>
-                  <h4 className={`${darkMode ? "text-blue-300" : "text-blue-900"} font-semibold mb-1`}>
-                    Quick Save Tip
+                  <h4 className={`${darkMode ? "text-indigo-300" : "text-indigo-900"} font-semibold mb-1`}>
+                    Install DANGIT App
                   </h4>
-                  <p className={`${darkMode ? "text-blue-200" : "text-blue-800"} text-sm leading-relaxed`}>
-                    Add our widget to your notification panel for one-tap saving from anywhere on your device
+                  <p className={`${darkMode ? "text-indigo-200" : "text-indigo-800"} text-sm leading-relaxed`}>
+                    Add to your home screen for quick access. Works like a native app!
                   </p>
                 </div>
               </div>
@@ -586,7 +567,7 @@ export function HomeScreen({
           )}
 
           {/* Stats Card */}
-          {selectedFilter === "all" && stats.total > 0 && (
+          {stats.total > 0 && (
             <div className={`${
               darkMode
                 ? "bg-gradient-to-r from-gray-800 to-slate-800 border border-gray-700"
@@ -618,24 +599,22 @@ export function HomeScreen({
             </div>
           )}
 
-          {/* Content Cards */}
+          {/* Content Cards - Only Uncompleted */}
           <div className="space-y-4">
             {filteredAndSortedItems.length === 0 ? (
               <div className="text-center py-12">
                 <div className={`w-16 h-16 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                  <Search className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  <Sparkles className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
                 </div>
                 <h3 className={`${darkMode ? 'text-white' : 'text-slate-900'} font-semibold mb-2`}>
-                  {searchQuery ? "No items found" : contentItems.length === 0 ? "No content yet" : "No items match filter"}
+                  {searchQuery ? "No items found" : stats.pending === 0 ? "All done! 🎉" : "No pending items"}
                 </h3>
                 <p className={`${darkMode ? 'text-gray-400' : 'text-slate-500'} text-sm`}>
                   {searchQuery 
                     ? 'Try adjusting your search terms' 
-                    : contentItems.length === 0 
-                      ? userId 
-                        ? 'Add some content to get started'
-                        : 'Please log in to see your content'
-                      : 'Try changing your filter'
+                    : stats.pending === 0
+                      ? 'Great job! All your items are completed'
+                      : 'Add some content to get started'
                   }
                 </p>
               </div>
@@ -651,7 +630,6 @@ export function HomeScreen({
                   }}
                 >
                   <ContentCard
-                    key={item.id}
                     content={item}
                     onClick={onShowContentDetail}
                     onToggleComplete={handleToggleComplete}
