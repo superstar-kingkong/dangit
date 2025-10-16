@@ -3,7 +3,7 @@ import { Onboarding } from './components/onboarding';
 import { SignUp } from './components/sign-up';
 import { HomeScreen } from './components/home-screen';
 import { SearchScreen } from './components/search-screen';
-import { AddScreen } from './components/add-screen';
+import { AddContentScreen } from './components/add-screen';
 import { ProfileScreen } from './components/profile-screen';
 import { EditProfileScreen } from './components/edit-profile-screen';
 import { ContentDetailView } from './components/content-detail-view';
@@ -395,7 +395,7 @@ function AppContent() {
 
               {currentScreen === 'add' && (
                 <div className="animate-in fade-in-0 duration-300">
-                  <AddScreen 
+                  <AddContentScreen 
                     darkMode={darkMode}
                     currentTime={currentTime}
                     userId={currentUser.email} // Pass real user email instead of function
