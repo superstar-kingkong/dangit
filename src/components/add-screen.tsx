@@ -54,10 +54,7 @@ export function AddContentScreen({
     });
   };
 
-  const handleSave = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleSave = async () => {
     if (isProcessing || !hasContent() || analysisResult !== null) {
       return;
     }
@@ -155,7 +152,7 @@ export function AddContentScreen({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-screen flex flex-col bg-white overflow-hidden">
       
       {/* Status Bar */}
       <div className="flex justify-between items-center px-6 pt-4 pb-2 flex-shrink-0">
@@ -186,8 +183,8 @@ export function AddContentScreen({
       )}
 
       {/* Header */}
-      <div className="px-6 pt-4 pb-6 flex-shrink-0">
-        <div className="flex items-center justify-between mb-6">
+      <div className="px-6 pt-4 pb-4 flex-shrink-0">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-black text-gray-900">
               Add Content
@@ -205,8 +202,8 @@ export function AddContentScreen({
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="grid grid-cols-4 gap-2 bg-gray-100 rounded-2xl p-1.5">
+        {/* Tabs - 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -217,26 +214,26 @@ export function AddContentScreen({
                   setErrorMessage('');
                   setAnalysisResult(null);
                 }}
-                className={`flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all ${
+                className={`flex items-center justify-center gap-2 py-4 rounded-xl transition-all ${
                   activeTab === tab.id
-                    ? 'bg-white shadow-sm text-indigo-600'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <Icon className="w-5 h-5" strokeWidth={2.5} />
-                <span className="text-xs font-semibold">{tab.label}</span>
+                <span className="text-sm font-bold">{tab.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Main Content - Properly Scrollable */}
-      <div className="flex-1 overflow-y-auto px-6 pb-6">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto px-6" style={{ paddingBottom: '140px' }}>
         
         {/* URL Tab */}
         {activeTab === 'url' && (
-          <div className="space-y-6 pb-32">
+          <div className="space-y-6">
             <div>
               <label className="block text-gray-900 mb-2 font-bold text-sm">
                 Paste any link
@@ -271,10 +268,6 @@ export function AddContentScreen({
                     <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Category</span>
                     <p className="text-indigo-600 font-bold mt-1">{analysisResult.category}</p>
                   </div>
-                  <div className="bg-white/60 rounded-lg p-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Summary</span>
-                    <p className="text-gray-700 mt-1 leading-relaxed">{analysisResult.summary}</p>
-                  </div>
                 </div>
               </div>
             )}
@@ -283,7 +276,7 @@ export function AddContentScreen({
 
         {/* Screenshot Tab */}
         {activeTab === 'screenshot' && (
-          <div className="space-y-6 pb-32">
+          <div className="space-y-6">
             <input
               ref={fileInputRef}
               type="file"
@@ -299,7 +292,7 @@ export function AddContentScreen({
                     <img 
                       src={previewUrl} 
                       alt="Preview" 
-                      className="w-full max-h-80 object-contain bg-gray-50"
+                      className="w-full h-48 object-cover"
                     />
                   )}
                   <button
@@ -327,22 +320,12 @@ export function AddContentScreen({
                 </div>
 
                 {analysisResult && (
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                         <Check className="w-6 h-6 text-white" strokeWidth={3} />
                       </div>
                       <span className="font-black text-green-900 text-lg">Saved!</span>
-                    </div>
-                    <div className="space-y-2.5">
-                      <div className="bg-white/60 rounded-lg p-3">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">What we found</span>
-                        <p className="text-gray-900 font-semibold mt-1">{analysisResult.title}</p>
-                      </div>
-                      <div className="bg-white/60 rounded-lg p-3">
-                        <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Category</span>
-                        <p className="text-indigo-600 font-bold mt-1">{analysisResult.category}</p>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -351,13 +334,13 @@ export function AddContentScreen({
               <div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-2xl p-16 text-center transition-all group"
+                  className="w-full border-2 border-dashed border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-2xl p-12 text-center transition-all group"
                 >
-                  <Upload className="w-20 h-20 text-gray-400 group-hover:text-indigo-500 mx-auto mb-4 transition-colors" />
-                  <p className="text-gray-900 font-bold text-xl mb-2">
+                  <Upload className="w-16 h-16 text-gray-400 group-hover:text-indigo-500 mx-auto mb-4 transition-colors" />
+                  <p className="text-gray-900 font-bold text-lg mb-2">
                     Choose an image
                   </p>
-                  <p className="text-gray-500">
+                  <p className="text-gray-500 text-sm">
                     Screenshots, photos, or any image
                   </p>
                 </button>
@@ -368,7 +351,7 @@ export function AddContentScreen({
 
         {/* Manual Tab */}
         {activeTab === 'manual' && (
-          <div className="space-y-6 pb-32">
+          <div className="space-y-6">
             <div>
               <label className="block text-gray-900 mb-2 font-bold text-sm">
                 Title (Optional)
@@ -389,8 +372,8 @@ export function AddContentScreen({
                 placeholder="Write anything... ideas, thoughts, reminders"
                 value={manualContent}
                 onChange={(e) => setManualContent(e.target.value)}
-                rows={6}
-                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-y text-gray-900 placeholder-gray-400 transition-all text-base leading-relaxed min-h-[150px] max-h-[400px]"
+                rows={8}
+                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-all text-base leading-relaxed"
               />
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
@@ -403,22 +386,12 @@ export function AddContentScreen({
             </div>
 
             {analysisResult && (
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                     <Check className="w-6 h-6 text-white" strokeWidth={3} />
                   </div>
                   <span className="font-black text-green-900 text-lg">Saved!</span>
-                </div>
-                <div className="space-y-2.5">
-                  <div className="bg-white/60 rounded-lg p-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Organized as</span>
-                    <p className="text-gray-900 font-semibold mt-1">{analysisResult.title}</p>
-                  </div>
-                  <div className="bg-white/60 rounded-lg p-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Category</span>
-                    <p className="text-indigo-600 font-bold mt-1">{analysisResult.category}</p>
-                  </div>
                 </div>
               </div>
             )}
@@ -427,7 +400,7 @@ export function AddContentScreen({
 
         {/* Voice Tab */}
         {activeTab === 'voice' && (
-          <div className="text-center py-20">
+          <div className="text-center py-16">
             <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-6">
               <Mic className="w-12 h-12 text-orange-500" />
             </div>
@@ -441,30 +414,31 @@ export function AddContentScreen({
         )}
       </div>
 
-      {/* Fixed Bottom Button - Above Navigation */}
-      <div className="flex-shrink-0 px-6 py-4 bg-white border-t border-gray-100">
+      {/* FIXED BOTTOM BUTTON - VISIBLE AND CLICKABLE */}
+      <div className="absolute bottom-20 left-0 right-0 px-6 pb-4 bg-gradient-to-t from-white via-white to-transparent pt-8 z-50">
         <button
+          type="button"
           onClick={handleSave}
           disabled={isProcessing || !hasContent() || analysisResult !== null}
-          className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-200 ${
+          className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-xl ${
             isProcessing || !hasContent() || analysisResult !== null
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl active:scale-[0.98]'
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white active:scale-[0.98]'
           }`}
         >
           {isProcessing ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} />
+              <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
               <span>Saving with AI...</span>
             </>
           ) : analysisResult ? (
             <>
-              <Check className="w-5 h-5" strokeWidth={3} />
+              <Check className="w-6 h-6" strokeWidth={3} />
               <span>Saved!</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" strokeWidth={2.5} />
+              <Sparkles className="w-6 h-6" strokeWidth={2.5} />
               <span>Save to DANGIT</span>
             </>
           )}
