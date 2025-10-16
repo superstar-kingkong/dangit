@@ -5,11 +5,13 @@ import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles } from
 interface AddContentScreenProps {
   userId: string;
   onClose: () => void;
+  darkMode?: boolean;
 }
 
 export function AddContentScreen({ 
   userId,
-  onClose
+  onClose,
+  darkMode = false
 }: AddContentScreenProps) {
   const [activeTab, setActiveTab] = useState<'url' | 'screenshot' | 'voice' | 'manual'>('url');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -103,8 +105,6 @@ export function AddContentScreen({
           return;
       }
 
-      console.log('Saving content...', { contentType, userId });
-
       const response = await fetch(`${API_URL}/api/process-content`, {
         method: 'POST',
         headers: {
@@ -152,26 +152,11 @@ export function AddContentScreen({
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
-      
-      {/* Status Bar */}
-      <div className="flex justify-between items-center px-6 pt-4 pb-2 flex-shrink-0">
-        <span className="text-sm font-semibold text-gray-900">9:41</span>
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            {[1,2,3,4].map(i => (
-              <div key={i} className="w-1 h-1 bg-gray-900 rounded-full"></div>
-            ))}
-          </div>
-          <div className="w-6 h-3 border-2 border-gray-900 rounded-sm relative">
-            <div className="absolute inset-0.5 bg-gray-900 rounded-[1px]"></div>
-          </div>
-        </div>
-      </div>
+    <div className={`h-screen flex flex-col overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="absolute top-16 left-4 right-4 z-50 animate-in slide-in-from-top-2">
+        <div className="absolute top-4 left-4 right-4 z-50 animate-in slide-in-from-top-2">
           <div className="bg-red-500 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2">
             <X className="w-5 h-5 flex-shrink-0" />
             <span className="font-semibold flex-1">{errorMessage}</span>
@@ -183,20 +168,24 @@ export function AddContentScreen({
       )}
 
       {/* Header */}
-      <div className="px-6 pt-4 pb-4 flex-shrink-0">
+      <div className="px-6 pt-6 pb-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-black text-gray-900">
+            <h1 className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Add Content
             </h1>
-            <p className="text-gray-600 mt-1 font-medium">
+            <p className={`mt-1 font-medium ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               Save anything, organized automatically
             </p>
           </div>
           
           <button
             onClick={onClose}
-            className="p-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors active:scale-95"
+            className={`p-2.5 rounded-xl transition-colors active:scale-95 ${
+              darkMode 
+                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
@@ -217,7 +206,9 @@ export function AddContentScreen({
                 className={`flex items-center justify-center gap-2 py-4 rounded-xl transition-all ${
                   activeTab === tab.id
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : darkMode
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
                 <Icon className="w-5 h-5" strokeWidth={2.5} />
@@ -235,7 +226,7 @@ export function AddContentScreen({
         {activeTab === 'url' && (
           <div className="space-y-6">
             <div>
-              <label className="block text-gray-900 mb-2 font-bold text-sm">
+              <label className={`block mb-2 font-bold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                 Paste any link
               </label>
               <input
@@ -243,10 +234,14 @@ export function AddContentScreen({
                 placeholder="https://example.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-all text-base"
+                className={`w-full px-4 py-4 rounded-xl border-2 focus:outline-none transition-all text-base ${
+                  darkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
+                }`}
                 autoFocus
               />
-              <p className="text-sm text-gray-500 mt-2">
+              <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 Save articles, videos, tweets, or any webpage
               </p>
             </div>
@@ -287,7 +282,7 @@ export function AddContentScreen({
             
             {selectedFile ? (
               <div className="space-y-4">
-                <div className="relative rounded-2xl overflow-hidden border-2 border-gray-200">
+                <div className={`relative rounded-2xl overflow-hidden border-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   {previewUrl && (
                     <img 
                       src={previewUrl} 
@@ -307,14 +302,14 @@ export function AddContentScreen({
                   </button>
                 </div>
                 
-                <div className="bg-gray-50 rounded-xl p-4">
+                <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
                       <Camera className="w-6 h-6 text-indigo-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 truncate">{selectedFile.name}</div>
-                      <div className="text-sm text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</div>
+                      <div className={`font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedFile.name}</div>
+                      <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{(selectedFile.size / 1024).toFixed(1)} KB</div>
                     </div>
                   </div>
                 </div>
@@ -334,13 +329,19 @@ export function AddContentScreen({
               <div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50 rounded-2xl p-12 text-center transition-all group"
+                  className={`w-full border-2 border-dashed rounded-2xl p-12 text-center transition-all group ${
+                    darkMode
+                      ? 'border-gray-700 hover:border-indigo-500 hover:bg-gray-800/50'
+                      : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50'
+                  }`}
                 >
-                  <Upload className="w-16 h-16 text-gray-400 group-hover:text-indigo-500 mx-auto mb-4 transition-colors" />
-                  <p className="text-gray-900 font-bold text-lg mb-2">
+                  <Upload className={`w-16 h-16 mx-auto mb-4 transition-colors ${
+                    darkMode ? 'text-gray-600 group-hover:text-indigo-500' : 'text-gray-400 group-hover:text-indigo-500'
+                  }`} />
+                  <p className={`font-bold text-lg mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Choose an image
                   </p>
-                  <p className="text-gray-500 text-sm">
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     Screenshots, photos, or any image
                   </p>
                 </button>
@@ -353,19 +354,23 @@ export function AddContentScreen({
         {activeTab === 'manual' && (
           <div className="space-y-6">
             <div>
-              <label className="block text-gray-900 mb-2 font-bold text-sm">
+              <label className={`block mb-2 font-bold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                 Title (Optional)
               </label>
               <input
                 placeholder="Give it a title..."
                 value={manualTitle}
                 onChange={(e) => setManualTitle(e.target.value)}
-                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none text-gray-900 placeholder-gray-400 transition-all text-base"
+                className={`w-full px-4 py-4 rounded-xl border-2 focus:outline-none transition-all text-base ${
+                  darkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
+                }`}
               />
             </div>
             
             <div>
-              <label className="block text-gray-900 mb-2 font-bold text-sm">
+              <label className={`block mb-2 font-bold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                 Your note
               </label>
               <textarea
@@ -373,13 +378,17 @@ export function AddContentScreen({
                 value={manualContent}
                 onChange={(e) => setManualContent(e.target.value)}
                 rows={8}
-                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-all text-base leading-relaxed"
+                className={`w-full px-4 py-4 rounded-xl border-2 focus:outline-none resize-none transition-all text-base leading-relaxed ${
+                  darkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
+                }`}
               />
               <div className="flex justify-between items-center mt-2">
-                <p className="text-sm text-gray-500">
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   AI will organize this for you
                 </p>
-                <span className="text-sm text-gray-500 font-medium">
+                <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   {manualContent.length} characters
                 </span>
               </div>
@@ -404,25 +413,29 @@ export function AddContentScreen({
             <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-6">
               <Mic className="w-12 h-12 text-orange-500" />
             </div>
-            <h3 className="text-gray-900 font-black mb-2 text-2xl">
+            <h3 className={`font-black mb-2 text-2xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Voice Notes
             </h3>
-            <p className="text-gray-600 text-lg">
+            <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Coming soon!
             </p>
           </div>
         )}
       </div>
 
-      {/* FIXED BOTTOM BUTTON - VISIBLE AND CLICKABLE */}
-      <div className="absolute bottom-20 left-0 right-0 px-6 pb-4 bg-gradient-to-t from-white via-white to-transparent pt-8 z-50">
+      {/* FIXED BOTTOM BUTTON */}
+      <div className={`absolute bottom-20 left-0 right-0 px-6 pb-4 bg-gradient-to-t pt-8 z-50 ${
+        darkMode ? 'from-gray-900 via-gray-900' : 'from-white via-white'
+      }`}>
         <button
           type="button"
           onClick={handleSave}
           disabled={isProcessing || !hasContent() || analysisResult !== null}
           className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-xl ${
             isProcessing || !hasContent() || analysisResult !== null
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              ? darkMode 
+                ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white active:scale-[0.98]'
           }`}
         >
