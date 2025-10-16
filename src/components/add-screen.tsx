@@ -37,7 +37,6 @@ export function AddContentScreen({
       setErrorMessage('');
       setAnalysisResult(null);
       
-      // Create preview
       const reader = new FileReader();
       reader.onload = (e) => setPreviewUrl(e.target?.result as string);
       reader.readAsDataURL(file);
@@ -55,7 +54,14 @@ export function AddContentScreen({
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isProcessing || !hasContent() || analysisResult !== null) {
+      return;
+    }
+
     setIsProcessing(true);
     setErrorMessage('');
 
@@ -100,6 +106,8 @@ export function AddContentScreen({
           return;
       }
 
+      console.log('Saving content...', { contentType, userId });
+
       const response = await fetch(`${API_URL}/api/process-content`, {
         method: 'POST',
         headers: {
@@ -122,7 +130,6 @@ export function AddContentScreen({
           tags: result.data.ai_tags,
         });
         
-        // Auto-close after showing success
         setTimeout(() => {
           onClose();
         }, 2000);
@@ -224,12 +231,12 @@ export function AddContentScreen({
         </div>
       </div>
 
-      {/* Main Content - Scrollable with extra padding for button */}
-      <div className="flex-1 overflow-y-auto px-6 pb-40">
+      {/* Main Content - Properly Scrollable */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
         
         {/* URL Tab */}
         {activeTab === 'url' && (
-          <div className="space-y-6">
+          <div className="space-y-6 pb-32">
             <div>
               <label className="block text-gray-900 mb-2 font-bold text-sm">
                 Paste any link
@@ -276,7 +283,7 @@ export function AddContentScreen({
 
         {/* Screenshot Tab */}
         {activeTab === 'screenshot' && (
-          <div className="space-y-6">
+          <div className="space-y-6 pb-32">
             <input
               ref={fileInputRef}
               type="file"
@@ -292,7 +299,7 @@ export function AddContentScreen({
                     <img 
                       src={previewUrl} 
                       alt="Preview" 
-                      className="w-full h-64 object-cover"
+                      className="w-full max-h-80 object-contain bg-gray-50"
                     />
                   )}
                   <button
@@ -361,7 +368,7 @@ export function AddContentScreen({
 
         {/* Manual Tab */}
         {activeTab === 'manual' && (
-          <div className="space-y-6">
+          <div className="space-y-6 pb-32">
             <div>
               <label className="block text-gray-900 mb-2 font-bold text-sm">
                 Title (Optional)
@@ -382,8 +389,8 @@ export function AddContentScreen({
                 placeholder="Write anything... ideas, thoughts, reminders"
                 value={manualContent}
                 onChange={(e) => setManualContent(e.target.value)}
-                rows={10}
-                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-none text-gray-900 placeholder-gray-400 transition-all text-base leading-relaxed"
+                rows={6}
+                className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:outline-none resize-y text-gray-900 placeholder-gray-400 transition-all text-base leading-relaxed min-h-[150px] max-h-[400px]"
               />
               <div className="flex justify-between items-center mt-2">
                 <p className="text-sm text-gray-500">
@@ -434,30 +441,30 @@ export function AddContentScreen({
         )}
       </div>
 
-      {/* Fixed Bottom Button */}
-      <div className="absolute bottom-20 left-0 right-0 px-6 pb-6 bg-gradient-to-t from-white via-white to-transparent pt-8 pointer-events-none">
+      {/* Fixed Bottom Button - Above Navigation */}
+      <div className="flex-shrink-0 px-6 py-4 bg-white border-t border-gray-100">
         <button
           onClick={handleSave}
           disabled={isProcessing || !hasContent() || analysisResult !== null}
-          className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-lg pointer-events-auto ${
+          className={`w-full h-14 rounded-2xl font-bold text-base flex items-center justify-center gap-3 transition-all duration-200 ${
             isProcessing || !hasContent() || analysisResult !== null
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white hover:shadow-xl active:scale-[0.98]'
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl active:scale-[0.98]'
           }`}
         >
           {isProcessing ? (
             <>
-              <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
+              <Loader2 className="w-5 h-5 animate-spin" strokeWidth={2.5} />
               <span>Saving with AI...</span>
             </>
           ) : analysisResult ? (
             <>
-              <Check className="w-6 h-6" strokeWidth={3} />
+              <Check className="w-5 h-5" strokeWidth={3} />
               <span>Saved!</span>
             </>
           ) : (
             <>
-              <Sparkles className="w-6 h-6" strokeWidth={2.5} />
+              <Sparkles className="w-5 h-5" strokeWidth={2.5} />
               <span>Save to DANGIT</span>
             </>
           )}
