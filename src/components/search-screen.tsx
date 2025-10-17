@@ -173,7 +173,7 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: S
           title: item.title,
           description: item.ai_summary || 'No description',
           tags: Array.isArray(item.ai_tags) ? item.ai_tags : [],
-          timestamp: formatTimeAgo(item.created_at),
+          timestamp: item.created_at,
           completed: item.is_completed,
           category: item.ai_category,
           borderColor: categoryColors[item.ai_category] || categoryColors['Other'],

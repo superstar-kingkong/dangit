@@ -179,7 +179,7 @@ export function HomeScreen({
           title: item.title || 'Untitled',
           description: item.ai_summary || 'No description available',
           tags: Array.isArray(item.ai_tags) ? item.ai_tags : [],
-          timestamp: formatTimeAgo(item.created_at),
+          timestamp: item.created_at,
           completed: Boolean(item.is_completed),
           category: item.ai_category || 'Other',
           borderColor: getCategoryColor(item.ai_category || 'Other'),
