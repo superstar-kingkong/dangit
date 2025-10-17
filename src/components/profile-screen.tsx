@@ -255,9 +255,8 @@ export function ProfileScreen({
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       
-      {/* Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto px-6" style={{ paddingBottom: '140px' }}>
-      
+      {/* FIXED: Removed h-screen and added proper scrolling container */}
+      <div className="overflow-y-auto" style={{ height: 'calc(100vh - 80px)' }}>
         
         {/* Header with User Info */}
         <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 px-6 pt-8 pb-8">
