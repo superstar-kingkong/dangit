@@ -9,7 +9,6 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
-import { API_URL } from '../config';
 
 interface ContentDetailViewProps {
   content: {
@@ -24,13 +23,13 @@ interface ContentDetailViewProps {
     borderColor: string;
     originalUrl?: string;
     aiSummary?: string;
-    created_at?: string; // This matches your database field
+    created_at?: string;
     notifications?: {
       enabled: boolean;
       frequency: 'once' | 'daily' | 'weekly';
       time: string;
       customMessage?: string;
-    };
+    } | string; // Can be string if stored as JSON string
   };
   onClose: () => void;
   onToggleComplete?: (id: number) => void;
@@ -68,35 +67,58 @@ export function ContentDetailView({
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
   
-  // FIXED: Notification state with persistence
-  const [notificationsEnabled, setNotificationsEnabled] = useState(content.notifications?.enabled || false);
-  const [notificationFrequency, setNotificationFrequency] = useState(content.notifications?.frequency || 'once');
-  const [notificationTime, setNotificationTime] = useState(content.notifications?.time || '09:00');
-  const [customMessage, setCustomMessage] = useState(content.notifications?.customMessage || '');
+  // FIXED: Notification state with proper persistence
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationFrequency, setNotificationFrequency] = useState<'once' | 'daily' | 'weekly'>('once');
+  const [notificationTime, setNotificationTime] = useState('09:00');
+  const [customMessage, setCustomMessage] = useState('');
   const [notificationSaved, setNotificationSaved] = useState(false);
   const [savingNotification, setSavingNotification] = useState(false);
   
-  // Update states when content changes
+  // FIXED: Parse and set notification state properly
   useEffect(() => {
     setIsCompleted(content.completed);  
     setEditedTitle(content.title);
     setEditedDescription(content.description);
     setEditedTags(content.tags);
     
-    // Parse notifications if stored as string
-    let notifications = content.notifications;
-    if (typeof content.notifications === 'string') {
-      try {
-        notifications = JSON.parse(content.notifications);
-      } catch (e) {
-        notifications = null;
+    // Parse notifications properly
+    let notifications = null;
+    
+    if (content.notifications) {
+      if (typeof content.notifications === 'string') {
+        try {
+          notifications = JSON.parse(content.notifications);
+          console.log('Parsed notifications from string:', notifications);
+        } catch (e) {
+          console.warn('Failed to parse notification string:', content.notifications);
+          notifications = null;
+        }
+      } else {
+        notifications = content.notifications;
+        console.log('Using notifications object:', notifications);
       }
     }
     
-    setNotificationsEnabled(notifications?.enabled || false);
-    setNotificationFrequency(notifications?.frequency || 'once');
-    setNotificationTime(notifications?.time || '09:00');
-    setCustomMessage(notifications?.customMessage || '');
+    // Set notification state
+    if (notifications) {
+      setNotificationsEnabled(notifications.enabled || false);
+      setNotificationFrequency(notifications.frequency || 'once');
+      setNotificationTime(notifications.time || '09:00');
+      setCustomMessage(notifications.customMessage || '');
+      console.log('Notification settings loaded:', {
+        enabled: notifications.enabled,
+        frequency: notifications.frequency,
+        time: notifications.time
+      });
+    } else {
+      // Reset to defaults if no notifications
+      setNotificationsEnabled(false);
+      setNotificationFrequency('once');
+      setNotificationTime('09:00');  
+      setCustomMessage('');
+      console.log('No notification settings found, using defaults');
+    }
   }, [content]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -145,7 +167,7 @@ export function ContentDetailView({
     setTimeout(() => onClose(), 200);
   };
 
-  // FIXED: Handle completion toggle with proper API format
+  // FIXED: Handle completion toggle with relative URL
   const handleToggleComplete = async () => {
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
@@ -153,13 +175,14 @@ export function ContentDetailView({
     try {
       console.log('Toggling completion for item:', content.id, 'to:', newCompletedState, 'userId:', userId);
       
-      const response = await fetch(`${API_URL}/api/toggle-completion`, {
+      // FIXED: Use relative URL for Next.js API route
+      const response = await fetch(`/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          itemId: content.id, // Your backend expects this as number
+          itemId: content.id,
           completed: newCompletedState,
           userId: userId
         })
@@ -222,13 +245,19 @@ export function ContentDetailView({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-  // FIXED: Calculate actual time from created_at field
+  // FIXED: Handle time display properly
   const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
     try {
       const now = new Date();
       const dateString = createdAt || fallbackTimestamp;
       
       if (!dateString) return 'Unknown time';
+      
+      // Check if dateString is already formatted (like "6h ago")
+      if (dateString.includes('ago') || dateString.includes('now')) {
+        console.warn('Already formatted time string passed:', dateString);
+        return dateString; // Return as-is if already formatted
+      }
       
       const date = new Date(dateString);
       
@@ -261,7 +290,7 @@ export function ContentDetailView({
     }
   };
 
-  // FIXED: Save notification settings to backend
+  // FIXED: Save notification settings with relative URL and proper persistence
   const handleSaveNotificationSettings = async () => {
     setSavingNotification(true);
     
@@ -275,7 +304,8 @@ export function ContentDetailView({
 
       console.log('Saving notification settings:', notificationSettings);
 
-      const response = await fetch(`${API_URL}/api/notification-settings`, {
+      // FIXED: Use relative URL for Next.js API route
+      const response = await fetch(`/api/notification-settings`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -288,14 +318,25 @@ export function ContentDetailView({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        const errorText = await response.text();
+        console.error('Notification settings API error:', response.status, errorText);
+        throw new Error(`Failed to save notification settings: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log('Notification settings saved:', result);
+      console.log('Notification settings saved successfully:', result);
       
       setNotificationSaved(true);
+      
+      // FIXED: Update the content object so notifications persist when navigating back
+      if (onContentUpdate) {
+        const updatedContent = {
+          ...content,
+          notifications: notificationSettings
+        };
+        onContentUpdate(updatedContent);
+        console.log('Updated content with notification settings');
+      }
       
       // Schedule the actual notification
       if (notificationsEnabled) {
@@ -482,7 +523,7 @@ export function ContentDetailView({
             )}
           </div>
 
-          {/* FIXED: Content metadata with accurate time, removed reading time and views */}
+          {/* Content metadata with time display */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-2xl bg-gradient-to-r ${currentType.color} shadow-lg`}>
@@ -504,7 +545,6 @@ export function ContentDetailView({
                     <Clock className="w-4 h-4" />
                     {formatTimeAgo(content.created_at, content.timestamp)}
                   </div>
-                  {/* REMOVED: Reading time and view count */}
                 </div>
               </div>
             </div>
@@ -576,7 +616,7 @@ export function ContentDetailView({
         }}
       >
         <div className="p-6 space-y-6">
-          {/* FIXED: Title with completion state - crosses out when completed */}
+          {/* Title with completion state */}
           <div className="relative">
             {isEditing ? (
               <textarea
@@ -605,7 +645,7 @@ export function ContentDetailView({
             )}
           </div>
 
-          {/* Single Content Details section (removed AI summary duplication) */}
+          {/* Content Details section */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -702,7 +742,7 @@ export function ContentDetailView({
             </div>
           </div>
 
-          {/* FIXED: Notification Settings with Save Button and Persistence */}
+          {/* FIXED: Notification Settings with proper persistence */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -721,7 +761,7 @@ export function ContentDetailView({
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                   <p className="text-sm text-green-800 font-medium">
-                    Notification settings saved successfully!
+                    Notification settings saved and will persist!
                   </p>
                 </div>
               </div>
@@ -760,7 +800,7 @@ export function ContentDetailView({
                       {notificationsEnabled ? 'Reminders Enabled' : 'Enable Reminders'}
                     </div>
                     <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {notificationsEnabled ? 'You\'ll get reminded about this content' : 'Get PWA notifications to review this content'}
+                      {notificationsEnabled ? 'Settings will be saved when you click "Save Reminder Settings"' : 'Get PWA notifications to review this content'}
                     </div>
                   </div>
                 </div>
@@ -839,7 +879,7 @@ export function ContentDetailView({
                   />
                 </div>
 
-                {/* FIXED: Save Notification Settings Button */}
+                {/* Save Notification Settings Button */}
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
                   <Button
                     onClick={handleSaveNotificationSettings}
