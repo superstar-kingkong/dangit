@@ -159,17 +159,81 @@ export function ContentCard({ content, onClick, onToggleComplete, onMenuClick, d
     onClick();
   };
 
-  // Calculate relative time more accurately
+  // Enhanced relative time calculation function
   const getRelativeTime = (timestamp: string) => {
-    const timeMap: Record<string, string> = {
-      '2h ago': '2 hours ago',
-      '4h ago': '4 hours ago', 
-      '1d ago': 'Yesterday',
-      '2d ago': '2 days ago',
-      '3d ago': '3 days ago',
-      '5d ago': '5 days ago'
-    };
-    return timeMap[timestamp] || timestamp;
+    try {
+      // Handle different timestamp formats
+      let date: Date;
+      
+      // If timestamp is already in ISO format or standard date format
+      if (timestamp.includes('T') || timestamp.includes('-')) {
+        date = new Date(timestamp);
+      } else {
+        // If it's a Unix timestamp (number as string)
+        const numTimestamp = parseInt(timestamp);
+        date = new Date(numTimestamp);
+      }
+
+      // Fallback: if date is invalid, try parsing as is
+      if (isNaN(date.getTime())) {
+        date = new Date(timestamp);
+      }
+
+      // If still invalid, return the original timestamp
+      if (isNaN(date.getTime())) {
+        return timestamp;
+      }
+
+      const now = new Date();
+      const diffInMs = now.getTime() - date.getTime();
+      
+      // Convert to different time units
+      const diffInSeconds = Math.floor(diffInMs / 1000);
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      const diffInDays = Math.floor(diffInHours / 24);
+      const diffInWeeks = Math.floor(diffInDays / 7);
+      const diffInMonths = Math.floor(diffInDays / 30);
+      const diffInYears = Math.floor(diffInDays / 365);
+
+      // Handle future dates
+      if (diffInMs < 0) {
+        const absDiffInSeconds = Math.abs(diffInSeconds);
+        const absDiffInMinutes = Math.abs(diffInMinutes);
+        const absDiffInHours = Math.abs(diffInHours);
+        const absDiffInDays = Math.abs(diffInDays);
+
+        if (absDiffInSeconds < 60) {
+          return 'in a few seconds';
+        } else if (absDiffInMinutes < 60) {
+          return `in ${absDiffInMinutes} ${absDiffInMinutes === 1 ? 'minute' : 'minutes'}`;
+        } else if (absDiffInHours < 24) {
+          return `in ${absDiffInHours} ${absDiffInHours === 1 ? 'hour' : 'hours'}`;
+        } else {
+          return `in ${absDiffInDays} ${absDiffInDays === 1 ? 'day' : 'days'}`;
+        }
+      }
+
+      // Handle past dates
+      if (diffInSeconds < 60) {
+        return diffInSeconds <= 5 ? 'just now' : `${diffInSeconds} seconds ago`;
+      } else if (diffInMinutes < 60) {
+        return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+      } else if (diffInHours < 24) {
+        return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+      } else if (diffInDays < 7) {
+        return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+      } else if (diffInWeeks < 4) {
+        return `${diffInWeeks} ${diffInWeeks === 1 ? 'week' : 'weeks'} ago`;
+      } else if (diffInMonths < 12) {
+        return `${diffInMonths} ${diffInMonths === 1 ? 'month' : 'months'} ago`;
+      } else {
+        return `${diffInYears} ${diffInYears === 1 ? 'year' : 'years'} ago`;
+      }
+    } catch (error) {
+      console.warn('Error parsing timestamp:', timestamp, error);
+      return timestamp; // Fallback to original timestamp
+    }
   };
 
   return (
