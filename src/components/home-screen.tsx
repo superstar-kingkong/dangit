@@ -2,7 +2,6 @@ import { API_URL } from '../config';
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
-  Settings,
   X,
   Filter,
   Clock,
@@ -10,6 +9,8 @@ import {
   TrendingUp,
   RefreshCw,
   Download,
+  Share,
+  MoreVertical,
 } from "lucide-react";
 
 interface HomeScreenProps {
@@ -104,23 +105,26 @@ export function HomeScreen({
   
   const currentTime = externalCurrentTime || new Date();
 
-  // Category color mapping
+  // UPDATED: Unified Category color mapping (consistent across all screens)
   const getCategoryColor = (category: string): string => {
     const colorMap: { [key: string]: string } = {
-      'Work': '#2563EB',
-      'Learning': '#10B981',
-      'Ideas': '#8B5CF6',
-      'Personal': '#10B981',
-      'Shopping': '#EC4899',
-      'Food & Dining': '#84CC16',
-      'Travel': '#06B6D4',
-      'Finance': '#F59E0B',
-      'AI Tools': '#6366F1',
-      'Entertainment': '#EF4444',
-      'Productivity': '#2563EB',
-      'Health & Fitness': '#EF4444',
-      'Coupons & Deals': '#F59E0B',
-      'Other': '#6B7280'
+      'Work': '#2563EB',           // Blue
+      'Personal': '#10B981',       // Green  
+      'Ideas': '#8B5CF6',          // Purple
+      'Research': '#F59E0B',       // Orange/Amber
+      'Learning': '#10B981',       // Green
+      'Shopping': '#EC4899',       // Pink
+      'Travel': '#06B6D4',         // Cyan
+      'Health': '#EF4444',         // Red
+      'Food': '#84CC16',           // Lime
+      'Entertainment': '#EF4444',  // Red
+      'Finance': '#F59E0B',        // Orange
+      'AI Tools': '#6366F1',       // Indigo
+      'Productivity': '#2563EB',   // Blue
+      'Health & Fitness': '#EF4444', // Red
+      'Food & Dining': '#84CC16',  // Lime
+      'Coupons & Deals': '#F59E0B', // Orange
+      'Other': '#6B7280'           // Gray
     };
     return colorMap[category] || '#6B7280';
   };
@@ -406,53 +410,54 @@ export function HomeScreen({
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      {/* REMOVED: Status Bar - No longer needed since phone provides this */}
-      
-      {/* Scrollable Content - FIXED: Full height now that status bar is removed */}
+      {/* Scrollable Content */}
       <div className="overflow-y-auto h-screen">
-        {/* Header - FIXED: Removed backdrop-blur effects that caused blurring */}
+        {/* UPDATED: Header with unified gradient and fixed DANGIT visibility */}
         <div className={`relative overflow-hidden ${
           darkMode
-            ? "bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700"
+            ? "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"
             : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
         }`}>
           <div className="relative px-5 pt-6 pb-6">
-            {/* Header */}
+            {/* UPDATED: Header with removed settings button and fixed DANGIT text */}
             <div className="flex justify-between items-center mb-6">
               <div>
-                {/* FIXED: Removed backdrop-blur that was causing title to blur */}
                 <h1 className="text-3xl tracking-tight font-bold">
-                  <span className={`text-transparent ${
-                    darkMode ? "bg-gradient-to-r from-indigo-400 to-purple-400" : "bg-gradient-to-r from-indigo-600 to-purple-600"
-                  } bg-clip-text`}>DANG</span>
-                  <span className={`text-transparent ${
-                    darkMode ? "bg-gradient-to-r from-purple-400 to-pink-400" : "bg-gradient-to-r from-purple-600 to-pink-600"
-                  } bg-clip-text`}>IT</span>
+                  <span className={`${
+                    darkMode 
+                      ? "text-indigo-300 drop-shadow-sm" 
+                      : "text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text"
+                  }`}>DANG</span>
+                  <span className={`${
+                    darkMode 
+                      ? "text-pink-300 drop-shadow-sm" 
+                      : "text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text"
+                  }`}>IT</span>
                 </h1>
-                <p className={`${darkMode ? "text-gray-300" : "text-slate-600"} mt-1 font-medium`}>
+                <p className={`${darkMode ? "text-indigo-200" : "text-slate-600"} mt-1 font-medium`}>
                   {getGreeting()}, ready to organize?
                 </p>
               </div>
+              {/* UPDATED: Removed settings button, kept only refresh */}
               <div className="flex items-center gap-3">
                 <button 
                   onClick={handleRefresh}
                   disabled={refreshing || !userId}
                   className={`p-2 rounded-xl ${
-                    darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'
+                    darkMode 
+                      ? 'bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm' 
+                      : 'bg-white/80 hover:bg-white backdrop-blur-sm'
                   } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
                   title="Refresh"
                 >
-                  <RefreshCw className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-slate-700'} ${refreshing ? 'animate-spin' : ''}`} />
-                </button>
-                <button className={`p-2 rounded-xl ${
-                  darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'
-                } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105`}>
-                  <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-slate-700'}`} />
+                  <RefreshCw className={`w-5 h-5 ${
+                    darkMode ? 'text-indigo-300' : 'text-slate-700'
+                  } ${refreshing ? 'animate-spin' : ''}`} />
                 </button>
               </div>
             </div>
 
-            {/* Search Bar - FIXED: Removed backdrop-blur that was causing blurring */}
+            {/* Search Bar */}
             <div className="relative mb-4">
               <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-200 ${
                 isSearchFocused ? 'text-indigo-500 scale-110' : darkMode ? 'text-gray-400' : 'text-slate-400'
@@ -468,8 +473,8 @@ export function HomeScreen({
                 onBlur={() => setIsSearchFocused(false)}
                 className={`w-full ${
                   darkMode
-                    ? "bg-gray-700 text-white placeholder-gray-400"
-                    : "bg-white text-slate-900 placeholder-slate-500"
+                    ? "bg-gray-800/80 text-white placeholder-gray-400 backdrop-blur-sm"
+                    : "bg-white/90 text-slate-900 placeholder-slate-500 backdrop-blur-sm"
                 } rounded-2xl pl-12 pr-4 py-4 border-2 transition-all duration-200 shadow-sm ${
                   isSearchFocused
                     ? "border-indigo-500 shadow-lg"
@@ -480,7 +485,7 @@ export function HomeScreen({
               />
             </div>
 
-            {/* Filter Pills - FIXED: Removed backdrop-blur from filter buttons */}
+            {/* Filter Pills */}
             <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
               {[
                 { key: "all", label: "All", icon: null },
@@ -492,10 +497,12 @@ export function HomeScreen({
                   onClick={() => setSelectedFilter(key as any)}
                   className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                     selectedFilter === key
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
+                      ? darkMode
+                        ? "bg-indigo-800/80 text-indigo-200 shadow-sm scale-105 backdrop-blur-sm"
+                        : "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
                       : darkMode
-                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:shadow-sm"
-                        : "bg-white text-slate-600 hover:bg-gray-50 hover:shadow-sm"
+                        ? "bg-gray-800/60 text-gray-300 hover:bg-gray-700/60 hover:shadow-sm backdrop-blur-sm"
+                        : "bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm backdrop-blur-sm"
                   }`}
                 >
                   {Icon && <Icon className="w-4 h-4" />}
@@ -508,33 +515,67 @@ export function HomeScreen({
 
         {/* Main Content */}
         <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
-          {/* PWA Install Banner */}
+          {/* UPDATED: Enhanced PWA Install Banner with clearer instructions */}
           {showNotificationBanner && (
             <div className={`${
               darkMode
-                ? "bg-gradient-to-r from-indigo-900/50 to-purple-900/50 border border-indigo-800"
+                ? "bg-gradient-to-r from-indigo-900/60 to-purple-900/60 border border-indigo-700"
                 : "bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100"
-            } rounded-2xl p-4 mb-6 relative shadow-sm`}>
+            } rounded-2xl p-5 mb-6 relative shadow-sm`}>
               <button
                 onClick={() => setShowNotificationBanner(false)}
-                className={`absolute top-3 right-3 ${
+                className={`absolute top-4 right-4 ${
                   darkMode
                     ? "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-800/50"
                     : "text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100"
-                } transition-colors p-1 rounded-lg`}
+                } transition-colors p-1.5 rounded-lg`}
               >
                 <X className="w-4 h-4" />
               </button>
-              <div className="flex items-start gap-3 pr-8">
-                <div className={`p-2 ${darkMode ? "bg-indigo-800" : "bg-indigo-100"} rounded-xl`}>
-                  <Download className={`w-4 h-4 ${darkMode ? "text-indigo-400" : "text-indigo-600"}`} />
+              <div className="flex items-start gap-4 pr-10">
+                <div className={`p-3 ${
+                  darkMode ? "bg-indigo-800/60" : "bg-indigo-100"
+                } rounded-xl flex-shrink-0`}>
+                  <Download className={`w-5 h-5 ${
+                    darkMode ? "text-indigo-300" : "text-indigo-600"
+                  }`} />
                 </div>
-                <div>
-                  <h4 className={`${darkMode ? "text-indigo-300" : "text-indigo-900"} font-semibold mb-1`}>
-                    Install DANGIT App
+                <div className="flex-1">
+                  <h4 className={`${
+                    darkMode ? "text-indigo-200" : "text-indigo-900"
+                  } font-bold mb-2 text-lg`}>
+                    📱 Install DANGIT App
                   </h4>
-                  <p className={`${darkMode ? "text-indigo-200" : "text-indigo-800"} text-sm leading-relaxed`}>
+                  <p className={`${
+                    darkMode ? "text-indigo-300" : "text-indigo-800"
+                  } text-sm leading-relaxed mb-3`}>
                     Add to your home screen for quick access. Works like a native app!
+                  </p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                      darkMode 
+                        ? "bg-gray-800/50 text-gray-300" 
+                        : "bg-white/80 text-slate-600"
+                    }`}>
+                      <Share className="w-3 h-3" />
+                      Tap Share
+                    </div>
+                    <span className={`text-xs ${darkMode ? "text-indigo-400" : "text-indigo-600"}`}>
+                      →
+                    </span>
+                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                      darkMode 
+                        ? "bg-gray-800/50 text-gray-300" 
+                        : "bg-white/80 text-slate-600"
+                    }`}>
+                      <Download className="w-3 h-3" />
+                      Add to Home Screen
+                    </div>
+                  </div>
+                  <p className={`text-xs ${
+                    darkMode ? "text-indigo-400/80" : "text-indigo-600/80"
+                  }`}>
+                    Or use your browser's menu button
                   </p>
                 </div>
               </div>

@@ -68,61 +68,12 @@ export function ContentDetailView({
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
   
-  // SIMPLE Notification state (NO SERVICE WORKER)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationFrequency, setNotificationFrequency] = useState<'once' | 'daily' | 'weekly'>('once');
-  const [notificationTime, setNotificationTime] = useState('09:00');
-  const [customMessage, setCustomMessage] = useState('');
-  const [notificationSaved, setNotificationSaved] = useState(false);
-  const [savingNotification, setSavingNotification] = useState(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [isPWAInstalled, setIsPWAInstalled] = useState(false);
-  
-  // Check PWA installation (NO SERVICE WORKER CHECK)
-  useEffect(() => {
-    // Check if running as PWA
-    const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                  (window.navigator as any).standalone === true ||
-                  document.referrer.includes('android-app://');
-    
-    setIsPWAInstalled(isPWA);
-  }, []);
-  
-  // Parse notification state on mount
+  // Parse content state on mount
   useEffect(() => {
     setIsCompleted(content.completed);  
     setEditedTitle(content.title);
     setEditedDescription(content.description);
     setEditedTags(content.tags);
-    
-    // Parse notifications properly
-    let notifications = null;
-    
-    if (content.notifications) {
-      if (typeof content.notifications === 'string') {
-        try {
-          notifications = JSON.parse(content.notifications);
-        } catch (e) {
-          notifications = null;
-        }
-      } else {
-        notifications = content.notifications;
-      }
-    }
-    
-    if (notifications && notifications.enabled) {
-      setNotificationsEnabled(true);
-      setNotificationFrequency(notifications.frequency || 'once');
-      setNotificationTime(notifications.time || '09:00');
-      setCustomMessage(notifications.customMessage || '');
-      setShowNotificationSettings(false);
-    } else {
-      setNotificationsEnabled(false);
-      setNotificationFrequency('once');
-      setNotificationTime('09:00');  
-      setCustomMessage('');
-      setShowNotificationSettings(false);
-    }
   }, [content]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -278,232 +229,6 @@ export function ContentDetailView({
     } catch (error) {
       return 'Time error';
     }
-  };
-
-  // UPDATED: Simple notification system WITHOUT service worker
-  const scheduleSimpleNotification = async () => {
-    try {
-      console.log('Setting up simple notification system...');
-
-      // Request permission
-      let permission = Notification.permission;
-      if (permission === 'default') {
-        permission = await Notification.requestPermission();
-      }
-
-      if (permission !== 'granted') {
-        alert('Please enable notifications in your browser settings:\n\n1. Tap the 🔒 icon next to the URL\n2. Turn ON Notifications\n3. Try again');
-        return false;
-      }
-
-      // Show immediate test notification
-      const testNotif = new Notification('DANGIT - Reminder Set! 📱', {
-        body: `You'll be reminded about "${editedTitle || content.title}" at ${notificationTime}`,
-        icon: '/icons/web-app-manifest-192x192.png',
-        tag: `test-${content.id}`,
-      });
-
-      // Auto-close test notification
-      setTimeout(() => testNotif.close(), 3000);
-
-      // Calculate delay for scheduled notification
-      const now = new Date();
-      const [hours, minutes] = notificationTime.split(':').map(Number);
-      const notificationDate = new Date();
-      notificationDate.setHours(hours, minutes, 0, 0);
-
-      if (notificationDate <= now) {
-        notificationDate.setDate(notificationDate.getDate() + 1);
-      }
-
-      const delay = notificationDate.getTime() - now.getTime();
-
-      // Clear existing timer
-      const existingTimer = localStorage.getItem(`timer-${content.id}`);
-      if (existingTimer) {
-        clearTimeout(parseInt(existingTimer));
-      }
-
-      // Schedule notification using setTimeout
-      const message = customMessage || `Time to review: "${editedTitle || content.title}"`;
-      const reminderTitle = `DANGIT ${notificationFrequency === 'once' ? 'Reminder' : 
-                            notificationFrequency === 'daily' ? 'Daily Reminder' : 'Weekly Reminder'} 🔔`;
-
-      const timerId = setTimeout(() => {
-        try {
-          const notification = new Notification(reminderTitle, {
-            body: message,
-            icon: '/icons/web-app-manifest-192x192.png',
-            tag: `reminder-${content.id}`,
-          });
-          
-          notification.onclick = () => {
-            window.focus();
-            notification.close();
-          };
-          
-          console.log('📱 Reminder notification shown!');
-          localStorage.removeItem(`timer-${content.id}`);
-        } catch (error) {
-          console.error('Notification error:', error);
-          // Fallback to alert
-          alert(`${reminderTitle}\n\n${message}`);
-        }
-      }, delay);
-
-      localStorage.setItem(`timer-${content.id}`, timerId.toString());
-
-      // Handle recurring notifications
-      if (notificationFrequency !== 'once') {
-        const interval = notificationFrequency === 'daily' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
-        
-        const recurringTimer = setInterval(() => {
-          try {
-            new Notification(`DANGIT ${notificationFrequency.charAt(0).toUpperCase() + notificationFrequency.slice(1)} Reminder`, {
-              body: message,
-              icon: '/icons/web-app-manifest-192x192.png',
-              tag: `${notificationFrequency}-${content.id}`,
-            });
-          } catch (e) {
-            console.error('Recurring notification error:', e);
-            alert(`${reminderTitle}\n\n${message}`);
-          }
-        }, interval);
-
-        localStorage.setItem(`${notificationFrequency}-${content.id}`, recurringTimer.toString());
-      }
-
-      console.log(`Notification scheduled for ${notificationDate.toLocaleString()}, delay: ${Math.floor(delay/60000)} minutes`);
-      return true;
-
-    } catch (error) {
-      console.error('Notification setup error:', error);
-      return false;
-    }
-  };
-
-  // Save notification settings with simple approach
-  const handleSaveNotificationSettings = async () => {
-    setSavingNotification(true);
-    
-    try {
-      const notificationSettings = {
-        enabled: notificationsEnabled,
-        frequency: notificationFrequency,
-        time: notificationTime,
-        customMessage: customMessage
-      };
-
-      console.log('Saving notification settings:', notificationSettings);
-
-      // Try backend, fallback to local
-      try {
-        const response = await fetch(`${API_URL}/api/notification-settings`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            itemId: content.id,
-            userId: userId,
-            notifications: notificationSettings
-          })
-        });
-        if (!response.ok) throw new Error('Backend unavailable');
-        console.log('Notification settings saved to backend');
-      } catch (e) {
-        console.log('Using local storage for notifications');
-      }
-      
-      // Update content locally
-      if (onContentUpdate) {
-        const updatedContent = {
-          ...content,
-          notifications: notificationSettings
-        };
-        onContentUpdate(updatedContent);
-        console.log('Updated content locally with notification settings');
-      }
-      
-      // Set up simple notifications
-      if (notificationsEnabled) {
-        await scheduleSimpleNotification();
-        setNotificationSaved(true);
-      } else {
-        // Clear existing notifications
-        const timerId = localStorage.getItem(`timer-${content.id}`);
-        if (timerId) {
-          clearTimeout(parseInt(timerId));
-          localStorage.removeItem(`timer-${content.id}`);
-        }
-        
-        // Clear recurring timers
-        const dailyTimer = localStorage.getItem(`daily-${content.id}`);
-        const weeklyTimer = localStorage.getItem(`weekly-${content.id}`);
-        if (dailyTimer) {
-          clearInterval(parseInt(dailyTimer));
-          localStorage.removeItem(`daily-${content.id}`);
-        }
-        if (weeklyTimer) {
-          clearInterval(parseInt(weeklyTimer));
-          localStorage.removeItem(`weekly-${content.id}`);
-        }
-      }
-      
-      setShowNotificationSettings(false);
-      setTimeout(() => setNotificationSaved(false), 5000);
-      
-    } catch (error) {
-      console.error('Error saving notification settings:', error);
-      
-      // Show user-friendly error message
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      if (errorMsg.includes('permission')) {
-        alert('Please allow notifications in your browser settings:\n\n1. Tap the 🔒 icon next to the URL\n2. Turn ON Notifications\n3. Try again');
-      } else {
-        alert('Error setting up notifications. Make sure notifications are enabled in your browser settings.');
-      }
-    } finally {
-      setSavingNotification(false);
-    }
-  };
-
-  // Handle notification toggle
-  const handleToggleNotifications = (enabled: boolean) => {
-    setNotificationsEnabled(enabled);
-    if (enabled) {
-      setShowNotificationSettings(true);
-    } else {
-      setShowNotificationSettings(false);
-      // Clear notifications
-      const timerId = localStorage.getItem(`timer-${content.id}`);
-      if (timerId) {
-        clearTimeout(parseInt(timerId));
-        localStorage.removeItem(`timer-${content.id}`);
-      }
-      
-      if (onContentUpdate) {
-        const updatedContent = {
-          ...content,
-          notifications: { enabled: false, frequency: 'once', time: '09:00', customMessage: '' }
-        };
-        onContentUpdate(updatedContent);
-      }
-    }
-  };
-
-  // Get notification summary
-  const getNotificationSummary = () => {
-    if (!notificationsEnabled) return null;
-    
-    const freqText = notificationFrequency === 'once' ? 'Once' : 
-                    notificationFrequency === 'daily' ? 'Daily' : 'Weekly';
-    
-    const timeFormat = new Date(`2000-01-01T${notificationTime}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-    
-    return `${freqText} at ${timeFormat}`;
   };
 
   return (
@@ -825,161 +550,67 @@ export function ContentDetailView({
             </div>
           </div>
 
-          {/* UPDATED: Simple Notifications (NO SERVICE WORKER) */}
+          {/* UPDATED: Coming Soon Notifications */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
             <h3 className={`font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              {notificationsEnabled ? (
-                <Bell className="w-5 h-5 text-indigo-500" />
-              ) : (
-                <BellOff className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              )}
-              📱 Simple Reminders
+              <BellOff className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+              📱 Reminders
             </h3>
             
-            {/* Success message */}
-            {notificationSaved && (
-              <div className="mb-4 p-4 bg-green-50 border-2 border-green-200 rounded-xl animate-in fade-in">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-green-800">
-                      📱 Reminder set successfully!
-                    </p>
-                    <p className="text-xs text-green-700 mt-1">
-                      You'll get notified {getNotificationSummary()}
-                    </p>
+            {/* Coming Soon Card */}
+            <div className={`p-6 rounded-xl border-2 border-dashed transition-all duration-300 ${
+              darkMode 
+                ? 'border-gray-600 bg-gray-700/30 hover:border-gray-500' 
+                : 'border-gray-300 bg-gray-50/50 hover:border-gray-400'
+            }`}>
+              <div className="text-center">
+                <div className="flex justify-center mb-4">
+                  <div className={`p-4 rounded-full ${
+                    darkMode 
+                      ? 'bg-gradient-to-br from-indigo-900/50 to-purple-900/50' 
+                      : 'bg-gradient-to-br from-indigo-100 to-purple-100'
+                  }`}>
+                    <Clock className={`w-8 h-8 ${
+                      darkMode ? 'text-indigo-400' : 'text-indigo-600'
+                    }`} />
+                  </div>
+                </div>
+                <h4 className={`text-lg font-bold mb-2 ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  🚀 Coming Soon!
+                </h4>
+                <p className={`text-sm leading-relaxed mb-4 ${
+                  darkMode ? 'text-gray-300' : 'text-gray-600'
+                }`}>
+                  Smart reminders and notifications will be available in the next update. 
+                  Get notified when it's ready!
+                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
+                    darkMode 
+                      ? 'bg-gray-800 text-gray-400' 
+                      : 'bg-white text-gray-500'
+                  }`}>
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm font-medium">In Development</span>
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* Show notification status when enabled, toggle when disabled */}
-            {notificationsEnabled && !showNotificationSettings ? (
-              <div className="p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 mb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Bell className="w-6 h-6 text-indigo-600" />
-                    <div>
-                      <div className="font-semibold text-indigo-800 text-base">
-                        📱 Reminder Active
-                      </div>
-                      <div className="text-sm text-indigo-700">
-                        {getNotificationSummary()}
-                        {customMessage && <div className="text-xs mt-1 italic">"{customMessage}"</div>}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <button onClick={() => setShowNotificationSettings(true)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors">
-                      Edit
-                    </button>
-                    <button onClick={() => handleToggleNotifications(false)} className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors">
-                      Turn Off
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className={`p-4 rounded-xl border-2 transition-all duration-300 mb-4 ${notificationsEnabled ? 'border-indigo-200 bg-indigo-50' : darkMode ? 'border-gray-700 bg-gray-800 hover:border-gray-600' : 'border-gray-200 bg-white hover:border-gray-300'}`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {notificationsEnabled ? (
-                      <Bell className="w-6 h-6 text-indigo-600" />
-                    ) : (
-                      <BellOff className={`w-6 h-6 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
-                    )}
-                    <div>
-                      <div className={`font-medium text-base transition-colors ${notificationsEnabled ? 'text-indigo-800' : darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {notificationsEnabled ? 'Setting Up Reminder...' : '📱 Set Reminder'}
-                      </div>
-                      <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {notificationsEnabled ? 'Configure your reminder settings below' : 'Get browser notifications'}
-                      </div>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={notificationsEnabled}
-                    onCheckedChange={handleToggleNotifications}
-                    className="data-[state=checked]:bg-indigo-600 scale-125"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Notification Settings Panel */}
-            {notificationsEnabled && showNotificationSettings && (
-              <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
-                {/* Frequency */}
-                <div>
-                  <label className={`block text-base font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    📅 How Often?
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { value: 'once', label: 'Once', icon: Clock3 },
-                      { value: 'daily', label: 'Daily', icon: Repeat },
-                      { value: 'weekly', label: 'Weekly', icon: Calendar }
-                    ].map((option) => (
-                      <button key={option.value} onClick={() => setNotificationFrequency(option.value as any)} className={`p-4 rounded-xl border-2 transition-all duration-200 flex flex-col items-center gap-2 touch-manipulation ${notificationFrequency === option.value ? 'border-indigo-500 bg-indigo-50 text-indigo-700 scale-105' : darkMode ? 'border-gray-600 hover:border-gray-500 text-gray-300' : 'border-gray-200 hover:border-gray-300 text-gray-600'}`}>
-                        <option.icon className="w-5 h-5" />
-                        <span className="text-sm font-medium">{option.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Time */}
-                <div>
-                  <label className={`block text-base font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    ⏰ What Time?
-                  </label>
-                  <input type="time" value={notificationTime} onChange={(e) => setNotificationTime(e.target.value)} className={`w-full p-4 border-2 rounded-xl text-lg transition-all duration-300 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-300 focus:border-indigo-400' : 'bg-white border-gray-200 text-gray-700 focus:border-indigo-400'}`} />
-                </div>
-
-                {/* Custom Message */}
-                <div>
-                  <label className={`block text-base font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    💬 Custom Message <span className="text-sm font-normal text-gray-400">(optional)</span>
-                  </label>
-                  <textarea value={customMessage} onChange={(e) => setCustomMessage(e.target.value)} placeholder="e.g., 'Don't forget to review this!'" rows={3} className={`w-full p-4 border-2 rounded-xl resize-none transition-all duration-300 ${darkMode ? 'bg-gray-700 border-gray-600 text-gray-300 focus:border-indigo-400 placeholder:text-gray-500' : 'bg-white border-gray-200 text-gray-700 focus:border-indigo-400 placeholder:text-gray-400'}`} />
-                </div>
-
-                {/* Save Button */}
-                <div className="pt-4 border-t-2 border-gray-200 dark:border-gray-600">
-                  <button onClick={handleSaveNotificationSettings} disabled={savingNotification} className={`w-full h-16 rounded-xl text-lg font-bold transition-all duration-200 transform active:scale-95 touch-manipulation shadow-lg ${savingNotification ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl'} text-white`}>
-                    {savingNotification ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Setting Up Reminder...</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-3">
-                        <Bell className="w-6 h-6" />
-                        <span>📱 Set Browser Notification</span>
-                      </div>
-                    )}
-                  </button>
-                  
-                  <button onClick={() => setShowNotificationSettings(false)} className={`w-full mt-3 h-12 rounded-xl text-base font-medium transition-colors ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}>
-                    Cancel
-                  </button>
-                </div>
-
-                {/* Preview */}
-                <div className={`p-4 rounded-xl border-2 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                  <div className={`text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    📱 Preview Notification:
-                  </div>
-                  <div className="bg-white rounded-lg border p-3 text-black text-sm">
-                    <div className="font-semibold">DANGIT Reminder 🔔</div>
-                    <div className="text-gray-700 mt-1">{customMessage || `Time to review: "${content.title}"`}</div>
-                    <div className="text-xs text-gray-500 mt-2">{getNotificationSummary()} • Tap to open</div>
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
+            
+            {/* Feature Preview */}
+            <div className={`mt-4 p-4 rounded-xl ${
+              darkMode ? 'bg-gray-700/20' : 'bg-slate-50'
+            }`}>
+              <p className={`text-xs text-center ${
+                darkMode ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                ✨ Coming features: Custom reminders, Smart scheduling, Push notifications
+              </p>
+            </div>
           </div>
         </div>
       </div>
