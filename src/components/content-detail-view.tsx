@@ -10,6 +10,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { API_URL } from '../config';
 
 interface ContentDetailViewProps {
   content: {
@@ -26,6 +27,7 @@ interface ContentDetailViewProps {
     aiSummary?: string;
     readingTime?: string;
     viewCount?: number;
+    createdAt?: string; // Add this for actual time calculation
     notifications?: {
       enabled: boolean;
       frequency: 'once' | 'daily' | 'weekly';
@@ -40,6 +42,7 @@ interface ContentDetailViewProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onShare?: () => void;
+  userId?: string; // Add userId for notifications
 }
 
 export function ContentDetailView({ 
@@ -50,7 +53,8 @@ export function ContentDetailView({
   darkMode = false,
   onEdit, 
   onDelete, 
-  onShare 
+  onShare,
+  userId 
 }: ContentDetailViewProps) {
   const [isCompleted, setIsCompleted] = useState(content.completed);
   const [isClosing, setIsClosing] = useState(false);
@@ -130,10 +134,50 @@ export function ContentDetailView({
     setTimeout(() => onClose(), 200);
   };
 
-  const handleToggleComplete = () => {
+  // FIXED: Handle completion toggle with backend sync and home screen refresh
+  const handleToggleComplete = async () => {
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
-    onToggleComplete?.(content.id);
+    
+    try {
+      // Update backend
+      const response = await fetch(`${API_URL}/api/toggle-completion`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: content.id.toString(),
+          completed: newCompletedState,
+          userId: userId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update completion status');
+      }
+
+      // Trigger home screen refresh to show/hide the item
+      if ((window as any).refreshHomeScreen) {
+        console.log('Triggering home screen refresh from content detail');
+        (window as any).refreshHomeScreen();
+      }
+
+      // Also trigger search screen refresh
+      if ((window as any).refreshSearchScreen) {
+        console.log('Triggering search screen refresh from content detail');
+        (window as any).refreshSearchScreen();
+      }
+
+      // Call the parent toggle handler
+      onToggleComplete?.(content.id);
+      
+    } catch (error) {
+      console.error('Error toggling completion:', error);
+      // Revert the state if backend update failed
+      setIsCompleted(!newCompletedState);
+      alert('Failed to update completion status. Please try again.');
+    }
   };
 
   const handleCopyContent = () => {
@@ -177,10 +221,112 @@ export function ContentDetailView({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-  const formatTimeAgo = (timestamp: string) => {
-    // Mock implementation - replace with actual time formatting
-    return "2 hours ago";
+  // FIXED: Calculate actual time since creation
+  const formatTimeAgo = (timestamp: string, createdAt?: string) => {
+    const now = new Date();
+    const date = new Date(createdAt || timestamp);
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    
+    const diffInDays = Math.floor(diffInMinutes / 1440);
+    if (diffInDays < 30) return `${diffInDays}d ago`;
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) return `${diffInMonths}mo ago`;
+    
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears}y ago`;
   };
+
+  // FIXED: PWA Notification function
+  const scheduleNotification = async () => {
+    if (!notificationsEnabled || !('serviceWorker' in navigator) || !('Notification' in window)) {
+      return;
+    }
+
+    try {
+      // Request notification permission
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        alert('Please enable notifications to receive reminders');
+        return;
+      }
+
+      // Calculate notification time
+      const now = new Date();
+      const [hours, minutes] = notificationTime.split(':').map(Number);
+      const notificationDate = new Date();
+      notificationDate.setHours(hours, minutes, 0, 0);
+
+      // If time has passed today, schedule for tomorrow
+      if (notificationDate <= now) {
+        notificationDate.setDate(notificationDate.getDate() + 1);
+      }
+
+      const delay = notificationDate.getTime() - now.getTime();
+
+      // Schedule the notification
+      setTimeout(() => {
+        const message = customMessage || `Time to review: "${content.title}"`;
+        new Notification('DANGIT Reminder', {
+          body: message,
+          icon: '/icon-192x192.png', // Your PWA icon
+          badge: '/icon-192x192.png',
+          tag: `reminder-${content.id}`,
+          requireInteraction: true,
+          actions: [
+            { action: 'open', title: 'Open Item' },
+            { action: 'dismiss', title: 'Dismiss' }
+          ]
+        });
+
+        // Schedule recurring notifications
+        if (notificationFrequency === 'daily') {
+          const dailyInterval = setInterval(() => {
+            new Notification('DANGIT Reminder', {
+              body: message,
+              icon: '/icon-192x192.png',
+              tag: `reminder-${content.id}`
+            });
+          }, 24 * 60 * 60 * 1000); // 24 hours
+
+          // Store interval ID to clear later if needed
+          localStorage.setItem(`notification-${content.id}`, dailyInterval.toString());
+        } else if (notificationFrequency === 'weekly') {
+          const weeklyInterval = setInterval(() => {
+            new Notification('DANGIT Reminder', {
+              body: message,
+              icon: '/icon-192x192.png',
+              tag: `reminder-${content.id}`
+            });
+          }, 7 * 24 * 60 * 60 * 1000); // 7 days
+
+          localStorage.setItem(`notification-${content.id}`, weeklyInterval.toString());
+        }
+      }, delay);
+
+      console.log(`Notification scheduled for ${notificationDate.toLocaleString()}`);
+    } catch (error) {
+      console.error('Error scheduling notification:', error);
+    }
+  };
+
+  // Schedule notification when settings change
+  useEffect(() => {
+    if (notificationsEnabled) {
+      scheduleNotification();
+    } else {
+      // Clear existing notifications
+      const intervalId = localStorage.getItem(`notification-${content.id}`);
+      if (intervalId) {
+        clearInterval(parseInt(intervalId));
+        localStorage.removeItem(`notification-${content.id}`);
+      }
+    }
+  }, [notificationsEnabled, notificationFrequency, notificationTime, customMessage]);
 
   return (
     <div className={`
@@ -188,6 +334,21 @@ export function ContentDetailView({
       ${darkMode ? 'bg-gray-900' : 'bg-white'}
       ${isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
     `}>
+      {/* FIXED: Custom CSS without JSX syntax error */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .content-detail-scroll::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+          }
+          .content-detail-scroll {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+          }
+        `
+      }} />
+
       {/* Reading Progress Bar */}
       <div className={`fixed top-0 left-0 right-0 h-1 z-10 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
         <div 
@@ -289,7 +450,7 @@ export function ContentDetailView({
                 <div className={`flex items-center gap-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {formatTimeAgo(content.timestamp)}
+                    {formatTimeAgo(content.timestamp, content.createdAt)}
                   </div>
                   {content.readingTime && (
                     <div className="flex items-center gap-1">
@@ -297,12 +458,7 @@ export function ContentDetailView({
                       {content.readingTime} read
                     </div>
                   )}
-                  {content.viewCount && (
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4" />
-                      {content.viewCount} views
-                    </div>
-                  )}
+                  {/* REMOVED: View count - using actual time instead */}
                 </div>
               </div>
             </div>
@@ -369,26 +525,12 @@ export function ContentDetailView({
         className="flex-1 overflow-y-auto pb-32 overscroll-contain content-detail-scroll"
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          height: 'calc(100vh - 140px)', // Ensure proper height calculation
+          height: 'calc(100vh - 140px)',
           maxHeight: 'calc(100vh - 140px)'
         }}
       >
-        
-        {/* Global scroll hiding styles */}
-        <style jsx global>{`
-          .content-detail-scroll::-webkit-scrollbar {
-            display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-          }
-          .content-detail-scroll {
-            scrollbar-width: none !important;
-            -ms-overflow-style: none !important;
-          }
-        `}</style>
-        
         <div className="p-6 space-y-6">
-          {/* Title with completion state */}
+          {/* FIXED: Title with completion state - crosses out when completed */}
           <div className="relative">
             {isEditing ? (
               <textarea
@@ -404,7 +546,7 @@ export function ContentDetailView({
             ) : (
               <h1 className={`text-2xl font-bold leading-tight transition-all duration-300 ${
                 isCompleted 
-                  ? darkMode ? 'text-gray-500 line-through' : 'text-gray-500 line-through'
+                  ? darkMode ? 'text-gray-500 line-through opacity-60' : 'text-gray-500 line-through opacity-60'
                   : darkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 {editedTitle}
@@ -417,20 +559,7 @@ export function ContentDetailView({
             )}
           </div>
 
-          {/* AI Summary Section */}
-          {content.aiSummary && (
-            <div className={`rounded-2xl p-5 border ${
-              darkMode 
-                ? 'bg-gradient-to-r from-indigo-900/30 via-purple-900/30 to-pink-900/30 border-indigo-800' 
-                : 'bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border-indigo-100'
-            }`}>
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-5 h-5 text-indigo-600" />
-                <h3 className={`font-semibold ${darkMode ? 'text-indigo-400' : 'text-indigo-800'}`}>AI Summary</h3>
-              </div>
-              <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{content.aiSummary}</p>
-            </div>
-          )}
+          {/* REMOVED: AI Summary Section - keeping only one content section */}
 
           {/* Original Content Preview */}
           {content.type === 'url' && (
@@ -535,7 +664,7 @@ export function ContentDetailView({
             </div>
           )}
 
-          {/* Full Description */}
+          {/* MODIFIED: Single Content Details section (removed duplicate) */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -558,7 +687,11 @@ export function ContentDetailView({
             ) : (
               <div className={`leading-relaxed transition-all duration-300 ${
                 showFullDescription ? '' : 'line-clamp-4'
-              } ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              } ${
+                isCompleted 
+                  ? darkMode ? 'text-gray-500 opacity-60' : 'text-gray-500 opacity-60'
+                  : darkMode ? 'text-gray-300' : 'text-gray-700'
+              }`}>
                 <p>{editedDescription}</p>
               </div>
             )}
@@ -640,7 +773,7 @@ export function ContentDetailView({
             </div>
           </div>
 
-          {/* Notification Settings Section */}
+          {/* ENHANCED: PWA Notification Settings Section */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -652,6 +785,15 @@ export function ContentDetailView({
               )}
               Reminder Settings
             </h3>
+            
+            {/* PWA notification support check */}
+            {!('Notification' in window) && (
+              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  Notifications are not supported in this browser. Please use a modern browser or add this app to your home screen.
+                </p>
+              </div>
+            )}
             
             {/* Main notification toggle */}
             <div className={`p-4 rounded-xl border-2 transition-all duration-300 mb-4 ${
@@ -677,7 +819,7 @@ export function ContentDetailView({
                       {notificationsEnabled ? 'Reminders Enabled' : 'Enable Reminders'}
                     </div>
                     <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {notificationsEnabled ? 'You\'ll get reminded about this content' : 'Get notified to review this content'}
+                      {notificationsEnabled ? 'You\'ll get reminded about this content' : 'Get PWA notifications to review this content'}
                     </div>
                   </div>
                 </div>
@@ -777,7 +919,7 @@ export function ContentDetailView({
         </div>
       </div>
 
-      {/* Enhanced Floating Footer */}
+      {/* FIXED: Enhanced Floating Footer with completion state visual feedback */}
       <div className={`fixed bottom-0 left-0 right-0 p-4 backdrop-blur-lg border-t shadow-lg ${
         darkMode 
           ? 'bg-gray-900/95 border-gray-700' 

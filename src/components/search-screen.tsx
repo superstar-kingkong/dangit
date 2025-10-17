@@ -5,7 +5,6 @@ import { Search, Filter, SortAsc, Calendar, Star, Tag, X, RefreshCw } from 'luci
 interface SearchScreenProps {
   onShowContentDetail: (content: any) => void;
   darkMode?: boolean;
-  currentTime?: Date;
   userId?: string;
 }
 
@@ -44,7 +43,7 @@ const Button = ({ children, onClick, className, variant = 'default' }: any) => (
 const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onToggleComplete) onToggleComplete(content.id);
+    if (onToggleComplete) onToggleComplete(content.id, !content.completed);
   };
 
   return (
@@ -92,7 +91,7 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
   );
 };
 
-export function SearchScreen({ onShowContentDetail, darkMode = false, currentTime, userId}: SearchScreenProps) {
+export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: SearchScreenProps) {
   // State
   const [contentItems, setContentItems] = useState<ContentItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,53 +228,64 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, currentTim
     }
   }, [loading]);
 
-  // Handle completion toggle (use backend API for consistency)
-  const handleToggleComplete = async (itemId: string) => {
-    const item = contentItems.find(item => item.id === itemId);
-    if (!item) return;
+  // FIXED: Handle completion toggle with proper backend sync and home screen refresh
+  const handleToggleComplete = async (itemId: string, newCompletedState: boolean) => {
+    if (!userId) return;
 
-    // Optimistic update
+    // Optimistic update for search screen
     setContentItems(prev => 
       prev.map(item => 
         item.id === itemId 
-          ? { ...item, completed: !item.completed }
+          ? { ...item, completed: newCompletedState }
           : item
       )
     );
 
     try {
+      console.log('Toggling completion for item:', itemId, 'to:', newCompletedState);
+      
+      // Use the same endpoint as home screen for consistency
       const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          itemId,
-          completed: !item.completed
+          itemId: itemId,
+          completed: newCompletedState,
+          userId: userId
         })
       });
 
       if (!response.ok) {
-        // Revert optimistic update
-        setContentItems(prev => 
-          prev.map(item => 
-            item.id === itemId 
-              ? { ...item, completed: item.completed }
-              : item
-          )
-        );
-        console.error('Failed to toggle completion');
+        throw new Error(`HTTP ${response.status}: Failed to update item`);
       }
+
+      const result = await response.json();
+      console.log('Successfully toggled completion in search:', result);
+      
+      // IMPORTANT: Trigger home screen refresh to sync the changes
+      if ((window as any).refreshHomeScreen) {
+        console.log('Triggering home screen refresh from search');
+        (window as any).refreshHomeScreen();
+      }
+      
+      // Refresh search screen data after small delay to ensure backend is updated
+      setTimeout(() => loadContentItems(false), 500);
+      
     } catch (error) {
+      console.error('Error toggling completion:', error);
+      
       // Revert optimistic update
       setContentItems(prev => 
         prev.map(item => 
           item.id === itemId 
-            ? { ...item, completed: item.completed }
+            ? { ...item, completed: !newCompletedState }
             : item
         )
       );
-      console.error('Error toggling completion:', error);
+      
+      alert('Failed to update item. Please try again.');
     }
   };
 
@@ -404,44 +414,15 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, currentTim
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Status Bar */}
-      <div className={`flex justify-between items-center px-5 pt-4 pb-2 ${darkMode 
-        ? 'bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700' 
-        : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50'
-      }`}>
-        <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-          {currentTime ? currentTime.toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: false,
-          }) : new Date().toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: false,
-          })}
-        </span>
-        <div className="flex items-center gap-1">
-          <div className="flex gap-1">
-            <div className={`w-1 h-1 ${darkMode ? 'bg-white' : 'bg-slate-900'} rounded-full`}></div>
-            <div className={`w-1 h-1 ${darkMode ? 'bg-white' : 'bg-slate-900'} rounded-full`}></div>
-            <div className={`w-1 h-1 ${darkMode ? 'bg-white' : 'bg-slate-900'} rounded-full`}></div>
-          </div>
-          <div className="ml-2 flex items-center gap-1">
-            <div className={`w-6 h-3 border ${darkMode ? 'border-white' : 'border-slate-900'} rounded-sm relative`}>
-              <div className="absolute inset-0.5 bg-green-500 rounded-sm"></div>
-            </div>
-            <span className={`font-medium ${darkMode ? 'text-white' : 'text-slate-900'}`}>100%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Scrollable Content */}
-      <div className="overflow-y-auto" style={{ height: 'calc(100vh - 60px)' }}>
-        {/* Header Section */}
+      {/* REMOVED: Status Bar - No longer needed since phone provides this */}
+      
+      {/* FIXED: Scrollable Content - Full height now that status bar is removed */}
+      <div className="overflow-y-auto h-screen">
+        {/* Header Section - FIXED: Removed backdrop blur that caused search icon to blur */}
         <div className={`${darkMode 
           ? 'bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700' 
           : 'bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50'
-        } px-5 pt-4 pb-6`}>
+        } px-5 pt-6 pb-6`}>
           
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
@@ -456,20 +437,20 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, currentTim
                   refreshing
                     ? 'opacity-50' 
                     : darkMode 
-                      ? 'text-gray-300 hover:bg-gray-700' 
-                      : 'text-gray-700 hover:bg-white'
-                }`}
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                } shadow-sm hover:shadow-md hover:scale-105`}
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`p-2 rounded-xl transition-all duration-200 ${
+                className={`p-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 ${
                   hasActiveFilters || showFilters
                     ? 'bg-indigo-100 text-indigo-700' 
                     : darkMode 
-                      ? 'text-gray-300 hover:bg-gray-700' 
-                      : 'text-gray-700 hover:bg-white'
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <Filter className="w-5 h-5" />
@@ -477,18 +458,20 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, currentTim
             </div>
           </div>
 
-          {/* Search Bar */}
+          {/* FIXED: Search Bar - Removed backdrop blur, solid backgrounds */}
           <div className="relative mb-6">
-            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${
+              darkMode ? 'text-gray-400' : 'text-gray-400'
+            }`} />
             <input
               type="text"
               placeholder="Search your saved content..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full ${darkMode 
-                ? 'bg-gray-700/90 text-white placeholder-gray-400 border-gray-600 hover:border-gray-500 focus:border-indigo-400' 
-                : 'bg-white/90 text-slate-900 placeholder-slate-500 border-transparent hover:border-slate-200 focus:border-indigo-200'
-              } backdrop-blur-sm rounded-2xl pl-12 pr-4 py-4 border-2 hover:shadow-md focus:shadow-lg transition-all duration-200`}
+                ? 'bg-gray-700 text-white placeholder-gray-400 border-gray-600 hover:border-gray-500 focus:border-indigo-400' 
+                : 'bg-white text-slate-900 placeholder-slate-500 border-gray-200 hover:border-slate-300 focus:border-indigo-500'
+              } rounded-2xl pl-12 pr-4 py-4 border-2 hover:shadow-md focus:shadow-lg transition-all duration-200`}
             />
             {searchQuery && (
               <button
@@ -574,7 +557,7 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, currentTim
             </div>
           )}
 
-          {/* Category Filters */}
+          {/* Category Filters - FIXED: Removed backdrop blur */}
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((category) => (
               <button
@@ -584,8 +567,8 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, currentTim
                   activeCategory === category.name
                     ? 'bg-indigo-100 text-indigo-700 shadow-sm scale-105'
                     : darkMode 
-                      ? 'bg-gray-700/60 text-gray-300 hover:bg-gray-600/80 hover:shadow-sm' 
-                      : 'bg-white/60 text-gray-700 hover:bg-white/80 hover:shadow-sm'
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:shadow-sm' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
                 }`}
               >
                 <div 

@@ -17,26 +17,16 @@ interface BottomNavigationProps {
 }
 
 export function BottomNavigation({ currentScreen, onNavigate, darkMode = false }: BottomNavigationProps) {
+  // FIXED: Always keep navigation visible
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
   const [ripplePosition, setRipplePosition] = useState<{x: number, y: number, show: boolean}>({
     x: 0,
     y: 0,
     show: false
   });
 
-  // Auto-hide navigation on scroll (optional)
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setIsVisible(currentScrollY < lastScrollY || currentScrollY < 10);
-      setLastScrollY(currentScrollY);
-    };
-
-    // Uncomment to enable auto-hide behavior
-    // window.addEventListener('scroll', handleScroll, { passive: true });
-    // return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  // REMOVED: Auto-hide navigation logic - navigation stays visible always
+  // No scroll event listeners needed since we want it always visible
 
   const navItems = [
     { 
@@ -88,27 +78,24 @@ export function BottomNavigation({ currentScreen, onNavigate, darkMode = false }
   };
 
   return (
-    // FIXED: Changed from fixed positioning to absolute positioning within app container
+    // FIXED: Navigation is always visible - removed conditional visibility
     <div 
-      className={`
-        absolute bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out
-        ${isVisible ? 'translate-y-0' : 'translate-y-full'}
-      `}
+      className="absolute bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out"
     >
-      {/* Premium background with blur effect - FIXED: Constrained to app width */}
+      {/* Premium background with blur effect */}
       <div className={`absolute inset-0 backdrop-blur-xl border-t ${darkMode 
         ? 'bg-gray-800/95 border-gray-700' 
         : 'bg-white/90 border-slate-200/50'
       }`} />
       
-      {/* Subtle gradient overlay - FIXED: Constrained to app width */}
+      {/* Subtle gradient overlay */}
       <div className={`absolute inset-0 ${darkMode 
         ? 'bg-gradient-to-t from-gray-800/50 to-transparent' 
         : 'bg-gradient-to-t from-white/50 to-transparent'
       }`} />
 
-      {/* Main navigation content - FIXED: Responsive padding that respects app boundaries */}
-      <div className="relative px-4 sm:px-6 pt-4 pb-6">
+      {/* Main navigation content - ENHANCED: Better safe area handling */}
+      <div className="relative px-4 sm:px-6 pt-4 pb-safe-4 pb-6">
         <div className="flex justify-around items-center max-w-md mx-auto">
           {navItems.map((item, index) => {
             const Icon = item.icon;
