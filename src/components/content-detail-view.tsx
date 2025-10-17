@@ -9,6 +9,7 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
+import { API_URL } from '../config'; // Your existing config
 
 interface ContentDetailViewProps {
   content: {
@@ -29,7 +30,7 @@ interface ContentDetailViewProps {
       frequency: 'once' | 'daily' | 'weekly';
       time: string;
       customMessage?: string;
-    } | string; // Can be string if stored as JSON string
+    } | string;
   };
   onClose: () => void;
   onToggleComplete?: (id: number) => void;
@@ -67,7 +68,7 @@ export function ContentDetailView({
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
   
-  // FIXED: Notification state with proper persistence
+  // Notification state
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationFrequency, setNotificationFrequency] = useState<'once' | 'daily' | 'weekly'>('once');
   const [notificationTime, setNotificationTime] = useState('09:00');
@@ -75,7 +76,7 @@ export function ContentDetailView({
   const [notificationSaved, setNotificationSaved] = useState(false);
   const [savingNotification, setSavingNotification] = useState(false);
   
-  // FIXED: Parse and set notification state properly
+  // Parse and set notification state properly
   useEffect(() => {
     setIsCompleted(content.completed);  
     setEditedTitle(content.title);
@@ -100,7 +101,6 @@ export function ContentDetailView({
       }
     }
     
-    // Set notification state
     if (notifications) {
       setNotificationsEnabled(notifications.enabled || false);
       setNotificationFrequency(notifications.frequency || 'once');
@@ -112,7 +112,6 @@ export function ContentDetailView({
         time: notifications.time
       });
     } else {
-      // Reset to defaults if no notifications
       setNotificationsEnabled(false);
       setNotificationFrequency('once');
       setNotificationTime('09:00');  
@@ -167,7 +166,7 @@ export function ContentDetailView({
     setTimeout(() => onClose(), 200);
   };
 
-  // FIXED: Handle completion toggle with relative URL
+  // FIXED: Use your existing backend for toggle completion
   const handleToggleComplete = async () => {
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
@@ -175,8 +174,8 @@ export function ContentDetailView({
     try {
       console.log('Toggling completion for item:', content.id, 'to:', newCompletedState, 'userId:', userId);
       
-      // FIXED: Use relative URL for Next.js API route
-      const response = await fetch(`/api/toggle-completion`, {
+      // Use your existing backend (dangit-backend.onrender.com)
+      const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +244,7 @@ export function ContentDetailView({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-  // FIXED: Handle time display properly
+  // Handle time display properly
   const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
     try {
       const now = new Date();
@@ -256,7 +255,7 @@ export function ContentDetailView({
       // Check if dateString is already formatted (like "6h ago")
       if (dateString.includes('ago') || dateString.includes('now')) {
         console.warn('Already formatted time string passed:', dateString);
-        return dateString; // Return as-is if already formatted
+        return dateString;
       }
       
       const date = new Date(dateString);
@@ -290,7 +289,7 @@ export function ContentDetailView({
     }
   };
 
-  // FIXED: Save notification settings with relative URL and proper persistence
+  // FIXED: Save notification settings to your existing backend
   const handleSaveNotificationSettings = async () => {
     setSavingNotification(true);
     
@@ -304,8 +303,8 @@ export function ContentDetailView({
 
       console.log('Saving notification settings:', notificationSettings);
 
-      // FIXED: Use relative URL for Next.js API route
-      const response = await fetch(`/api/notification-settings`, {
+      // Use your existing backend (dangit-backend.onrender.com)
+      const response = await fetch(`${API_URL}/api/notification-settings`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -318,6 +317,31 @@ export function ContentDetailView({
       });
 
       if (!response.ok) {
+        // Check if endpoint exists, if not, save locally for now
+        if (response.status === 404) {
+          console.warn('Notification endpoint does not exist on backend, saving locally');
+          
+          // Save locally until backend endpoint is created
+          const updatedContent = {
+            ...content,
+            notifications: notificationSettings
+          };
+          
+          if (onContentUpdate) {
+            onContentUpdate(updatedContent);
+          }
+          
+          setNotificationSaved(true);
+          
+          // Schedule PWA notification
+          if (notificationsEnabled) {
+            await scheduleNotification();
+          }
+          
+          setTimeout(() => setNotificationSaved(false), 3000);
+          return;
+        }
+        
         const errorText = await response.text();
         console.error('Notification settings API error:', response.status, errorText);
         throw new Error(`Failed to save notification settings: ${response.status}`);
@@ -328,7 +352,7 @@ export function ContentDetailView({
       
       setNotificationSaved(true);
       
-      // FIXED: Update the content object so notifications persist when navigating back
+      // Update the content object so notifications persist
       if (onContentUpdate) {
         const updatedContent = {
           ...content,
@@ -338,12 +362,11 @@ export function ContentDetailView({
         console.log('Updated content with notification settings');
       }
       
-      // Schedule the actual notification
+      // Schedule PWA notification
       if (notificationsEnabled) {
         await scheduleNotification();
       }
       
-      // Auto-hide success message
       setTimeout(() => setNotificationSaved(false), 3000);
       
     } catch (error) {
@@ -523,7 +546,7 @@ export function ContentDetailView({
             )}
           </div>
 
-          {/* Content metadata with time display */}
+          {/* Content metadata */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-2xl bg-gradient-to-r ${currentType.color} shadow-lg`}>
@@ -742,7 +765,7 @@ export function ContentDetailView({
             </div>
           </div>
 
-          {/* FIXED: Notification Settings with proper persistence */}
+          {/* Notification Settings Section */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -761,7 +784,7 @@ export function ContentDetailView({
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
                   <p className="text-sm text-green-800 font-medium">
-                    Notification settings saved and will persist!
+                    Notification settings saved! PWA notifications are scheduled.
                   </p>
                 </div>
               </div>
@@ -800,7 +823,7 @@ export function ContentDetailView({
                       {notificationsEnabled ? 'Reminders Enabled' : 'Enable Reminders'}
                     </div>
                     <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {notificationsEnabled ? 'Settings will be saved when you click "Save Reminder Settings"' : 'Get PWA notifications to review this content'}
+                      {notificationsEnabled ? 'PWA notifications will remind you about this content' : 'Get browser notifications to review this content'}
                     </div>
                   </div>
                 </div>
@@ -898,7 +921,7 @@ export function ContentDetailView({
                     ) : (
                       <div className="flex items-center gap-2">
                         <Bell className="w-4 h-4" />
-                        Save Reminder Settings
+                        Save PWA Reminders
                       </div>
                     )}
                   </Button>
