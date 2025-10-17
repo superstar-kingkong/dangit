@@ -9,7 +9,6 @@ import {
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { API_URL } from '../config';
 
 interface ContentDetailViewProps {
@@ -25,9 +24,7 @@ interface ContentDetailViewProps {
     borderColor: string;
     originalUrl?: string;
     aiSummary?: string;
-    readingTime?: string;
-    viewCount?: number;
-    createdAt?: string; // Add this for actual time calculation
+    created_at?: string; // This matches your database field
     notifications?: {
       enabled: boolean;
       frequency: 'once' | 'daily' | 'weekly';
@@ -42,7 +39,7 @@ interface ContentDetailViewProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onShare?: () => void;
-  userId?: string; // Add userId for notifications
+  userId?: string;
 }
 
 export function ContentDetailView({ 
@@ -71,22 +68,36 @@ export function ContentDetailView({
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
   
-  // Notification state
+  // FIXED: Notification state with persistence
   const [notificationsEnabled, setNotificationsEnabled] = useState(content.notifications?.enabled || false);
   const [notificationFrequency, setNotificationFrequency] = useState(content.notifications?.frequency || 'once');
   const [notificationTime, setNotificationTime] = useState(content.notifications?.time || '09:00');
   const [customMessage, setCustomMessage] = useState(content.notifications?.customMessage || '');
+  const [notificationSaved, setNotificationSaved] = useState(false);
+  const [savingNotification, setSavingNotification] = useState(false);
   
-  // Update edited state when content changes
+  // Update states when content changes
   useEffect(() => {
+    setIsCompleted(content.completed);  
     setEditedTitle(content.title);
     setEditedDescription(content.description);
     setEditedTags(content.tags);
-    setNotificationsEnabled(content.notifications?.enabled || false);
-    setNotificationFrequency(content.notifications?.frequency || 'once');
-    setNotificationTime(content.notifications?.time || '09:00');
-    setCustomMessage(content.notifications?.customMessage || '');
-  }, [content.title, content.description, content.tags, content.notifications]);
+    
+    // Parse notifications if stored as string
+    let notifications = content.notifications;
+    if (typeof content.notifications === 'string') {
+      try {
+        notifications = JSON.parse(content.notifications);
+      } catch (e) {
+        notifications = null;
+      }
+    }
+    
+    setNotificationsEnabled(notifications?.enabled || false);
+    setNotificationFrequency(notifications?.frequency || 'once');
+    setNotificationTime(notifications?.time || '09:00');
+    setCustomMessage(notifications?.customMessage || '');
+  }, [content]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -134,55 +145,54 @@ export function ContentDetailView({
     setTimeout(() => onClose(), 200);
   };
 
-  // FIXED: Handle completion toggle with backend sync and home screen refresh
+  // FIXED: Handle completion toggle with proper API format
   const handleToggleComplete = async () => {
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
     
     try {
-      // Update backend
+      console.log('Toggling completion for item:', content.id, 'to:', newCompletedState, 'userId:', userId);
+      
       const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          itemId: content.id.toString(),
+          itemId: content.id, // Your backend expects this as number
           completed: newCompletedState,
           userId: userId
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update completion status');
+        const errorData = await response.json();
+        console.error('Toggle completion API error:', response.status, errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
-      // Trigger home screen refresh to show/hide the item
+      const result = await response.json();
+      console.log('Successfully toggled completion:', result);
+
+      // Trigger screen refreshes
       if ((window as any).refreshHomeScreen) {
-        console.log('Triggering home screen refresh from content detail');
         (window as any).refreshHomeScreen();
       }
-
-      // Also trigger search screen refresh
       if ((window as any).refreshSearchScreen) {
-        console.log('Triggering search screen refresh from content detail');
         (window as any).refreshSearchScreen();
       }
 
-      // Call the parent toggle handler
       onToggleComplete?.(content.id);
       
     } catch (error) {
       console.error('Error toggling completion:', error);
-      // Revert the state if backend update failed
       setIsCompleted(!newCompletedState);
-      alert('Failed to update completion status. Please try again.');
+      alert(`Failed to update completion status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   const handleCopyContent = () => {
     navigator.clipboard.writeText(content.description);
-    // Show toast notification
   };
 
   const togglePlayback = () => {
@@ -190,23 +200,14 @@ export function ContentDetailView({
   };
 
   const handleSaveEdit = () => {
-    // Create updated content object
     const updatedContent = {
       ...content,
       title: editedTitle,
       description: editedDescription,
-      tags: editedTags,
-      notifications: {
-        enabled: notificationsEnabled,
-        frequency: notificationFrequency,
-        time: notificationTime,
-        customMessage: customMessage
-      }
+      tags: editedTags
     };
     
-    // Call the update function passed from parent
     onContentUpdate?.(updatedContent);
-    
     setIsEditing(false);
   };
 
@@ -221,67 +222,135 @@ export function ContentDetailView({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-  // FIXED: Calculate actual time since creation
-  const formatTimeAgo = (timestamp: string, createdAt?: string) => {
-    const now = new Date();
-    const date = new Date(createdAt || timestamp);
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    
-    const diffInDays = Math.floor(diffInMinutes / 1440);
-    if (diffInDays < 30) return `${diffInDays}d ago`;
-    
-    const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) return `${diffInMonths}mo ago`;
-    
-    const diffInYears = Math.floor(diffInMonths / 12);
-    return `${diffInYears}y ago`;
+  // FIXED: Calculate actual time from created_at field
+  const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
+    try {
+      const now = new Date();
+      const dateString = createdAt || fallbackTimestamp;
+      
+      if (!dateString) return 'Unknown time';
+      
+      const date = new Date(dateString);
+      
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date:', dateString);
+        return 'Invalid date';
+      }
+      
+      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+      
+      if (diffInSeconds < 60) return diffInSeconds <= 5 ? 'Just now' : `${diffInSeconds}s ago`;
+      
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+      
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h ago`;
+      
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 30) return `${diffInDays}d ago`;
+      
+      const diffInMonths = Math.floor(diffInDays / 30);
+      if (diffInMonths < 12) return `${diffInMonths}mo ago`;
+      
+      const diffInYears = Math.floor(diffInMonths / 12);
+      return `${diffInYears}y ago`;
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return 'Time error';
+    }
   };
 
-  // FIXED: PWA Notification function
+  // FIXED: Save notification settings to backend
+  const handleSaveNotificationSettings = async () => {
+    setSavingNotification(true);
+    
+    try {
+      const notificationSettings = {
+        enabled: notificationsEnabled,
+        frequency: notificationFrequency,
+        time: notificationTime,
+        customMessage: customMessage
+      };
+
+      console.log('Saving notification settings:', notificationSettings);
+
+      const response = await fetch(`${API_URL}/api/notification-settings`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          itemId: content.id,
+          userId: userId,
+          notifications: notificationSettings
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Notification settings saved:', result);
+      
+      setNotificationSaved(true);
+      
+      // Schedule the actual notification
+      if (notificationsEnabled) {
+        await scheduleNotification();
+      }
+      
+      // Auto-hide success message
+      setTimeout(() => setNotificationSaved(false), 3000);
+      
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+      alert(`Failed to save notification settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setSavingNotification(false);
+    }
+  };
+
+  // PWA Notification function
   const scheduleNotification = async () => {
     if (!notificationsEnabled || !('serviceWorker' in navigator) || !('Notification' in window)) {
       return;
     }
 
     try {
-      // Request notification permission
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         alert('Please enable notifications to receive reminders');
         return;
       }
 
-      // Calculate notification time
       const now = new Date();
       const [hours, minutes] = notificationTime.split(':').map(Number);
       const notificationDate = new Date();
       notificationDate.setHours(hours, minutes, 0, 0);
 
-      // If time has passed today, schedule for tomorrow
       if (notificationDate <= now) {
         notificationDate.setDate(notificationDate.getDate() + 1);
       }
 
       const delay = notificationDate.getTime() - now.getTime();
 
-      // Schedule the notification
       setTimeout(() => {
         const message = customMessage || `Time to review: "${content.title}"`;
-        new Notification('DANGIT Reminder', {
+        const notification = new Notification('DANGIT Reminder', {
           body: message,
-          icon: '/icon-192x192.png', // Your PWA icon
+          icon: '/icon-192x192.png',
           badge: '/icon-192x192.png',
           tag: `reminder-${content.id}`,
-          requireInteraction: true,
-          actions: [
-            { action: 'open', title: 'Open Item' },
-            { action: 'dismiss', title: 'Dismiss' }
-          ]
+          requireInteraction: true
         });
+
+        notification.onclick = () => {
+          window.focus();
+          notification.close();
+        };
 
         // Schedule recurring notifications
         if (notificationFrequency === 'daily') {
@@ -291,9 +360,8 @@ export function ContentDetailView({
               icon: '/icon-192x192.png',
               tag: `reminder-${content.id}`
             });
-          }, 24 * 60 * 60 * 1000); // 24 hours
+          }, 24 * 60 * 60 * 1000);
 
-          // Store interval ID to clear later if needed
           localStorage.setItem(`notification-${content.id}`, dailyInterval.toString());
         } else if (notificationFrequency === 'weekly') {
           const weeklyInterval = setInterval(() => {
@@ -302,7 +370,7 @@ export function ContentDetailView({
               icon: '/icon-192x192.png',
               tag: `reminder-${content.id}`
             });
-          }, 7 * 24 * 60 * 60 * 1000); // 7 days
+          }, 7 * 24 * 60 * 60 * 1000);
 
           localStorage.setItem(`notification-${content.id}`, weeklyInterval.toString());
         }
@@ -314,27 +382,12 @@ export function ContentDetailView({
     }
   };
 
-  // Schedule notification when settings change
-  useEffect(() => {
-    if (notificationsEnabled) {
-      scheduleNotification();
-    } else {
-      // Clear existing notifications
-      const intervalId = localStorage.getItem(`notification-${content.id}`);
-      if (intervalId) {
-        clearInterval(parseInt(intervalId));
-        localStorage.removeItem(`notification-${content.id}`);
-      }
-    }
-  }, [notificationsEnabled, notificationFrequency, notificationTime, customMessage]);
-
   return (
     <div className={`
       fixed inset-0 z-50 transition-all duration-300 ease-out flex flex-col
       ${darkMode ? 'bg-gray-900' : 'bg-white'}
       ${isClosing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
     `}>
-      {/* FIXED: Custom CSS without JSX syntax error */}
       <style dangerouslySetInnerHTML={{
         __html: `
           .content-detail-scroll::-webkit-scrollbar {
@@ -359,7 +412,6 @@ export function ContentDetailView({
 
       {/* Enhanced Header */}
       <div className={`relative overflow-hidden border-b ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-        {/* Dynamic gradient background based on content type */}
         <div className={`absolute inset-0 bg-gradient-to-br ${currentType.color} opacity-10`} />
         <div 
           className="absolute inset-0 opacity-40" 
@@ -430,7 +482,7 @@ export function ContentDetailView({
             )}
           </div>
 
-          {/* Content metadata */}
+          {/* FIXED: Content metadata with accurate time, removed reading time and views */}
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-2xl bg-gradient-to-r ${currentType.color} shadow-lg`}>
@@ -450,15 +502,9 @@ export function ContentDetailView({
                 <div className={`flex items-center gap-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {formatTimeAgo(content.timestamp, content.createdAt)}
+                    {formatTimeAgo(content.created_at, content.timestamp)}
                   </div>
-                  {content.readingTime && (
-                    <div className="flex items-center gap-1">
-                      <Eye className="w-4 h-4" />
-                      {content.readingTime} read
-                    </div>
-                  )}
-                  {/* REMOVED: View count - using actual time instead */}
+                  {/* REMOVED: Reading time and view count */}
                 </div>
               </div>
             </div>
@@ -559,112 +605,7 @@ export function ContentDetailView({
             )}
           </div>
 
-          {/* REMOVED: AI Summary Section - keeping only one content section */}
-
-          {/* Original Content Preview */}
-          {content.type === 'url' && (
-            <div className={`rounded-2xl border p-5 shadow-sm ${
-              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md">
-                  <LinkIcon className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Original Article</div>
-                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>example.com</div>
-                </div>
-                <Button size="sm" variant="outline" className="rounded-full">
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  Open
-                </Button>
-              </div>
-              
-              <div className="aspect-video bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center">
-                <div className="text-center">
-                  <LinkIcon className="w-12 h-12 text-blue-400 mx-auto mb-2" />
-                  <span className="text-blue-600 font-medium">Website Preview</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {content.type === 'voice' && (
-            <div className={`rounded-2xl border p-5 shadow-sm ${
-              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-md">
-                  <Mic className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Voice Recording</div>
-                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>2:34 duration • 45 KB</div>
-                </div>
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="rounded-full"
-                  onClick={togglePlayback}
-                >
-                  {isPlaying ? <PauseCircle className="w-4 h-4 mr-1" /> : <PlayCircle className="w-4 h-4 mr-1" />}
-                  {isPlaying ? 'Pause' : 'Play'}
-                </Button>
-              </div>
-              
-              <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-4 border border-red-100">
-                <div className="flex justify-center items-center gap-1 h-16 mb-3">
-                  {[...Array(20)].map((_, i) => (
-                    <div 
-                      key={i}
-                      className={`bg-red-400 rounded-full transition-all duration-200 ${
-                        isPlaying ? 'animate-pulse' : ''
-                      }`}
-                      style={{
-                        width: '3px',
-                        height: `${Math.random() * 40 + 10}px`,
-                        animationDelay: `${i * 0.1}s`
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-red-600">0:00</span>
-                  <Volume2 className="w-4 h-4 text-red-500" />
-                  <span className="text-sm text-red-600">2:34</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {content.type === 'screenshot' && (
-            <div className={`rounded-2xl border p-5 shadow-sm ${
-              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-md">
-                  <Image className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Screenshot Analysis</div>
-                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>AI extracted text and context</div>
-                </div>
-                <Button size="sm" variant="outline" className="rounded-full">
-                  <Download className="w-4 h-4 mr-1" />
-                  Save
-                </Button>
-              </div>
-              
-              <div className="aspect-video bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-dashed border-green-200 flex items-center justify-center">
-                <div className="text-center">
-                  <Image className="w-12 h-12 text-green-400 mx-auto mb-2" />
-                  <span className="text-green-600 font-medium">Screenshot Preview</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* MODIFIED: Single Content Details section (removed duplicate) */}
+          {/* Single Content Details section (removed AI summary duplication) */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -706,7 +647,7 @@ export function ContentDetailView({
             )}
           </div>
 
-          {/* Enhanced Tags Section */}
+          {/* Tags Section */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -758,22 +699,10 @@ export function ContentDetailView({
                   </button>
                 </div>
               )}
-              {!isEditing && (
-                <button 
-                  onClick={() => setIsEditing(true)}
-                  className={`px-3 py-1 border-2 border-dashed rounded-full text-sm transition-colors ${
-                    darkMode 
-                      ? 'border-gray-600 text-gray-400 hover:border-gray-500 hover:text-gray-300' 
-                      : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  + Add tag
-                </button>
-              )}
             </div>
           </div>
 
-          {/* ENHANCED: PWA Notification Settings Section */}
+          {/* FIXED: Notification Settings with Save Button and Persistence */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -785,6 +714,18 @@ export function ContentDetailView({
               )}
               Reminder Settings
             </h3>
+            
+            {/* Success message */}
+            {notificationSaved && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <p className="text-sm text-green-800 font-medium">
+                    Notification settings saved successfully!
+                  </p>
+                </div>
+              </div>
+            )}
             
             {/* PWA notification support check */}
             {!('Notification' in window) && (
@@ -831,7 +772,7 @@ export function ContentDetailView({
               </div>
             </div>
 
-            {/* Notification frequency and timing (only show when enabled) */}
+            {/* Notification frequency and timing */}
             {notificationsEnabled && (
               <div className="space-y-4 animate-in slide-in-from-top-2 duration-300">
                 {/* Frequency Selection */}
@@ -898,6 +839,31 @@ export function ContentDetailView({
                   />
                 </div>
 
+                {/* FIXED: Save Notification Settings Button */}
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-600">
+                  <Button
+                    onClick={handleSaveNotificationSettings}
+                    disabled={savingNotification}
+                    className={`w-full h-12 rounded-xl font-semibold ${
+                      savingNotification
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-indigo-600 hover:bg-indigo-700'
+                    } text-white transition-all duration-200`}
+                  >
+                    {savingNotification ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Saving...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4" />
+                        Save Reminder Settings
+                      </div>
+                    )}
+                  </Button>
+                </div>
+
                 {/* Preview */}
                 <div className={`p-4 rounded-lg border ${
                   darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
@@ -919,7 +885,7 @@ export function ContentDetailView({
         </div>
       </div>
 
-      {/* FIXED: Enhanced Floating Footer with completion state visual feedback */}
+      {/* Enhanced Floating Footer */}
       <div className={`fixed bottom-0 left-0 right-0 p-4 backdrop-blur-lg border-t shadow-lg ${
         darkMode 
           ? 'bg-gray-900/95 border-gray-700' 
