@@ -68,7 +68,7 @@ export function ContentDetailView({
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
   
-  // Notification state
+  // FIXED: Notification state with proper management
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationFrequency, setNotificationFrequency] = useState<'once' | 'daily' | 'weekly'>('once');
   const [notificationTime, setNotificationTime] = useState('09:00');
@@ -76,13 +76,19 @@ export function ContentDetailView({
   const [notificationSaved, setNotificationSaved] = useState(false);
   const [savingNotification, setSavingNotification] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   
-  // Parse and set notification state properly
+  // Parse and set notification state properly on mount
   useEffect(() => {
     setIsCompleted(content.completed);  
     setEditedTitle(content.title);
     setEditedDescription(content.description);
     setEditedTags(content.tags);
+    
+    // Check current notification permission status
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
     
     // Parse notifications properly
     let notifications = null;
@@ -102,22 +108,22 @@ export function ContentDetailView({
       }
     }
     
-    if (notifications) {
-      setNotificationsEnabled(notifications.enabled || false);
+    // Set notification states based on parsed data
+    if (notifications && notifications.enabled) {
+      setNotificationsEnabled(true);
       setNotificationFrequency(notifications.frequency || 'once');
       setNotificationTime(notifications.time || '09:00');
       setCustomMessage(notifications.customMessage || '');
-      console.log('Notification settings loaded:', {
-        enabled: notifications.enabled,
-        frequency: notifications.frequency,
-        time: notifications.time
-      });
+      // Don't show settings panel if notification is already set
+      setShowNotificationSettings(false);
+      console.log('Notification is enabled, showing status');
     } else {
       setNotificationsEnabled(false);
       setNotificationFrequency('once');
       setNotificationTime('09:00');  
       setCustomMessage('');
-      console.log('No notification settings found, using defaults');
+      setShowNotificationSettings(false);
+      console.log('No notification set, showing toggle');
     }
   }, [content]);
   
@@ -167,7 +173,7 @@ export function ContentDetailView({
     setTimeout(() => onClose(), 200);
   };
 
-  // Handle completion toggle with your existing backend
+  // Handle completion toggle
   const handleToggleComplete = async () => {
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
@@ -288,34 +294,50 @@ export function ContentDetailView({
     }
   };
 
-  // ENHANCED: Mobile PWA Notification function with service worker
+  // FIXED: Mobile-compatible notification function without vibrate
   const scheduleNotification = async () => {
     if (!notificationsEnabled) return;
 
     try {
+      console.log('Scheduling mobile notification...');
+      
       // Request notification permission
       let permission = Notification.permission;
       if (permission === 'default') {
         permission = await Notification.requestPermission();
+        setNotificationPermission(permission);
       }
       
       if (permission !== 'granted') {
-        alert('Please enable notifications in your browser settings to receive reminders on your phone.');
+        alert('Please allow notifications in your browser settings to receive reminders on your phone. Go to browser settings → Site settings → Notifications');
         return;
       }
 
-      // Show immediate test notification
-      const testNotification = new Notification('DANGIT - Reminder Set!', {
-        body: `You'll be reminded about "${content.title}" at ${notificationTime}`,
+      console.log('Notification permission granted, creating test notification...');
+
+      // FIXED: Create notification options without TypeScript errors
+      const notificationOptions: NotificationOptions = {
+        body: `Reminder set! You'll be notified about "${content.title}" at ${notificationTime}`,
         icon: '/icon-192x192.png',
         badge: '/icon-192x192.png',
         tag: `test-${content.id}`,
         requireInteraction: false,
-        silent: false
-      });
+        silent: false,
+        // REMOVED: vibrate property to fix TypeScript error
+        // Note: Mobile devices may still vibrate based on user settings
+      };
 
-      // Auto close test notification after 3 seconds
-      setTimeout(() => testNotification.close(), 3000);
+      // Show immediate test notification
+      const testNotification = new Notification('DANGIT - Mobile Reminder Set! 📱', notificationOptions);
+
+      // Auto close test notification after 4 seconds
+      setTimeout(() => {
+        try {
+          testNotification.close();
+        } catch (e) {
+          console.log('Test notification already closed');
+        }
+      }, 4000);
 
       // Schedule actual reminder
       const now = new Date();
@@ -338,45 +360,47 @@ export function ContentDetailView({
 
       // Schedule new reminder
       const timerId = setTimeout(() => {
+        console.log('Firing scheduled notification for:', content.title);
+        
         const message = customMessage || `Time to review: "${content.title}"`;
-        const notification = new Notification('DANGIT Reminder', {
+        const scheduledNotificationOptions: NotificationOptions = {
           body: message,
           icon: '/icon-192x192.png',
           badge: '/icon-192x192.png',
           tag: `reminder-${content.id}`,
           requireInteraction: true,
           silent: false,
-          vibrate: [200, 100, 200], // Mobile vibration pattern
-          actions: [
-            { action: 'open', title: 'Open' },
-            { action: 'dismiss', title: 'Dismiss' }
-          ]
-        });
+        };
+
+        const notification = new Notification('DANGIT Reminder 🔔', scheduledNotificationOptions);
 
         notification.onclick = () => {
+          console.log('Notification clicked, opening app...');
           window.focus();
           notification.close();
+          // Try to open the app if it's installed as PWA
+          if (window.location.href !== window.location.origin) {
+            window.location.href = window.location.origin;
+          }
         };
 
         // Schedule recurring notifications
         if (notificationFrequency === 'daily') {
           const dailyInterval = setInterval(() => {
-            new Notification('DANGIT Daily Reminder', {
+            new Notification('DANGIT Daily Reminder 📅', {
               body: message,
               icon: '/icon-192x192.png',
-              tag: `daily-${content.id}`,
-              vibrate: [200, 100, 200]
+              tag: `daily-${content.id}`
             });
           }, 24 * 60 * 60 * 1000);
 
           localStorage.setItem(`daily-interval-${content.id}`, dailyInterval.toString());
         } else if (notificationFrequency === 'weekly') {
           const weeklyInterval = setInterval(() => {
-            new Notification('DANGIT Weekly Reminder', {
+            new Notification('DANGIT Weekly Reminder 📆', {
               body: message,
               icon: '/icon-192x192.png',
-              tag: `weekly-${content.id}`,
-              vibrate: [200, 100, 200]
+              tag: `weekly-${content.id}`
             });
           }, 7 * 24 * 60 * 60 * 1000);
 
@@ -391,13 +415,15 @@ export function ContentDetailView({
       localStorage.setItem(`reminder-timer-${content.id}`, timerId.toString());
 
       console.log(`Mobile notification scheduled for ${notificationDate.toLocaleString()}`);
+      console.log(`Delay: ${Math.floor(delay / 1000)} seconds`);
+      
     } catch (error) {
       console.error('Error scheduling mobile notification:', error);
-      alert('Error setting up notifications. Please try again.');
+      alert('Error setting up notifications. Make sure notifications are enabled in your browser settings.');
     }
   };
 
-  // FIXED: Save notification settings with better mobile support
+  // FIXED: Save notification settings with better persistence
   const handleSaveNotificationSettings = async () => {
     setSavingNotification(true);
     
@@ -456,6 +482,19 @@ export function ContentDetailView({
           clearTimeout(parseInt(timerId));
           localStorage.removeItem(`reminder-timer-${content.id}`);
         }
+        
+        // Clear recurring notifications
+        const dailyInterval = localStorage.getItem(`daily-interval-${content.id}`);
+        if (dailyInterval) {
+          clearInterval(parseInt(dailyInterval));
+          localStorage.removeItem(`daily-interval-${content.id}`);
+        }
+        
+        const weeklyInterval = localStorage.getItem(`weekly-interval-${content.id}`);
+        if (weeklyInterval) {
+          clearInterval(parseInt(weeklyInterval));
+          localStorage.removeItem(`weekly-interval-${content.id}`);
+        }
       }
       
       // Auto-hide success message
@@ -469,6 +508,33 @@ export function ContentDetailView({
     }
   };
 
+  // FIXED: Handle turning ON notifications (show settings)
+  const handleToggleNotifications = (enabled: boolean) => {
+    setNotificationsEnabled(enabled);
+    if (enabled) {
+      // Show settings when turning ON notifications
+      setShowNotificationSettings(true);
+    } else {
+      // Hide settings and save disabled state when turning OFF
+      setShowNotificationSettings(false);
+      // Clear any existing notifications
+      const timerId = localStorage.getItem(`reminder-timer-${content.id}`);
+      if (timerId) {
+        clearTimeout(parseInt(timerId));
+        localStorage.removeItem(`reminder-timer-${content.id}`);
+      }
+      
+      // Update content immediately to show disabled state
+      if (onContentUpdate) {
+        const updatedContent = {
+          ...content,
+          notifications: { enabled: false, frequency: 'once', time: '09:00', customMessage: '' }
+        };
+        onContentUpdate(updatedContent);
+      }
+    }
+  };
+
   // Helper function to format notification summary
   const getNotificationSummary = () => {
     if (!notificationsEnabled) return null;
@@ -476,7 +542,13 @@ export function ContentDetailView({
     const freqText = notificationFrequency === 'once' ? 'Once' : 
                     notificationFrequency === 'daily' ? 'Daily' : 'Weekly';
     
-    return `${freqText} at ${notificationTime}`;
+    const timeFormat = new Date(`2000-01-01T${notificationTime}`).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+    
+    return `${freqText} at ${timeFormat}`;
   };
 
   return (
@@ -798,7 +870,7 @@ export function ContentDetailView({
             </div>
           </div>
 
-          {/* ENHANCED: Mobile-Friendly Notification Settings */}
+          {/* FIXED: Mobile-Optimized Notification Section */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -808,7 +880,7 @@ export function ContentDetailView({
               ) : (
                 <BellOff className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               )}
-              Phone Reminders
+              Mobile Reminders
             </h3>
             
             {/* Success message */}
@@ -818,25 +890,43 @@ export function ContentDetailView({
                   <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-green-800">
-                      Mobile reminder set successfully! 📱
+                      📱 Mobile reminder set successfully!
                     </p>
                     <p className="text-xs text-green-700 mt-1">
-                      You'll get a test notification now, then reminders at your scheduled time.
+                      You should see a test notification now. Your reminder is scheduled for {getNotificationSummary()}.
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ENHANCED: Notification Status Display */}
-            {notificationsEnabled && !showNotificationSettings && (
-              <div className={`p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 mb-4`}>
+            {/* Notification permission warning */}
+            {notificationPermission !== 'granted' && (
+              <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-800">
+                      Notification Permission Needed
+                    </p>
+                    <p className="text-xs text-yellow-700 mt-1">
+                      Allow notifications when prompted, or go to Settings → Site Settings → Notifications
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* FIXED: Show notification status when enabled, toggle when disabled */}
+            {notificationsEnabled && !showNotificationSettings ? (
+              /* ACTIVE NOTIFICATION DISPLAY */
+              <div className="p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Bell className="w-6 h-6 text-indigo-600" />
                     <div>
-                      <div className="font-semibold text-indigo-800">
-                        Reminder Active 📱
+                      <div className="font-semibold text-indigo-800 text-base">
+                        📱 Reminder Active
                       </div>
                       <div className="text-sm text-indigo-700">
                         {getNotificationSummary()}
@@ -846,18 +936,24 @@ export function ContentDetailView({
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setShowNotificationSettings(true)}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => setShowNotificationSettings(true)}
+                      className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleToggleNotifications(false)}
+                      className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                    >
+                      Turn Off
+                    </button>
+                  </div>
                 </div>
               </div>
-            )}
-
-            {/* Main notification toggle */}
-            {(!notificationsEnabled || showNotificationSettings) && (
+            ) : (
+              /* NOTIFICATION TOGGLE (when disabled or setting up) */
               <div className={`p-4 rounded-xl border-2 transition-all duration-300 mb-4 ${
                 notificationsEnabled 
                   ? 'border-indigo-200 bg-indigo-50' 
@@ -873,28 +969,28 @@ export function ContentDetailView({
                       <BellOff className={`w-6 h-6 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
                     )}
                     <div>
-                      <div className={`font-medium transition-colors ${
+                      <div className={`font-medium text-base transition-colors ${
                         notificationsEnabled 
                           ? 'text-indigo-800' 
                           : darkMode ? 'text-white' : 'text-gray-900'
                       }`}>
-                        {notificationsEnabled ? 'Phone Reminders On' : 'Enable Phone Reminders'}
+                        {notificationsEnabled ? 'Setting Up Reminder...' : 'Set Mobile Reminder'}
                       </div>
                       <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {notificationsEnabled ? 'Get notifications on your phone' : 'Never miss important content - get notified on your phone'}
+                        {notificationsEnabled ? 'Choose your reminder settings below' : 'Get notifications on your phone to never miss this content'}
                       </div>
                     </div>
                   </div>
                   <Switch
                     checked={notificationsEnabled}
-                    onCheckedChange={setNotificationsEnabled}
+                    onCheckedChange={handleToggleNotifications}
                     className="data-[state=checked]:bg-indigo-600 scale-125"
                   />
                 </div>
               </div>
             )}
 
-            {/* Notification settings panel */}
+            {/* NOTIFICATION SETTINGS PANEL */}
             {notificationsEnabled && showNotificationSettings && (
               <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
                 {/* Frequency Selection */}
@@ -961,15 +1057,15 @@ export function ContentDetailView({
                   />
                 </div>
 
-                {/* FIXED: Mobile-Visible Save Button */}
+                {/* FIXED: Prominent Save Button */}
                 <div className="pt-4 border-t-2 border-gray-200 dark:border-gray-600">
                   <button
                     onClick={handleSaveNotificationSettings}
                     disabled={savingNotification}
-                    className={`w-full h-14 rounded-xl text-lg font-bold transition-all duration-200 transform active:scale-95 touch-manipulation ${
+                    className={`w-full h-16 rounded-xl text-lg font-bold transition-all duration-200 transform active:scale-95 touch-manipulation shadow-lg ${
                       savingNotification
                         ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-lg hover:shadow-xl'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl'
                     } text-white`}
                   >
                     {savingNotification ? (
@@ -979,8 +1075,8 @@ export function ContentDetailView({
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-3">
-                        <Bell className="w-5 h-5" />
-                        <span>Set Phone Reminder 📱</span>
+                        <Bell className="w-6 h-6" />
+                        <span>📱 Set Mobile Reminder</span>
                       </div>
                     )}
                   </button>
@@ -1003,17 +1099,16 @@ export function ContentDetailView({
                   darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
                 }`}>
                   <div className={`text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    📱 Preview Notification:
+                    📱 Preview Mobile Notification:
                   </div>
                   <div className={`text-sm font-medium mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    DANGIT Reminder
+                    DANGIT Reminder 🔔
                   </div>
                   <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {customMessage || `Time to review: "${content.title}"`}
                   </div>
                   <div className={`text-xs mt-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                    {notificationFrequency === 'once' ? 'One-time reminder' : 
-                     notificationFrequency === 'daily' ? 'Daily reminder' : 'Weekly reminder'} at {notificationTime}
+                    {getNotificationSummary()}
                   </div>
                 </div>
               </div>
