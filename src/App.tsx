@@ -73,50 +73,6 @@ function AppContent() {
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>('medium');
 
-  // ADDED: Service Worker quick initialization
-  useEffect(() => {
-    // Force service worker registration on app start
-    if ('serviceWorker' in navigator) {
-      console.log('🔧 Registering service worker...');
-      
-      navigator.serviceWorker.register('/service-worker.js', { 
-        scope: '/',
-        updateViaCache: 'none' // Don't cache the service worker file
-      })
-      .then((registration) => {
-        console.log('✅ Service Worker registered successfully:', registration);
-        
-        // Force activation if waiting
-        if (registration.waiting) {
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-        
-        // Listen for updates
-        registration.addEventListener('updatefound', () => {
-          console.log('🔄 Service Worker update found');
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'activated') {
-                console.log('✅ New Service Worker activated');
-                window.location.reload();
-              }
-            });
-          }
-        });
-      })
-      .catch((error) => {
-        console.error('❌ Service Worker registration failed:', error);
-      });
-      
-      // Check if service worker is ready immediately
-      navigator.serviceWorker.ready.then(() => {
-        console.log('🚀 Service Worker is ready! Mobile notifications enabled!');
-      });
-    } else {
-      console.warn('⚠️ Service Worker not supported in this browser');
-    }
-  }, []);
 
   // Handle viewport changes for better mobile experience
   useEffect(() => {
