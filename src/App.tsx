@@ -22,9 +22,9 @@ interface User {
 type AppScreen = 'onboarding' | 'signup' | 'home' | 'search' | 'add' | 'profile' | 'editProfile';
 type MainScreen = 'home' | 'search' | 'add' | 'profile';
 
-// FIXED: Updated ContentItem interface to match ContentDetailView expectations
+// FIXED: Updated ContentItem interface to match ContentDetailView expectations exactly
 interface ContentItem {
-  id: number; // Changed from string to number to match ContentDetailView
+  id: number;
   type: string;
   title: string;
   description: string;
@@ -38,11 +38,13 @@ interface ContentItem {
   // Additional properties that ContentDetailView expects
   originalUrl?: string;
   aiSummary?: string;
-  readingTime?: string;
-  viewCount?: number;
-  notifications?: {
+  created_at?: string;
+  // FIXED: Notification type to match ContentDetailView exactly
+  notifications?: string | {
     enabled: boolean;
-    frequency: 'daily' | 'weekly' | 'monthly';
+    frequency: 'once' | 'daily' | 'weekly';
+    time: string;
+    customMessage?: string;
   };
 }
 
@@ -70,6 +72,51 @@ function AppContent() {
   // Responsive viewport detection
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>('medium');
+
+  // ADDED: Service Worker quick initialization
+  useEffect(() => {
+    // Force service worker registration on app start
+    if ('serviceWorker' in navigator) {
+      console.log('🔧 Registering service worker...');
+      
+      navigator.serviceWorker.register('/sw.js', { 
+        scope: '/',
+        updateViaCache: 'none' // Don't cache the service worker file
+      })
+      .then((registration) => {
+        console.log('✅ Service Worker registered successfully:', registration);
+        
+        // Force activation if waiting
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        
+        // Listen for updates
+        registration.addEventListener('updatefound', () => {
+          console.log('🔄 Service Worker update found');
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'activated') {
+                console.log('✅ New Service Worker activated');
+                window.location.reload();
+              }
+            });
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker registration failed:', error);
+      });
+      
+      // Check if service worker is ready immediately
+      navigator.serviceWorker.ready.then(() => {
+        console.log('🚀 Service Worker is ready! Mobile notifications enabled!');
+      });
+    } else {
+      console.warn('⚠️ Service Worker not supported in this browser');
+    }
+  }, []);
 
   // Handle viewport changes for better mobile experience
   useEffect(() => {
@@ -226,7 +273,7 @@ function AppContent() {
     }, 150);
   };
 
-  // FIXED: Updated to match ContentDetailView expectations
+  // FIXED: Updated to match ContentDetailView expectations exactly
   const handleShowContentDetail = (content: any) => {
     // Transform the content to match ContentDetailView interface
     const transformedContent: ContentItem = {
@@ -234,11 +281,13 @@ function AppContent() {
       id: typeof content.id === 'string' ? parseInt(content.id) : content.id,
       originalUrl: content.original_content || content.originalUrl,
       aiSummary: content.ai_summary || content.description,
-      readingTime: '2 min read',
-      viewCount: Math.floor(Math.random() * 100) + 1,
-      notifications: {
+      created_at: content.created_at || content.timestamp,
+      // FIXED: Proper notification structure with required fields
+      notifications: content.notifications || {
         enabled: false,
-        frequency: 'weekly' as const
+        frequency: 'once' as const,
+        time: '09:00',
+        customMessage: ''
       }
     };
     
@@ -275,7 +324,7 @@ function AppContent() {
     });
   }, [currentUser]);
 
-  // Handle content refresh callback
+  // FIXED: Handle content refresh callback - simplified without onContentSaved prop
   const handleContentSaved = useCallback(() => {
     console.log('Content saved, triggering refresh for user:', currentUser?.email);
     // Trigger refresh for all screens that show content
@@ -285,6 +334,8 @@ function AppContent() {
     if ((window as any).refreshSearchScreen) {
       (window as any).refreshSearchScreen();
     }
+    // Auto-navigate back to home after saving content
+    handleNavigate('home');
   }, [currentUser]);
 
   // Get user ID for API calls
@@ -296,6 +347,20 @@ function AppContent() {
     console.log('Using user ID for API calls:', currentUser.email);
     return currentUser.email;
   }, [currentUser]);
+
+  // Handle content update from ContentDetailView
+  const handleContentUpdate = useCallback((updatedContent: ContentItem) => {
+    console.log('Content updated in detail view:', updatedContent.title);
+    // Trigger refresh for screens that show content
+    if ((window as any).refreshHomeScreen) {
+      (window as any).refreshHomeScreen();
+    }
+    if ((window as any).refreshSearchScreen) {
+      (window as any).refreshSearchScreen();
+    }
+    // Update the selected content to reflect changes
+    setSelectedContent(updatedContent);
+  }, []);
 
   // FIXED: App container structure for proper bottom navigation positioning
   const containerClasses = useMemo(() => {
@@ -406,8 +471,8 @@ function AppContent() {
                   <AddContentScreen 
                     darkMode={darkMode}
                     userId={currentUser.email}
-                    onContentSaved={handleContentSaved}
-                    onClose={() => handleNavigate('home')}
+                    // REMOVED: onContentSaved prop that was causing the error
+                    onClose={() => handleContentSaved()} // This handles both content saved and close
                   />
                 </div>
               )}
@@ -492,7 +557,9 @@ function AppContent() {
               <ContentDetailView
                 content={selectedContent}
                 onClose={handleCloseContentDetail}
+                onContentUpdate={handleContentUpdate}
                 darkMode={darkMode}
+                userId={currentUser?.email}
               />
             </div>
           </>
