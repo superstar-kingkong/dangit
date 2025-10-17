@@ -68,7 +68,7 @@ export function ContentDetailView({
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
   
-  // MOBILE PWA Notification state
+  // SIMPLE Notification state (NO SERVICE WORKER)
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationFrequency, setNotificationFrequency] = useState<'once' | 'daily' | 'weekly'>('once');
   const [notificationTime, setNotificationTime] = useState('09:00');
@@ -77,9 +77,8 @@ export function ContentDetailView({
   const [savingNotification, setSavingNotification] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [isPWAInstalled, setIsPWAInstalled] = useState(false);
-  const [serviceWorkerReady, setServiceWorkerReady] = useState(false);
   
-  // Check PWA installation and service worker status
+  // Check PWA installation (NO SERVICE WORKER CHECK)
   useEffect(() => {
     // Check if running as PWA
     const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
@@ -87,16 +86,6 @@ export function ContentDetailView({
                   document.referrer.includes('android-app://');
     
     setIsPWAInstalled(isPWA);
-    
-    // Register service worker for mobile notifications
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        console.log('Service Worker ready for notifications:', registration);
-        setServiceWorkerReady(true);
-      }).catch((error) => {
-        console.error('Service Worker not ready:', error);
-      });
-    }
   }, []);
   
   // Parse notification state on mount
@@ -291,15 +280,10 @@ export function ContentDetailView({
     }
   };
 
-  // ENHANCED: Mobile PWA notification system with Service Worker integration
-  const scheduleMobileNotification = async () => {
+  // UPDATED: Simple notification system WITHOUT service worker
+  const scheduleSimpleNotification = async () => {
     try {
-      console.log('Setting up mobile PWA notification with Service Worker...');
-
-      // Check service worker
-      if (!serviceWorkerReady || !('serviceWorker' in navigator)) {
-        throw new Error('Service Worker not available');
-      }
+      console.log('Setting up simple notification system...');
 
       // Request permission
       let permission = Notification.permission;
@@ -308,25 +292,19 @@ export function ContentDetailView({
       }
 
       if (permission !== 'granted') {
-        throw new Error('Notification permission denied');
+        alert('Please enable notifications in your browser settings:\n\n1. Tap the 🔒 icon next to the URL\n2. Turn ON Notifications\n3. Try again');
+        return false;
       }
 
-      // Wait for service worker to be ready
-      const registration = await navigator.serviceWorker.ready;
-      
-      // Show immediate test notification via service worker
-      await registration.showNotification('DANGIT - Mobile Reminder Set! 📱', {
-        body: `You'll get reminded about "${content.title}" at ${notificationTime}`,
+      // Show immediate test notification
+      const testNotif = new Notification('DANGIT - Reminder Set! 📱', {
+        body: `You'll be reminded about "${editedTitle || content.title}" at ${notificationTime}`,
         icon: '/icons/web-app-manifest-192x192.png',
-        badge: '/icons/favicon-96x96.png',
         tag: `test-${content.id}`,
-        requireInteraction: false,
-        vibrate: [200, 100, 200],
-        actions: [
-          { action: 'open', title: 'Open App' },
-          { action: 'dismiss', title: 'Got it!' }
-        ]
       });
+
+      // Auto-close test notification
+      setTimeout(() => testNotif.close(), 3000);
 
       // Calculate delay for scheduled notification
       const now = new Date();
@@ -341,86 +319,70 @@ export function ContentDetailView({
       const delay = notificationDate.getTime() - now.getTime();
 
       // Clear existing timer
-      const existingTimer = localStorage.getItem(`mobile-timer-${content.id}`);
+      const existingTimer = localStorage.getItem(`timer-${content.id}`);
       if (existingTimer) {
         clearTimeout(parseInt(existingTimer));
       }
 
-      // Schedule via Service Worker message
-      const message = customMessage || `Time to review: "${content.title}"`;
+      // Schedule notification using setTimeout
+      const message = customMessage || `Time to review: "${editedTitle || content.title}"`;
       const reminderTitle = `DANGIT ${notificationFrequency === 'once' ? 'Reminder' : 
-                             notificationFrequency === 'daily' ? 'Daily Reminder' : 'Weekly Reminder'} 🔔`;
+                            notificationFrequency === 'daily' ? 'Daily Reminder' : 'Weekly Reminder'} 🔔`;
 
-      // Send message to service worker to schedule the notification
-      if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'SCHEDULE_REMINDER',
-          title: reminderTitle,
-          body: message,
-          delay: delay,
-          tag: `reminder-${content.id}`,
-          itemId: content.id
-        });
-        console.log('Reminder scheduled via Service Worker message');
-      } else {
-        // Fallback: direct setTimeout with service worker
-        const timerId = setTimeout(async () => {
-          try {
-            const reg = await navigator.serviceWorker.ready;
-            await reg.showNotification(reminderTitle, {
-              body: message,
-              icon: '/icons/web-app-manifest-192x192.png',
-              badge: '/icons/favicon-96x96.png',
-              tag: `reminder-${content.id}`,
-              requireInteraction: true,
-              vibrate: [200, 100, 200, 100, 200],
-              actions: [
-                { action: 'open', title: 'Open Item' },
-                { action: 'snooze', title: 'Snooze 10min' }
-              ]
-            });
-            console.log('Mobile reminder notification shown');
-            localStorage.removeItem(`mobile-timer-${content.id}`);
-          } catch (error) {
-            console.error('Error showing scheduled notification:', error);
-          }
-        }, delay);
+      const timerId = setTimeout(() => {
+        try {
+          const notification = new Notification(reminderTitle, {
+            body: message,
+            icon: '/icons/web-app-manifest-192x192.png',
+            tag: `reminder-${content.id}`,
+          });
+          
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+          
+          console.log('📱 Reminder notification shown!');
+          localStorage.removeItem(`timer-${content.id}`);
+        } catch (error) {
+          console.error('Notification error:', error);
+          // Fallback to alert
+          alert(`${reminderTitle}\n\n${message}`);
+        }
+      }, delay);
 
-        localStorage.setItem(`mobile-timer-${content.id}`, timerId.toString());
-      }
+      localStorage.setItem(`timer-${content.id}`, timerId.toString());
 
       // Handle recurring notifications
       if (notificationFrequency !== 'once') {
         const interval = notificationFrequency === 'daily' ? 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
         
-        const recurringTimer = setInterval(async () => {
+        const recurringTimer = setInterval(() => {
           try {
-            const reg = await navigator.serviceWorker.ready;
-            await reg.showNotification(`DANGIT ${notificationFrequency.charAt(0).toUpperCase() + notificationFrequency.slice(1)} Reminder`, {
+            new Notification(`DANGIT ${notificationFrequency.charAt(0).toUpperCase() + notificationFrequency.slice(1)} Reminder`, {
               body: message,
               icon: '/icons/web-app-manifest-192x192.png',
-              badge: '/icons/favicon-96x96.png',
               tag: `${notificationFrequency}-${content.id}`,
-              vibrate: [200, 100, 200]
             });
           } catch (e) {
             console.error('Recurring notification error:', e);
+            alert(`${reminderTitle}\n\n${message}`);
           }
         }, interval);
 
-        localStorage.setItem(`mobile-${notificationFrequency}-${content.id}`, recurringTimer.toString());
+        localStorage.setItem(`${notificationFrequency}-${content.id}`, recurringTimer.toString());
       }
 
-      console.log(`Mobile notification scheduled for ${notificationDate.toLocaleString()}, delay: ${Math.floor(delay/1000)}s`);
-      
+      console.log(`Notification scheduled for ${notificationDate.toLocaleString()}, delay: ${Math.floor(delay/60000)} minutes`);
       return true;
+
     } catch (error) {
-      console.error('Mobile notification setup error:', error);
-      throw error;
+      console.error('Notification setup error:', error);
+      return false;
     }
   };
 
-  // Save notification settings with mobile optimization
+  // Save notification settings with simple approach
   const handleSaveNotificationSettings = async () => {
     setSavingNotification(true);
     
@@ -461,24 +423,28 @@ export function ContentDetailView({
         console.log('Updated content locally with notification settings');
       }
       
-      // Set up mobile notifications
+      // Set up simple notifications
       if (notificationsEnabled) {
-        await scheduleMobileNotification();
+        await scheduleSimpleNotification();
         setNotificationSaved(true);
       } else {
         // Clear existing notifications
-        const timerId = localStorage.getItem(`mobile-timer-${content.id}`);
+        const timerId = localStorage.getItem(`timer-${content.id}`);
         if (timerId) {
           clearTimeout(parseInt(timerId));
-          localStorage.removeItem(`mobile-timer-${content.id}`);
+          localStorage.removeItem(`timer-${content.id}`);
         }
         
-        // Cancel via service worker if available
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({
-            type: 'CANCEL_REMINDER',
-            tag: `reminder-${content.id}`
-          });
+        // Clear recurring timers
+        const dailyTimer = localStorage.getItem(`daily-${content.id}`);
+        const weeklyTimer = localStorage.getItem(`weekly-${content.id}`);
+        if (dailyTimer) {
+          clearInterval(parseInt(dailyTimer));
+          localStorage.removeItem(`daily-${content.id}`);
+        }
+        if (weeklyTimer) {
+          clearInterval(parseInt(weeklyTimer));
+          localStorage.removeItem(`weekly-${content.id}`);
         }
       }
       
@@ -492,10 +458,8 @@ export function ContentDetailView({
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       if (errorMsg.includes('permission')) {
         alert('Please allow notifications in your browser settings:\n\n1. Tap the 🔒 icon next to the URL\n2. Turn ON Notifications\n3. Try again');
-      } else if (errorMsg.includes('Service Worker')) {
-        alert('Please make sure this app is installed to your home screen for mobile notifications to work properly.');
       } else {
-        alert('Error setting up notifications. Make sure notifications are enabled in your browser settings and the app is installed as PWA.');
+        alert('Error setting up notifications. Make sure notifications are enabled in your browser settings.');
       }
     } finally {
       setSavingNotification(false);
@@ -510,10 +474,10 @@ export function ContentDetailView({
     } else {
       setShowNotificationSettings(false);
       // Clear notifications
-      const timerId = localStorage.getItem(`mobile-timer-${content.id}`);
+      const timerId = localStorage.getItem(`timer-${content.id}`);
       if (timerId) {
         clearTimeout(parseInt(timerId));
-        localStorage.removeItem(`mobile-timer-${content.id}`);
+        localStorage.removeItem(`timer-${content.id}`);
       }
       
       if (onContentUpdate) {
@@ -861,52 +825,18 @@ export function ContentDetailView({
             </div>
           </div>
 
-          {/* ENHANCED: Mobile PWA Notifications */}
+          {/* UPDATED: Simple Notifications (NO SERVICE WORKER) */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
             <h3 className={`font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               {notificationsEnabled ? (
-                <Smartphone className="w-5 h-5 text-indigo-500" />
+                <Bell className="w-5 h-5 text-indigo-500" />
               ) : (
                 <BellOff className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
               )}
-              📱 Mobile Reminders
+              📱 Simple Reminders
             </h3>
-            
-            {/* PWA Installation Check */}
-            {!isPWAInstalled && (
-              <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Smartphone className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-blue-800">
-                      Install DANGIT for Better Notifications
-                    </p>
-                    <p className="text-xs text-blue-700 mt-1">
-                      Add to Home Screen → Chrome Menu → "Add to Home Screen" → Install
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Service Worker Status */}
-            {!serviceWorkerReady && (
-              <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-yellow-800">
-                      Service Worker Loading...
-                    </p>
-                    <p className="text-xs text-yellow-700 mt-1">
-                      Please wait for the service worker to initialize for mobile notifications.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
             
             {/* Success message */}
             {notificationSaved && (
@@ -915,10 +845,10 @@ export function ContentDetailView({
                   <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-green-800">
-                      📱 Mobile reminder set successfully!
+                      📱 Reminder set successfully!
                     </p>
                     <p className="text-xs text-green-700 mt-1">
-                      Check your notification - reminder scheduled for {getNotificationSummary()}
+                      You'll get notified {getNotificationSummary()}
                     </p>
                   </div>
                 </div>
@@ -930,10 +860,10 @@ export function ContentDetailView({
               <div className="p-4 rounded-xl border-2 border-indigo-200 bg-indigo-50 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Smartphone className="w-6 h-6 text-indigo-600" />
+                    <Bell className="w-6 h-6 text-indigo-600" />
                     <div>
                       <div className="font-semibold text-indigo-800 text-base">
-                        📱 Mobile Reminder Active
+                        📱 Reminder Active
                       </div>
                       <div className="text-sm text-indigo-700">
                         {getNotificationSummary()}
@@ -956,16 +886,16 @@ export function ContentDetailView({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {notificationsEnabled ? (
-                      <Smartphone className="w-6 h-6 text-indigo-600" />
+                      <Bell className="w-6 h-6 text-indigo-600" />
                     ) : (
                       <BellOff className={`w-6 h-6 ${darkMode ? 'text-gray-400' : 'text-gray-400'}`} />
                     )}
                     <div>
                       <div className={`font-medium text-base transition-colors ${notificationsEnabled ? 'text-indigo-800' : darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {notificationsEnabled ? 'Setting Up Mobile Reminder...' : '📱 Set Mobile Reminder'}
+                        {notificationsEnabled ? 'Setting Up Reminder...' : '📱 Set Reminder'}
                       </div>
                       <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {notificationsEnabled ? 'Configure your reminder settings below' : 'Get push notifications on your phone'}
+                        {notificationsEnabled ? 'Configure your reminder settings below' : 'Get browser notifications'}
                       </div>
                     </div>
                   </div>
@@ -1018,21 +948,16 @@ export function ContentDetailView({
 
                 {/* Save Button */}
                 <div className="pt-4 border-t-2 border-gray-200 dark:border-gray-600">
-                  <button onClick={handleSaveNotificationSettings} disabled={savingNotification || !serviceWorkerReady} className={`w-full h-16 rounded-xl text-lg font-bold transition-all duration-200 transform active:scale-95 touch-manipulation shadow-lg ${savingNotification || !serviceWorkerReady ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl'} text-white`}>
+                  <button onClick={handleSaveNotificationSettings} disabled={savingNotification} className={`w-full h-16 rounded-xl text-lg font-bold transition-all duration-200 transform active:scale-95 touch-manipulation shadow-lg ${savingNotification ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl'} text-white`}>
                     {savingNotification ? (
                       <div className="flex items-center justify-center gap-3">
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Setting Up Mobile Reminder...</span>
-                      </div>
-                    ) : !serviceWorkerReady ? (
-                      <div className="flex items-center justify-center gap-3">
-                        <AlertCircle className="w-6 h-6" />
-                        <span>Loading Service Worker...</span>
+                        <span>Setting Up Reminder...</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-3">
-                        <Smartphone className="w-6 h-6" />
-                        <span>📱 Set Mobile Push Notification</span>
+                        <Bell className="w-6 h-6" />
+                        <span>📱 Set Browser Notification</span>
                       </div>
                     )}
                   </button>
@@ -1045,10 +970,10 @@ export function ContentDetailView({
                 {/* Preview */}
                 <div className={`p-4 rounded-xl border-2 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
                   <div className={`text-sm font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                    📱 Preview Mobile Notification:
+                    📱 Preview Notification:
                   </div>
                   <div className="bg-white rounded-lg border p-3 text-black text-sm">
-                    <div className="font-semibold">DANGIT Mobile Reminder 🔔</div>
+                    <div className="font-semibold">DANGIT Reminder 🔔</div>
                     <div className="text-gray-700 mt-1">{customMessage || `Time to review: "${content.title}"`}</div>
                     <div className="text-xs text-gray-500 mt-2">{getNotificationSummary()} • Tap to open</div>
                   </div>
