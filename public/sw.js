@@ -1,10 +1,9 @@
 const CACHE_NAME = 'dangit-v1.0.0';
 const urlsToCache = [
   '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json'
 ];
+
 
 // Install event
 self.addEventListener('install', (event) => {
