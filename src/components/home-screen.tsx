@@ -406,46 +406,21 @@ export function HomeScreen({
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      {/* Status Bar */}
-      <div className={`flex justify-between items-center px-5 pt-4 pb-2 ${
-        darkMode
-          ? "bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700"
-          : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
-      }`}>
-        <span className={`font-medium ${darkMode ? "text-white" : "text-slate-900"}`}>
-          {currentTime.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: false,
-          })}
-        </span>
-        <div className="flex items-center gap-1">
-          <div className="flex gap-1">
-            <div className={`w-1 h-1 ${darkMode ? "bg-white" : "bg-slate-900"} rounded-full`}></div>
-            <div className={`w-1 h-1 ${darkMode ? "bg-white" : "bg-slate-900"} rounded-full`}></div>
-            <div className={`w-1 h-1 ${darkMode ? "bg-white" : "bg-slate-900"} rounded-full`}></div>
-          </div>
-          <div className="ml-2 flex items-center gap-1">
-            <div className={`w-6 h-3 border ${darkMode ? "border-white" : "border-slate-900"} rounded-sm relative`}>
-              <div className="absolute inset-0.5 bg-green-500 rounded-sm"></div>
-            </div>
-            <span className={`font-medium ${darkMode ? "text-white" : "text-slate-900"}`}>100%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Scrollable Content */}
-      <div className="overflow-y-auto" style={{ height: "calc(100vh - 60px)" }}>
-        {/* Header */}
+      {/* REMOVED: Status Bar - No longer needed since phone provides this */}
+      
+      {/* Scrollable Content - FIXED: Full height now that status bar is removed */}
+      <div className="overflow-y-auto h-screen">
+        {/* Header - FIXED: Removed backdrop-blur effects that caused blurring */}
         <div className={`relative overflow-hidden ${
           darkMode
             ? "bg-gradient-to-br from-gray-800 via-slate-800 to-gray-700"
             : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
         }`}>
-          <div className="relative px-5 pt-4 pb-6">
+          <div className="relative px-5 pt-6 pb-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <div>
+                {/* FIXED: Removed backdrop-blur that was causing title to blur */}
                 <h1 className="text-3xl tracking-tight font-bold">
                   <span className={`text-transparent ${
                     darkMode ? "bg-gradient-to-r from-indigo-400 to-purple-400" : "bg-gradient-to-r from-indigo-600 to-purple-600"
@@ -463,21 +438,21 @@ export function HomeScreen({
                   onClick={handleRefresh}
                   disabled={refreshing || !userId}
                   className={`p-2 rounded-xl ${
-                    darkMode ? 'bg-gray-700/60 hover:bg-gray-600' : 'bg-white/60 hover:bg-white'
-                  } backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
+                    darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'
+                  } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
                   title="Refresh"
                 >
                   <RefreshCw className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-slate-700'} ${refreshing ? 'animate-spin' : ''}`} />
                 </button>
                 <button className={`p-2 rounded-xl ${
-                  darkMode ? 'bg-gray-700/60 hover:bg-gray-600' : 'bg-white/60 hover:bg-white'
-                } backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105`}>
+                  darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-50'
+                } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105`}>
                   <Settings className={`w-5 h-5 ${darkMode ? 'text-gray-300' : 'text-slate-700'}`} />
                 </button>
               </div>
             </div>
 
-            {/* Search Bar */}
+            {/* Search Bar - FIXED: Removed backdrop-blur that was causing blurring */}
             <div className="relative mb-4">
               <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-200 ${
                 isSearchFocused ? 'text-indigo-500 scale-110' : darkMode ? 'text-gray-400' : 'text-slate-400'
@@ -493,19 +468,19 @@ export function HomeScreen({
                 onBlur={() => setIsSearchFocused(false)}
                 className={`w-full ${
                   darkMode
-                    ? "bg-gray-700/90 text-white placeholder-gray-400"
-                    : "bg-white/90 text-slate-900 placeholder-slate-500"
-                } backdrop-blur-sm rounded-2xl pl-12 pr-4 py-4 border-2 transition-all duration-200 shadow-sm ${
+                    ? "bg-gray-700 text-white placeholder-gray-400"
+                    : "bg-white text-slate-900 placeholder-slate-500"
+                } rounded-2xl pl-12 pr-4 py-4 border-2 transition-all duration-200 shadow-sm ${
                   isSearchFocused
-                    ? "border-indigo-200 shadow-lg shadow-indigo-100/50"
+                    ? "border-indigo-500 shadow-lg"
                     : darkMode
-                      ? "border-transparent hover:border-gray-600 hover:shadow-md"
-                      : "border-transparent hover:border-slate-200 hover:shadow-md"
+                      ? "border-gray-600 hover:border-gray-500 hover:shadow-md"
+                      : "border-gray-200 hover:border-slate-300 hover:shadow-md"
                 }`}
               />
             </div>
 
-            {/* Filter Pills */}
+            {/* Filter Pills - FIXED: Removed backdrop-blur from filter buttons */}
             <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
               {[
                 { key: "all", label: "All", icon: null },
@@ -519,8 +494,8 @@ export function HomeScreen({
                     selectedFilter === key
                       ? "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
                       : darkMode
-                        ? "bg-gray-700/60 text-gray-300 hover:bg-gray-600/80 hover:shadow-sm"
-                        : "bg-white/60 text-slate-600 hover:bg-white/80 hover:shadow-sm"
+                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:shadow-sm"
+                        : "bg-white text-slate-600 hover:bg-gray-50 hover:shadow-sm"
                   }`}
                 >
                   {Icon && <Icon className="w-4 h-4" />}

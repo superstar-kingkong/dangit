@@ -88,27 +88,28 @@ export function BottomNavigation({ currentScreen, onNavigate, darkMode = false }
   };
 
   return (
+    // FIXED: Changed from fixed positioning to absolute positioning within app container
     <div 
       className={`
-        fixed bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out
+        absolute bottom-0 left-0 right-0 z-50 transition-all duration-300 ease-out
         ${isVisible ? 'translate-y-0' : 'translate-y-full'}
       `}
     >
-      {/* Premium background with blur effect */}
+      {/* Premium background with blur effect - FIXED: Constrained to app width */}
       <div className={`absolute inset-0 backdrop-blur-xl border-t ${darkMode 
         ? 'bg-gray-800/95 border-gray-700' 
         : 'bg-white/90 border-slate-200/50'
       }`} />
       
-      {/* Subtle gradient overlay */}
+      {/* Subtle gradient overlay - FIXED: Constrained to app width */}
       <div className={`absolute inset-0 ${darkMode 
         ? 'bg-gradient-to-t from-gray-800/50 to-transparent' 
         : 'bg-gradient-to-t from-white/50 to-transparent'
       }`} />
 
-      {/* Main navigation content */}
-      <div className="relative px-6 pt-4 pb-6 safe-bottom">
-        <div className="flex justify-around items-center">
+      {/* Main navigation content - FIXED: Responsive padding that respects app boundaries */}
+      <div className="relative px-4 sm:px-6 pt-4 pb-6">
+        <div className="flex justify-around items-center max-w-md mx-auto">
           {navItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = currentScreen === item.id;

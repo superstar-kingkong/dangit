@@ -22,6 +22,32 @@ interface ProfileScreenProps {
   };
 }
 
+// FIXED: Define proper types for menu items
+interface SwitchMenuItem {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  hasSwitch: true;
+  value: boolean;
+  setter: (value: boolean) => void;
+  description?: string;
+}
+
+interface ActionMenuItem {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  hasSwitch?: false;
+  action: string;
+}
+
+type MenuItem = SwitchMenuItem | ActionMenuItem;
+
+interface MenuSection {
+  title: string;
+  items: MenuItem[];
+}
+
 // Better Switch Component
 const Switch = ({ checked, onCheckedChange, darkMode }: any) => (
   <button
@@ -166,7 +192,8 @@ export function ProfileScreen({
     }
   };
 
-  const menuSections = [
+  // FIXED: Properly typed menu sections
+  const menuSections: MenuSection[] = [
     {
       title: 'Preferences',
       items: [
@@ -178,7 +205,7 @@ export function ProfileScreen({
           value: darkMode, 
           setter: onDarkModeToggle,
           description: 'Easier on your eyes'
-        },
+        } as SwitchMenuItem,
         { 
           icon: Bell, 
           label: 'Notifications', 
@@ -187,30 +214,30 @@ export function ProfileScreen({
           value: notificationsEnabled, 
           setter: setNotificationsEnabled,
           description: 'Get reminders'
-        }
+        } as SwitchMenuItem
       ]
     },
     {
       title: 'Account',
       items: [
-        { icon: Edit, label: 'Edit Profile', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'edit' },
-        { icon: Shield, label: 'Privacy & Security', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'privacy' },
-        { icon: Download, label: 'Export Data', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'export' },
-        { icon: Share2, label: 'Share App', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'share' }
+        { icon: Edit, label: 'Edit Profile', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'edit' } as ActionMenuItem,
+        { icon: Shield, label: 'Privacy & Security', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'privacy' } as ActionMenuItem,
+        { icon: Download, label: 'Export Data', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'export' } as ActionMenuItem,
+        { icon: Share2, label: 'Share App', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'share' } as ActionMenuItem
       ]
     },
     {
       title: 'Support',
       items: [
-        { icon: HelpCircle, label: 'Help & Support', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'help' },
-        { icon: Eye, label: 'What\'s New', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'updates' }
+        { icon: HelpCircle, label: 'Help & Support', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'help' } as ActionMenuItem,
+        { icon: Eye, label: 'What\'s New', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'updates' } as ActionMenuItem
       ]
     },
     {
       title: 'Danger Zone',
       items: [
-        { icon: Trash2, label: 'Clear All Data', color: 'text-red-500', action: 'clear' },
-        { icon: LogOut, label: 'Sign Out', color: 'text-red-500', action: 'logout' }
+        { icon: Trash2, label: 'Clear All Data', color: 'text-red-500', action: 'clear' } as ActionMenuItem,
+        { icon: LogOut, label: 'Sign Out', color: 'text-red-500', action: 'logout' } as ActionMenuItem
       ]
     }
   ];
@@ -250,6 +277,15 @@ export function ProfileScreen({
         alert('What\'s new would open here');
         break;
     }
+  };
+
+  // FIXED: Type guard functions to check menu item types
+  const isSwitchMenuItem = (item: MenuItem): item is SwitchMenuItem => {
+    return item.hasSwitch === true;
+  };
+
+  const isActionMenuItem = (item: MenuItem): item is ActionMenuItem => {
+    return !item.hasSwitch;
   };
 
   return (
@@ -487,57 +523,67 @@ export function ProfileScreen({
               }`}>
                 {section.items.map((item, index) => {
                   const Icon = item.icon;
-                  return item.hasSwitch ? (
-                    <div
-                      key={index}
-                      className={`p-4 flex items-center justify-between transition-colors ${
-                        darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className={`p-2.5 rounded-xl ${
-                          darkMode ? 'bg-gray-700' : 'bg-gray-100'
-                        }`}>
-                          <Icon className={`w-5 h-5 ${item.color}`} />
-                        </div>
-                        <div className="flex-1">
-                          <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {item.label}
+                  
+                  // FIXED: Use type guards to safely access properties
+                  if (isSwitchMenuItem(item)) {
+                    return (
+                      <div
+                        key={index}
+                        className={`p-4 flex items-center justify-between transition-colors ${
+                          darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className={`p-2.5 rounded-xl ${
+                            darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                          }`}>
+                            <Icon className={`w-5 h-5 ${item.color}`} />
                           </div>
-                          {item.description && (
-                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                              {item.description}
+                          <div className="flex-1">
+                            <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {item.label}
                             </div>
-                          )}
+                            {item.description && (
+                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                {item.description}
+                              </div>
+                            )}
+                          </div>
                         </div>
+                        <Switch 
+                          checked={item.value} 
+                          onCheckedChange={item.setter}
+                          darkMode={darkMode}
+                        />
                       </div>
-                      <Switch 
-                        checked={item.value} 
-                        onCheckedChange={item.setter}
-                        darkMode={darkMode}
-                      />
-                    </div>
-                  ) : (
-                    <button
-                      key={index}
-                      onClick={() => item.action && handleAction(item.action)}
-                      className={`w-full p-4 flex items-center justify-between transition-colors ${
-                        darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`p-2.5 rounded-xl ${
-                          item.color === 'text-red-500' 
-                            ? 'bg-red-50' 
-                            : darkMode ? 'bg-gray-700' : 'bg-gray-100'
-                        }`}>
-                          <Icon className={`w-5 h-5 ${item.color}`} />
+                    );
+                  }
+                  
+                  if (isActionMenuItem(item)) {
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleAction(item.action)}
+                        className={`w-full p-4 flex items-center justify-between transition-colors ${
+                          darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`p-2.5 rounded-xl ${
+                            item.color === 'text-red-500' 
+                              ? 'bg-red-50' 
+                              : darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                          }`}>
+                            <Icon className={`w-5 h-5 ${item.color}`} />
+                          </div>
+                          <span className={`font-semibold ${item.color}`}>{item.label}</span>
                         </div>
-                        <span className={`font-semibold ${item.color}`}>{item.label}</span>
-                      </div>
-                      <ChevronRight className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                    </button>
-                  );
+                        <ChevronRight className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                      </button>
+                    );
+                  }
+                  
+                  return null;
                 })}
               </div>
             </div>

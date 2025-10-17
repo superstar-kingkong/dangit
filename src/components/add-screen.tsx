@@ -247,21 +247,25 @@ export function AddContentScreen({
             </div>
 
             {analysisResult && (
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4">
+              <div className={`border-2 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4 ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700' 
+                  : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
+              }`}>
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                     <Check className="w-6 h-6 text-white" strokeWidth={3} />
                   </div>
-                  <span className="font-black text-green-900 text-lg">Saved!</span>
+                  <span className={`font-black text-lg ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
                 </div>
                 <div className="space-y-2.5">
-                  <div className="bg-white/60 rounded-lg p-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Title</span>
-                    <p className="text-gray-900 font-semibold mt-1">{analysisResult.title}</p>
+                  <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-800/60' : 'bg-white/60'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wide ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Title</span>
+                    <p className={`font-semibold mt-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{analysisResult.title}</p>
                   </div>
-                  <div className="bg-white/60 rounded-lg p-3">
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Category</span>
-                    <p className="text-indigo-600 font-bold mt-1">{analysisResult.category}</p>
+                  <div className={`rounded-lg p-3 ${darkMode ? 'bg-gray-800/60' : 'bg-white/60'}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wide ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Category</span>
+                    <p className={`font-bold mt-1 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>{analysisResult.category}</p>
                   </div>
                 </div>
               </div>
@@ -304,8 +308,10 @@ export function AddContentScreen({
                 
                 <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                      <Camera className="w-6 h-6 text-indigo-600" />
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      darkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                    }`}>
+                      <Camera className={`w-6 h-6 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className={`font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedFile.name}</div>
@@ -315,12 +321,16 @@ export function AddContentScreen({
                 </div>
 
                 {analysisResult && (
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3">
+                  <div className={`border-2 rounded-2xl p-5 space-y-3 ${
+                    darkMode 
+                      ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700' 
+                      : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
+                  }`}>
                     <div className="flex items-center gap-2">
                       <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                         <Check className="w-6 h-6 text-white" strokeWidth={3} />
                       </div>
-                      <span className="font-black text-green-900 text-lg">Saved!</span>
+                      <span className={`font-black text-lg ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
                     </div>
                   </div>
                 )}
@@ -395,12 +405,16 @@ export function AddContentScreen({
             </div>
 
             {analysisResult && (
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-2xl p-5 space-y-3">
+              <div className={`border-2 rounded-2xl p-5 space-y-3 ${
+                darkMode 
+                  ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700' 
+                  : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
+              }`}>
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                     <Check className="w-6 h-6 text-white" strokeWidth={3} />
                   </div>
-                  <span className="font-black text-green-900 text-lg">Saved!</span>
+                  <span className={`font-black text-lg ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
                 </div>
               </div>
             )}
@@ -410,8 +424,10 @@ export function AddContentScreen({
         {/* Voice Tab */}
         {activeTab === 'voice' && (
           <div className="text-center py-16">
-            <div className="w-24 h-24 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-6">
-              <Mic className="w-12 h-12 text-orange-500" />
+            <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
+              darkMode ? 'bg-orange-900/30' : 'bg-orange-100'
+            }`}>
+              <Mic className={`w-12 h-12 ${darkMode ? 'text-orange-400' : 'text-orange-500'}`} />
             </div>
             <h3 className={`font-black mb-2 text-2xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Voice Notes
@@ -423,10 +439,12 @@ export function AddContentScreen({
         )}
       </div>
 
-      {/* FIXED BOTTOM BUTTON */}
-      <div className={`absolute bottom-20 left-0 right-0 px-6 pb-4 bg-gradient-to-t pt-8 z-50 ${
-        darkMode ? 'from-gray-900 via-gray-900' : 'from-white via-white'
-      }`}>
+      {/* FIXED BOTTOM BUTTON - Complete gradient fix */}
+      <div className={`absolute bottom-20 left-0 right-0 px-6 pb-4 z-50 ${
+        darkMode 
+          ? 'bg-gradient-to-t from-gray-900 via-gray-900 to-transparent' 
+          : 'bg-gradient-to-t from-white via-white to-transparent'
+      } pt-8`}>
         <button
           type="button"
           onClick={handleSave}

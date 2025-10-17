@@ -12,18 +12,19 @@ import { FloatingAddButton } from './components/floating-add-button';
 
 // User type for authentication
 interface User {
-  id: string; // Add ID for database operations
+  id: string;
   name: string;
   email: string;
   joinDate: string;
 }
 
-// Types for better type safety
+// FIXED: Updated types to match actual usage
 type AppScreen = 'onboarding' | 'signup' | 'home' | 'search' | 'add' | 'profile' | 'editProfile';
 type MainScreen = 'home' | 'search' | 'add' | 'profile';
 
+// FIXED: Updated ContentItem interface to match ContentDetailView expectations
 interface ContentItem {
-  id: string;
+  id: number; // Changed from string to number to match ContentDetailView
   type: string;
   title: string;
   description: string;
@@ -34,6 +35,15 @@ interface ContentItem {
   borderColor: string;
   priority?: "high" | "medium" | "low";
   aiScore?: number;
+  // Additional properties that ContentDetailView expects
+  originalUrl?: string;
+  aiSummary?: string;
+  readingTime?: string;
+  viewCount?: number;
+  notifications?: {
+    enabled: boolean;
+    frequency: 'daily' | 'weekly' | 'monthly';
+  };
 }
 
 function AppContent() {
@@ -53,9 +63,6 @@ function AppContent() {
   
   // Dark mode state
   const [darkMode, setDarkMode] = useState(false);
-  
-  // Centralized time state for all components
-  const [currentTime, setCurrentTime] = useState(new Date());
   
   // Screen transition state for smooth animations
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -95,14 +102,6 @@ function AppContent() {
       window.removeEventListener('resize', handleResize);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
-  
-  // Update time every minute for all components
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-    return () => clearInterval(timer);
   }, []);
 
   // Check for existing user session on app start
@@ -174,7 +173,7 @@ function AppContent() {
     // Set user data and save to localStorage
     const userWithDetails: User = {
       ...userData,
-      id: userData.email.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(), // Generate consistent ID
+      id: userData.email.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
       joinDate: new Date().toLocaleDateString('en-US', { 
         month: 'long', 
         year: 'numeric' 
@@ -227,8 +226,23 @@ function AppContent() {
     }, 150);
   };
 
-  const handleShowContentDetail = (content: ContentItem) => {
-    setSelectedContent(content);
+  // FIXED: Updated to match ContentDetailView expectations
+  const handleShowContentDetail = (content: any) => {
+    // Transform the content to match ContentDetailView interface
+    const transformedContent: ContentItem = {
+      ...content,
+      id: typeof content.id === 'string' ? parseInt(content.id) : content.id,
+      originalUrl: content.original_content || content.originalUrl,
+      aiSummary: content.ai_summary || content.description,
+      readingTime: '2 min read',
+      viewCount: Math.floor(Math.random() * 100) + 1,
+      notifications: {
+        enabled: false,
+        frequency: 'weekly' as const
+      }
+    };
+    
+    setSelectedContent(transformedContent);
     setShowContentDetail(true);
   };
 
@@ -273,20 +287,19 @@ function AppContent() {
     }
   }, [currentUser]);
 
-  // Get user ID for API calls - use the actual user ID or email
+  // Get user ID for API calls
   const getUserId = useCallback(() => {
     if (!currentUser) {
       console.warn('No current user found, using anonymous ID');
       return 'anonymous-user';
     }
-    // Use email as the primary identifier for your backend
     console.log('Using user ID for API calls:', currentUser.email);
     return currentUser.email;
   }, [currentUser]);
 
-  // Dynamic container sizing based on device
+  // FIXED: App container structure for proper bottom navigation positioning
   const containerClasses = useMemo(() => {
-    const baseClasses = "mx-auto h-full bg-white relative overflow-hidden";
+    const baseClasses = "relative min-h-screen max-w-md mx-auto overflow-hidden";
     const shadowClasses = "shadow-xl lg:shadow-2xl";
     
     switch (screenSize) {
@@ -317,14 +330,10 @@ function AppContent() {
 
   return (
     <div 
-      className={`w-full relative overflow-hidden ${darkMode 
+      className={`w-full min-h-screen relative overflow-hidden ${darkMode 
         ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100'
       }`}
-      style={{ 
-        height: `${viewportHeight}px`,
-        minHeight: '100vh'
-      }}
     >
       {/* Premium background pattern */}
       <div className="absolute inset-0 opacity-30">
@@ -342,8 +351,8 @@ function AppContent() {
         }`}></div>
       </div>
 
-      {/* Main app container with responsive sizing */}
-      <div className={`${containerClasses} ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+      {/* FIXED: Main app container with proper structure for bottom navigation */}
+      <div className={`${containerClasses} ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
         
         {/* Global transition overlay */}
         <div 
@@ -369,14 +378,14 @@ function AppContent() {
         {/* Main App Content */}
         {!showOnboarding && !showSignUp && isAuthenticated && currentUser && (
           <>
-            <div className={`h-full transition-all duration-300 ${isTransitioning ? 'opacity-70 scale-98' : 'opacity-100 scale-100'}`}>
+            {/* FIXED: Content area with proper bottom padding for navigation */}
+            <div className={`h-full pb-20 transition-all duration-300 ${isTransitioning ? 'opacity-70 scale-98' : 'opacity-100 scale-100'}`}>
               {/* Current Screen with smooth transitions */}
               {currentScreen === 'home' && (
                 <div className="animate-in fade-in-0 duration-300">
                   <HomeScreen 
                     onShowContentDetail={handleShowContentDetail}
                     darkMode={darkMode}
-                    currentTime={currentTime}
                     userId={currentUser?.email}
                   />
                 </div>
@@ -387,7 +396,6 @@ function AppContent() {
                   <SearchScreen 
                     onShowContentDetail={handleShowContentDetail}
                     darkMode={darkMode}
-                    currentTime={currentTime}
                     userId={currentUser?.email}
                   />
                 </div>
@@ -397,8 +405,7 @@ function AppContent() {
                 <div className="animate-in fade-in-0 duration-300">
                   <AddContentScreen 
                     darkMode={darkMode}
-                    currentTime={currentTime}
-                    userId={currentUser.email} // Pass real user email instead of function
+                    userId={currentUser.email}
                     onContentSaved={handleContentSaved}
                     onClose={() => handleNavigate('home')}
                   />
@@ -420,8 +427,7 @@ function AppContent() {
                       joinDate: currentUser.joinDate,
                       level: 'Active User'
                     }}
-                    currentTime={currentTime}
-                    onSignOut={handleSignOut} // Add sign out handler
+                    onSignOut={handleSignOut}
                   />
                 </div>
               )}
@@ -451,10 +457,18 @@ function AppContent() {
               )}
             </div>
 
-            {/* Enhanced Bottom Navigation */}
+            {/* FIXED: Enhanced Bottom Navigation with proper type handling */}
             {currentScreen !== 'editProfile' && (
               <BottomNavigation
-                currentScreen={currentScreen === 'editProfile' ? 'profile' : currentScreen}
+                currentScreen={
+                  // Ensure we only pass valid MainScreen types to BottomNavigation
+                  currentScreen === 'home' || 
+                  currentScreen === 'search' || 
+                  currentScreen === 'add' || 
+                  currentScreen === 'profile' 
+                    ? currentScreen 
+                    : 'home' // fallback
+                }
                 onNavigate={handleNavigate}
                 darkMode={darkMode}
               />
@@ -486,14 +500,11 @@ function AppContent() {
 
         {/* User Info Debug (remove in production) */}
         {currentUser && process.env.NODE_ENV === 'development' && (
-          <div className="fixed bottom-20 left-4 bg-black text-white text-xs p-2 rounded opacity-50 z-30">
+          <div className="fixed bottom-24 left-4 bg-black text-white text-xs p-2 rounded opacity-50 z-30">
             User: {currentUser.name} ({currentUser.email})
           </div>
         )}
       </div>
-
-      {/* Status bar spacer for iOS */}
-      <div className="absolute top-0 left-0 right-0 h-safe-top bg-transparent pointer-events-none" />
     </div>
   );
 }
