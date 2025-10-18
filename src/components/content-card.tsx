@@ -207,17 +207,22 @@ export function ContentCard({ content, onClick, onToggleComplete, onMenuClick, d
     onClick();
   };
 
-  // FIXED: Short format time calculation
+  // FIXED: Smart timestamp handling
   const getRelativeTime = (timestamp: string) => {
     try {
+      // If timestamp is already formatted (contains ago, time units, etc.), return as is
+      if (timestamp.includes('ago') || timestamp.includes('now') || 
+          /\d+[smhdwy](\s|$)/.test(timestamp) || // matches "6h", "30m", "2d", etc.
+          timestamp.includes('Just now') || timestamp.includes('moment')) {
+        return timestamp;
+      }
+
       const now = new Date();
       let date: Date;
       
       // Handle different timestamp formats
       if (timestamp.includes('T') || timestamp.includes('-')) {
         date = new Date(timestamp);
-      } else if (timestamp.includes('ago') || timestamp.includes('now')) {
-        return timestamp;
       } else {
         const numTimestamp = parseInt(timestamp);
         date = new Date(isNaN(numTimestamp) ? timestamp : numTimestamp);
@@ -461,7 +466,7 @@ export function ContentCard({ content, onClick, onToggleComplete, onMenuClick, d
             )}
           </div>
           
-          {/* FIXED: Enhanced Timestamp with Icon - SHORT FORMAT */}
+          {/* FIXED: Enhanced Timestamp with Icon - SMART FORMAT */}
           <div className={`flex items-center gap-1.5 transition-colors ${darkMode 
             ? 'text-gray-500 group-hover:text-gray-400' 
             : 'text-slate-500 group-hover:text-slate-600'
