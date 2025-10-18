@@ -129,17 +129,39 @@ export function HomeScreen({
     return colorMap[category] || '#6B7280';
   };
 
-  // Format timestamp
-  const formatTimeAgo = (dateString: string): string => {
+ // UPDATED: Format timestamp to short format
+const formatTimeAgo = (dateString: string): string => {
+  try {
     const now = new Date();
     const date = new Date(dateString);
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInSeconds = Math.floor(diffInMs / 1000);
 
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-    return `${Math.floor(diffInMinutes / 1440)}d ago`;
-  };
+    if (diffInSeconds < 60) {
+      return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+    }
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes}m`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays}d`;
+    
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    if (diffInWeeks < 4) return `${diffInWeeks}w`;
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) return `${diffInMonths}mo`;
+    
+    const diffInYears = Math.floor(diffInMonths / 12);
+    return `${diffInYears}y`;
+  } catch (error) {
+    return 'Unknown';
+  }
+};
 
   // Determine priority
   const determinePriority = (category: string, createdAt: string): 'high' | 'medium' | 'low' => {
@@ -183,7 +205,7 @@ export function HomeScreen({
           title: item.title || 'Untitled',
           description: item.ai_summary || 'No description available',
           tags: Array.isArray(item.ai_tags) ? item.ai_tags : [],
-          timestamp: item.created_at,
+          timestamp: formatTimeAgo(item.created_at),  
           completed: Boolean(item.is_completed),
           category: item.ai_category || 'Other',
           borderColor: getCategoryColor(item.ai_category || 'Other'),
