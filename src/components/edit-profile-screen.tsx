@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, User, Mail, Calendar, Camera, Save, 
-  Shield, Award, Edit3, Check, X
+  ArrowLeft, User, Mail, Camera, Save, 
+  Award, Edit3, Check, X
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -18,6 +18,7 @@ interface EditProfileScreenProps {
     website: string;
     joinDate: string;
     level: string;
+    streak?: number; // Add streak to the interface
   };
   onProfileUpdate: (profile: typeof userProfile) => void;
   darkMode?: boolean;
@@ -63,23 +64,13 @@ export function EditProfileScreen({ onBack, userProfile, onProfileUpdate, darkMo
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Status Bar */}
-      <div className={`flex justify-between items-center px-6 pt-4 pb-2 ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <div className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>9:41</div>
-        <div className="flex items-center gap-1">
-          <div className="flex gap-1">
-            <div className={`w-1 h-1 rounded-full ${darkMode ? 'bg-white' : 'bg-gray-800'}`}></div>
-            <div className={`w-1 h-1 rounded-full ${darkMode ? 'bg-white' : 'bg-gray-800'}`}></div>
-            <div className={`w-1 h-1 rounded-full ${darkMode ? 'bg-white' : 'bg-gray-800'}`}></div>
-          </div>
-          <div className={`ml-2 text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>100%</div>
-        </div>
-      </div>
-
-      {/* Scrollable Content */}
-      <div className="overflow-y-auto" style={{ height: 'calc(100vh - 60px)' }}>
+      
+      {/* REMOVED: Status Bar */}
+      
+      {/* Scrollable Content - UPDATED: Full height now */}
+      <div className="overflow-y-auto h-screen">
         {/* Header */}
-        <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 px-6 pt-6 pb-8">
+        <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 px-6 pt-8 pb-8">
           <div className="flex items-center justify-between mb-6">
             <button 
               onClick={onBack}
@@ -143,10 +134,18 @@ export function EditProfileScreen({ onBack, userProfile, onProfileUpdate, darkMo
                   <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
                     {profile.level}
                   </Badge>
-                  <div className="flex items-center gap-1 text-orange-600">
-                    <span className="text-lg">🔥</span>
-                    <span className="text-sm font-semibold">12 day streak</span>
-                  </div>
+                  {/* UPDATED: Show actual streak or fallback */}
+                  {(profile.streak && profile.streak > 0) ? (
+                    <div className="flex items-center gap-1 text-orange-600">
+                      <span className="text-lg">🔥</span>
+                      <span className="text-sm font-semibold">{profile.streak} day streak</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 text-gray-500">
+                      <span className="text-lg">📅</span>
+                      <span className="text-sm font-medium">Start your streak!</span>
+                    </div>
+                  )}
                 </div>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Member since {profile.joinDate}</p>
               </div>
@@ -206,7 +205,7 @@ export function EditProfileScreen({ onBack, userProfile, onProfileUpdate, darkMo
                   />
                 ) : (
                   <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <span className={darkMode ? 'text-white' : 'text-gray-900'}>{profile.location}</span>
+                    <span className={darkMode ? 'text-white' : 'text-gray-900'}>{profile.location || 'Not specified'}</span>
                   </div>
                 )}
               </div>
@@ -223,7 +222,11 @@ export function EditProfileScreen({ onBack, userProfile, onProfileUpdate, darkMo
                   />
                 ) : (
                   <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                    <span className="text-indigo-600 hover:text-indigo-700 cursor-pointer">{profile.website}</span>
+                    {profile.website ? (
+                      <span className="text-indigo-600 hover:text-indigo-700 cursor-pointer">{profile.website}</span>
+                    ) : (
+                      <span className={`${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No website</span>
+                    )}
                   </div>
                 )}
               </div>
@@ -247,40 +250,14 @@ export function EditProfileScreen({ onBack, userProfile, onProfileUpdate, darkMo
               />
             ) : (
               <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{profile.bio}</p>
+                <p className={`leading-relaxed ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {profile.bio || 'No bio yet. Tell others about yourself!'}
+                </p>
               </div>
             )}
           </div>
 
-          {/* Account Security */}
-          <div className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <h3 className={`text-lg font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              <Shield className="w-5 h-5 text-indigo-600" />
-              Account Security
-            </h3>
-            
-            <div className="space-y-4">
-              <div className={`flex items-center justify-between p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <div>
-                  <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Password</h4>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Last updated 2 months ago</p>
-                </div>
-                <Button variant="outline" size="sm" className={darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-600' : ''}>
-                  Change
-                </Button>
-              </div>
-
-              <div className={`flex items-center justify-between p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-                <div>
-                  <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Two-Factor Authentication</h4>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Add an extra layer of security</p>
-                </div>
-                <Button variant="outline" size="sm" className={darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-600' : ''}>
-                  Enable
-                </Button>
-              </div>
-            </div>
-          </div>
+          {/* REMOVED: Account Security Section */}
 
           {/* Save Button for Mobile */}
           {isEditing && (
@@ -304,6 +281,9 @@ export function EditProfileScreen({ onBack, userProfile, onProfileUpdate, darkMo
               </Button>
             </div>
           )}
+
+          {/* Bottom padding for better scrolling */}
+          <div className="pb-8"></div>
         </div>
       </div>
     </div>

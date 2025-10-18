@@ -46,7 +46,7 @@ export function ContentCard({ content, onClick, onToggleComplete, onMenuClick, d
   const [showRipple, setShowRipple] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Category configuration with colors and icons
+  // UPDATED: Unified Category configuration (same as HomeScreen)
   const getCategoryConfig = (cat: string) => {
     const categoryConfigs = {
       'Work': { 
@@ -102,9 +102,57 @@ export function ContentCard({ content, onClick, onToggleComplete, onMenuClick, d
         bgColor: darkMode ? '#65A30D20' : '#F7FEE7', 
         icon: Utensils,
         gradient: 'from-lime-500/10 to-green-500/5'
+      },
+      'Entertainment': { 
+        color: '#EF4444', 
+        bgColor: darkMode ? '#DC262620' : '#FEF2F2', 
+        icon: Star,
+        gradient: 'from-red-500/10 to-pink-500/5'
+      },
+      'Finance': { 
+        color: '#F59E0B', 
+        bgColor: darkMode ? '#D97706' : '#FFFBEB', 
+        icon: Star,
+        gradient: 'from-amber-500/10 to-orange-500/5'
+      },
+      'AI Tools': { 
+        color: '#6366F1', 
+        bgColor: darkMode ? '#4F46E520' : '#EEF2FF', 
+        icon: Star,
+        gradient: 'from-indigo-500/10 to-purple-500/5'
+      },
+      'Productivity': { 
+        color: '#2563EB', 
+        bgColor: darkMode ? '#1E3A8A20' : '#EFF6FF', 
+        icon: Briefcase,
+        gradient: 'from-blue-500/10 to-indigo-500/5'
+      },
+      'Health & Fitness': { 
+        color: '#EF4444', 
+        bgColor: darkMode ? '#DC262620' : '#FEF2F2', 
+        icon: Activity,
+        gradient: 'from-red-500/10 to-pink-500/5'
+      },
+      'Food & Dining': { 
+        color: '#84CC16', 
+        bgColor: darkMode ? '#65A30D20' : '#F7FEE7', 
+        icon: Utensils,
+        gradient: 'from-lime-500/10 to-green-500/5'
+      },
+      'Coupons & Deals': { 
+        color: '#F59E0B', 
+        bgColor: darkMode ? '#D97706' : '#FFFBEB', 
+        icon: Star,
+        gradient: 'from-amber-500/10 to-orange-500/5'
+      },
+      'Other': { 
+        color: '#6B7280', 
+        bgColor: darkMode ? '#37415120' : '#F9FAFB', 
+        icon: Star,
+        gradient: 'from-gray-500/10 to-slate-500/5'
       }
     };
-    return categoryConfigs[cat as keyof typeof categoryConfigs] || categoryConfigs['Work'];
+    return categoryConfigs[cat as keyof typeof categoryConfigs] || categoryConfigs['Other'];
   };
 
   const getContentTypeIcon = (contentType: string) => {
@@ -159,80 +207,69 @@ export function ContentCard({ content, onClick, onToggleComplete, onMenuClick, d
     onClick();
   };
 
- // Enhanced relative time calculation function
-const getRelativeTime = (timestamp: string) => {
-  try {
-    const now = new Date();
-    let date: Date;
-    
-    // Handle different timestamp formats more robustly
-    if (timestamp.includes('T') || timestamp.includes('-')) {
-      // ISO format or date string
-      date = new Date(timestamp);
-    } else if (timestamp.includes('ago') || timestamp.includes('now')) {
-      // Already formatted relative time
-      return timestamp;
-    } else {
-      // Try parsing as number (Unix timestamp)
-      const numTimestamp = parseInt(timestamp);
-      if (!isNaN(numTimestamp)) {
-        date = new Date(numTimestamp);
-      } else {
+  // FIXED: Short format time calculation
+  const getRelativeTime = (timestamp: string) => {
+    try {
+      const now = new Date();
+      let date: Date;
+      
+      // Handle different timestamp formats
+      if (timestamp.includes('T') || timestamp.includes('-')) {
         date = new Date(timestamp);
+      } else if (timestamp.includes('ago') || timestamp.includes('now')) {
+        return timestamp;
+      } else {
+        const numTimestamp = parseInt(timestamp);
+        date = new Date(isNaN(numTimestamp) ? timestamp : numTimestamp);
       }
+
+      if (isNaN(date.getTime())) {
+        return 'Unknown';
+      }
+
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInSeconds = Math.floor(diffInMs / 1000);
+
+      // Handle future dates
+      if (diffInMs < 0) {
+        const absDiffInSeconds = Math.abs(diffInSeconds);
+        const absDiffInMinutes = Math.floor(absDiffInSeconds / 60);
+        const absDiffInHours = Math.floor(absDiffInMinutes / 60);
+        const absDiffInDays = Math.floor(absDiffInHours / 24);
+
+        if (absDiffInSeconds < 60) return 'soon';
+        if (absDiffInMinutes < 60) return `${absDiffInMinutes}m`;
+        if (absDiffInHours < 24) return `${absDiffInHours}h`;
+        return `${absDiffInDays}d`;
+      }
+
+      // Handle past dates - SHORT FORMAT ONLY
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      const diffInDays = Math.floor(diffInHours / 24);
+      const diffInWeeks = Math.floor(diffInDays / 7);
+      const diffInMonths = Math.floor(diffInDays / 30);
+
+      if (diffInSeconds < 60) {
+        return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+      } else if (diffInMinutes < 60) {
+        return `${diffInMinutes}m`;
+      } else if (diffInHours < 24) {
+        return `${diffInHours}h`;
+      } else if (diffInDays < 7) {
+        return `${diffInDays}d`;
+      } else if (diffInWeeks < 4) {
+        return `${diffInWeeks}w`;
+      } else if (diffInMonths < 12) {
+        return `${diffInMonths}mo`;
+      } else {
+        const diffInYears = Math.floor(diffInMonths / 12);
+        return `${diffInYears}y`;
+      }
+    } catch (error) {
+      return 'Unknown';
     }
-
-    // If date is invalid, return a fallback
-    if (isNaN(date.getTime())) {
-      console.warn('Invalid timestamp:', timestamp);
-      return 'Unknown time';
-    }
-
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInSeconds = Math.floor(diffInMs / 1000);
-
-    // Handle future dates
-    if (diffInMs < 0) {
-      const absDiffInSeconds = Math.abs(diffInSeconds);
-      const absDiffInMinutes = Math.floor(absDiffInSeconds / 60);
-      const absDiffInHours = Math.floor(absDiffInMinutes / 60);
-      const absDiffInDays = Math.floor(absDiffInHours / 24);
-
-      if (absDiffInSeconds < 60) return 'in a moment';
-      if (absDiffInMinutes < 60) return `in ${absDiffInMinutes}m`;
-      if (absDiffInHours < 24) return `in ${absDiffInHours}h`;
-      return `in ${absDiffInDays}d`;
-    }
-
-    // Handle past dates with shorter format
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    const diffInMonths = Math.floor(diffInDays / 30);
-
-    if (diffInSeconds < 60) {
-      return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s ago`;
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes}m ago`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h ago`;
-    } else if (diffInDays < 7) {
-      return `${diffInDays}d ago`;
-    } else if (diffInWeeks < 4) {
-      return `${diffInWeeks}w ago`;
-    } else if (diffInMonths < 12) {
-      return `${diffInMonths}mo ago`;
-    } else {
-      const diffInYears = Math.floor(diffInMonths / 12);
-      return `${diffInYears}y ago`;
-    }
-  } catch (error) {
-    console.warn('Error parsing timestamp:', timestamp, error);
-    return 'Unknown time';
-  }
-};
-
+  };
 
   return (
     <div
@@ -424,7 +461,7 @@ const getRelativeTime = (timestamp: string) => {
             )}
           </div>
           
-          {/* Enhanced Timestamp with Icon */}
+          {/* FIXED: Enhanced Timestamp with Icon - SHORT FORMAT */}
           <div className={`flex items-center gap-1.5 transition-colors ${darkMode 
             ? 'text-gray-500 group-hover:text-gray-400' 
             : 'text-slate-500 group-hover:text-slate-600'
