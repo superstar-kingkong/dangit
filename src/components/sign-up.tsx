@@ -146,33 +146,16 @@ export function SignUp({ onComplete }: SignUpProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex flex-col">
-      {/* Status Bar */}
-      <div className="flex justify-between items-center px-6 pt-4 pb-2">
-        <span className="text-sm font-medium text-gray-900">9:41</span>
-        <div className="flex items-center gap-1">
-          <div className="flex gap-1">
-            <div className="w-1 h-1 bg-gray-900 rounded-full"></div>
-            <div className="w-1 h-1 bg-gray-900 rounded-full"></div>
-            <div className="w-1 h-1 bg-gray-900 rounded-full"></div>
-          </div>
-          <div className="ml-2 flex items-center gap-1">
-            <div className="w-6 h-3 border border-gray-900 rounded-sm relative">
-              <div className="absolute inset-0.5 bg-green-500 rounded-sm"></div>
-            </div>
-            <span className="text-sm font-medium">100%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Fixed Header */}
-      <div className="px-6 pt-6 pb-4">
+      
+      {/* CLEANED: Header without status bar */}
+      <div className="px-6 pt-8 pb-4">
         <div className="text-center">
-          <h1 className="text-4xl font-black mb-2">
+          <h1 className="text-4xl font-black mb-4">
             <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">DANG</span>
             <span className="text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">IT</span>
           </h1>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {step === 'email' ? 'Welcome to DANGIT' : 'Verify Your Email'}
+            {step === 'email' ? 'Get Started' : 'Verify Your Email'}
           </h2>
           <p className="text-gray-600">
             {step === 'email' 
@@ -201,11 +184,11 @@ export function SignUp({ onComplete }: SignUpProps) {
           {step === 'email' && (
             <form onSubmit={handleSendOTP} className="space-y-4">
               
-              {/* Name Field (Optional) */}
+              {/* CLEANED: Name Field without "Optional" text */}
               <div>
                 <Input
                   type="text"
-                  placeholder="Your Name (Optional)"
+                  placeholder="Your Name"
                   value={formData.name}
                   onChange={(e: any) => handleInputChange('name', e.target.value)}
                   icon={User}
