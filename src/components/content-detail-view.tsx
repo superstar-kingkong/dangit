@@ -190,46 +190,70 @@ export function ContentDetailView({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-  // Format time display
-  const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
-    try {
-      const now = new Date();
-      const dateString = createdAt || fallbackTimestamp;
-      
-      if (!dateString) return 'Unknown time';
-      
-      if (dateString.includes('ago') || dateString.includes('now')) {
-        return dateString;
-      }
-      
-      const date = new Date(dateString);
-      
-      if (isNaN(date.getTime())) {
-        return 'Invalid date';
-      }
-      
-      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-      
-      if (diffInSeconds < 60) return diffInSeconds <= 5 ? 'Just now' : `${diffInSeconds}s ago`;
-      
-      const diffInMinutes = Math.floor(diffInSeconds / 60);
-      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-      
-      const diffInHours = Math.floor(diffInMinutes / 60);
-      if (diffInHours < 24) return `${diffInHours}h ago`;
-      
-      const diffInDays = Math.floor(diffInHours / 24);
-      if (diffInDays < 30) return `${diffInDays}d ago`;
-      
-      const diffInMonths = Math.floor(diffInDays / 30);
-      if (diffInMonths < 12) return `${diffInMonths}mo ago`;
-      
-      const diffInYears = Math.floor(diffInMonths / 12);
-      return `${diffInYears}y ago`;
-    } catch (error) {
-      return 'Time error';
+// FIXED: Format time display - handle already formatted timestamps
+const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
+  try {
+    const dateString = createdAt || fallbackTimestamp;
+    
+    if (!dateString) return 'Unknown time';
+    
+    // If timestamp is already formatted (like "6h", "30m", etc.), return as is
+    if (dateString.includes('ago') || dateString.includes('now') || 
+        /\d+[smhdwy](\s|$)/.test(dateString) || // matches "6h", "30m", "2d", etc.
+        dateString.includes('Just now')) {
+      return dateString;
     }
-  };
+    
+    const now = new Date();
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+    
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInSeconds = Math.floor(diffInMs / 1000);
+    
+    // Handle future dates
+    if (diffInMs < 0) {
+      const absDiffInSeconds = Math.abs(diffInSeconds);
+      const absDiffInMinutes = Math.floor(absDiffInSeconds / 60);
+      const absDiffInHours = Math.floor(absDiffInMinutes / 60);
+      const absDiffInDays = Math.floor(absDiffInHours / 24);
+
+      if (absDiffInSeconds < 60) return 'soon';
+      if (absDiffInMinutes < 60) return `${absDiffInMinutes}m`;
+      if (absDiffInHours < 24) return `${absDiffInHours}h`;
+      return `${absDiffInDays}d`;
+    }
+    
+    // Handle past dates - SHORT FORMAT
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+    const diffInMonths = Math.floor(diffInDays / 30);
+    
+    if (diffInSeconds < 60) {
+      return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h`;
+    } else if (diffInDays < 7) {
+      return `${diffInDays}d`;
+    } else if (diffInDays < 30) {
+      return `${diffInDays}d`;
+    } else if (diffInMonths < 12) {
+      return `${diffInMonths}mo`;
+    } else {
+      const diffInYears = Math.floor(diffInMonths / 12);
+      return `${diffInYears}y`;
+    }
+  } catch (error) {
+    return 'Time error';
+  }
+};
+
 
   return (
     <div className={`
