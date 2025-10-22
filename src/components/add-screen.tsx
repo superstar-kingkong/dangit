@@ -1,6 +1,13 @@
 import { API_URL } from '../config';
+import { createClient } from '@supabase/supabase-js'; // Add this import
 import React, { useState, useRef } from 'react';
 import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles } from 'lucide-react';
+
+// Add Supabase client setup at the top
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface AddContentScreenProps {
   userId: string;
@@ -56,6 +63,30 @@ export function AddContentScreen({
     });
   };
 
+  // 🔒 NEW: Function to get auth token
+  const getAuthToken = async (): Promise<string | null> => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Error getting session:', error);
+        setErrorMessage('Authentication error. Please sign in again.');
+        return null;
+      }
+      
+      if (!session?.access_token) {
+        setErrorMessage('Please sign in to save content.');
+        return null;
+      }
+      
+      return session.access_token;
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+      setErrorMessage('Authentication failed. Please try again.');
+      return null;
+    }
+  };
+
   const handleSave = async () => {
     if (isProcessing || !hasContent() || analysisResult !== null) {
       return;
@@ -65,6 +96,13 @@ export function AddContentScreen({
     setErrorMessage('');
 
     try {
+      // 🔒 Get authentication token
+      const authToken = await getAuthToken();
+      if (!authToken) {
+        setIsProcessing(false);
+        return; // Error message already set in getAuthToken
+      }
+
       let content = '';
       let contentType = '';
 
@@ -105,19 +143,28 @@ export function AddContentScreen({
           return;
       }
 
+      // 🔒 UPDATED: Send request with authentication token
       const response = await fetch(`${API_URL}/api/process-content`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}` // 🔒 Add auth token
         },
         body: JSON.stringify({
           content,
-          contentType,
-          userId
+          contentType
+          // 🔒 Removed userId - now comes from authenticated token
         })
       });
 
       const result = await response.json();
+
+      // 🔒 Handle authentication errors
+      if (response.status === 401) {
+        setErrorMessage('Session expired. Please sign in again.');
+        setIsProcessing(false);
+        return;
+      }
 
       if (response.ok && result.success) {
         setAnalysisResult({
@@ -131,12 +178,24 @@ export function AddContentScreen({
           onClose();
         }, 2000);
       } else {
-        throw new Error(result.error || 'Failed to save');
+        throw new Error(result.error || 'Failed to save content');
       }
 
     } catch (error) {
       console.error('Error saving:', error);
-      setErrorMessage(error instanceof Error ? error.message : 'Failed to save content');
+      
+      // 🔒 Better error handling for different scenarios
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch')) {
+          setErrorMessage('Network error. Please check your connection and try again.');
+        } else if (error.message.includes('Authentication') || error.message.includes('auth')) {
+          setErrorMessage('Authentication failed. Please sign in again.');
+        } else {
+          setErrorMessage(error.message);
+        }
+      } else {
+        setErrorMessage('Failed to save content. Please try again.');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -460,7 +519,7 @@ export function AddContentScreen({
           {isProcessing ? (
             <>
               <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
-              <span>Saving with AI...</span>
+              <span>🔒 Saving securely...</span>
             </>
           ) : analysisResult ? (
             <>
