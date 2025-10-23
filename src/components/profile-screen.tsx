@@ -1,4 +1,5 @@
 import { API_URL } from '../config';
+import { supabase } from '../lib/supabase'; // 🔒 Import your existing supabase client
 import React, { useState, useEffect } from 'react';
 import { 
   User, Settings, HelpCircle, Shield, Bell, Trash2, LogOut, BarChart3, 
@@ -118,23 +119,50 @@ export function ProfileScreen({
     return currentStreak;
   };
 
-  // Load user stats from server
+  // 🔒 SECURE: Load user stats from server with authentication
   const loadUserStats = async () => {
     try {
       setLoading(true);
+      console.log('🔒 Loading profile stats securely...');
       
-      // Get stats
-      const statsResponse = await fetch(`${API_URL}/api/user-stats?userId=${encodeURIComponent(userProfile.email)}`);
+      // Get auth token
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session?.access_token) {
+        console.error('No valid session for profile stats');
+        setLoading(false);
+        return;
+      }
+      
+      // Get stats with authentication
+      const statsResponse = await fetch(`${API_URL}/api/user-stats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+        }
+        // Note: Removed userId from query - comes from token now
+      });
       
       if (statsResponse.ok) {
         const result = await statsResponse.json();
         if (result.success) {
           setStats(result.stats);
         }
+      } else if (statsResponse.status === 401) {
+        console.error('Session expired in profile stats');
+        // Handle auth error appropriately
       }
       
-      // Get all items to calculate streak
-      const itemsResponse = await fetch(`${API_URL}/api/saved-items?userId=${encodeURIComponent(userProfile.email)}`);
+      // Get all items to calculate streak with authentication
+      const itemsResponse = await fetch(`${API_URL}/api/saved-items`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+        }
+        // Note: Removed userId from query - comes from token now
+      });
       
       if (itemsResponse.ok) {
         const itemsResult = await itemsResponse.json();
@@ -142,6 +170,9 @@ export function ProfileScreen({
           const calculatedStreak = calculateStreak(itemsResult.data);
           setStreak(calculatedStreak);
         }
+      } else if (itemsResponse.status === 401) {
+        console.error('Session expired while loading items for streak');
+        // Handle auth error appropriately
       }
       
     } catch (error) {
@@ -303,7 +334,7 @@ export function ProfileScreen({
                 onClick={loadUserStats}
                 disabled={loading}
                 className="p-2.5 bg-white/20 rounded-xl hover:bg-white/30 transition-colors active:scale-95 disabled:opacity-50"
-                title="Refresh Stats"
+                title="🔒 Refresh Stats Securely"
               >
                 <RefreshCw className={`w-5 h-5 text-white ${loading ? 'animate-spin' : ''}`} />
               </button>
@@ -359,7 +390,7 @@ export function ProfileScreen({
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
                 <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Loading your stats...
+                  🔒 Loading your stats securely...
                 </p>
               </div>
             ) : (
@@ -598,7 +629,7 @@ export function ProfileScreen({
               <span className="text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">IT</span>
             </div>
             <p className={`text-sm mb-1 font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Version 1.0.0
+              Version 1.0.0 🔒 Secure
             </p>
             <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
               Made with ❤️ for productivity enthusiasts

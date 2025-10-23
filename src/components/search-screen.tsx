@@ -1,4 +1,5 @@
 import { API_URL } from '../config';
+import { supabase } from '../lib/supabase'; // 🔒 Import your existing supabase client
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, SortAsc, Calendar, Star, Tag, X, RefreshCw } from 'lucide-react';
 
@@ -127,38 +128,38 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: S
   };
 
   // UPDATED: Format timestamp to short format
-const formatTimeAgo = (dateString: string): string => {
-  try {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInSeconds = Math.floor(diffInMs / 1000);
+  const formatTimeAgo = (dateString: string): string => {
+    try {
+      const now = new Date();
+      const date = new Date(dateString);
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInSeconds = Math.floor(diffInMs / 1000);
 
-    if (diffInSeconds < 60) {
-      return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+      if (diffInSeconds < 60) {
+        return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+      }
+      
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      if (diffInMinutes < 60) return `${diffInMinutes}m`;
+      
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h`;
+      
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) return `${diffInDays}d`;
+      
+      const diffInWeeks = Math.floor(diffInDays / 7);
+      if (diffInWeeks < 4) return `${diffInWeeks}w`;
+      
+      const diffInMonths = Math.floor(diffInDays / 30);
+      if (diffInMonths < 12) return `${diffInMonths}mo`;
+      
+      const diffInYears = Math.floor(diffInMonths / 12);
+      return `${diffInYears}y`;
+    } catch (error) {
+      return 'Unknown';
     }
-    
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d`;
-    
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    if (diffInWeeks < 4) return `${diffInWeeks}w`;
-    
-    const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) return `${diffInMonths}mo`;
-    
-    const diffInYears = Math.floor(diffInMonths / 12);
-    return `${diffInYears}y`;
-  } catch (error) {
-    return 'Unknown';
-  }
-};
+  };
 
   // Determine priority
   const determinePriority = (category: string, createdAt: string): 'high' | 'medium' | 'low' => {
@@ -171,22 +172,40 @@ const formatTimeAgo = (dateString: string): string => {
     return 'low';
   };
 
-  // Fetch data from your working backend (same as home screen)
+  // 🔒 SECURE: Fetch data with authentication
   const loadContentItems = async (showLoader = true) => {
     if (showLoader) setLoading(true);
     setError(null);
     
     try {
-      console.log('Loading search data from server...');
-      // Use the same API as home screen for consistency
-      const response = await fetch(`${API_URL}/api/saved-items?userId=${encodeURIComponent(userId || 'anonymous-user')}`);
+      console.log('🔒 Loading search data securely from server...');
+      
+      // Get auth token
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session?.access_token) {
+        throw new Error('Authentication required. Please sign in again.');
+      }
+      
+      // Use secure API call with authentication
+      const response = await fetch(`${API_URL}/api/saved-items`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+        }
+        // Note: Removed userId from query - comes from token now
+      });
       
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.');
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const result = await response.json();
-      console.log('Search data loaded:', result.data?.length || 0, 'items');
+      console.log('🔒 Search data loaded securely:', result.data?.length || 0, 'items');
       
       if (result.data && Array.isArray(result.data)) {
         const transformedItems: ContentItem[] = result.data.map((item: any) => ({
@@ -210,7 +229,8 @@ const formatTimeAgo = (dateString: string): string => {
       }
     } catch (error) {
       console.error('Error loading search data:', error);
-      setError('Failed to load content. Please check if your server is running.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load content. Please check your connection.';
+      setError(errorMessage);
       setContentItems([]);
     } finally {
       if (showLoader) setLoading(false);
@@ -250,7 +270,7 @@ const formatTimeAgo = (dateString: string): string => {
     }
   }, [loading]);
 
-  // FIXED: Handle completion toggle with proper backend sync and home screen refresh
+  // 🔒 SECURE: Handle completion toggle with authentication
   const handleToggleComplete = async (itemId: string, newCompletedState: boolean) => {
     if (!userId) return;
 
@@ -264,27 +284,38 @@ const formatTimeAgo = (dateString: string): string => {
     );
 
     try {
-      console.log('Toggling completion for item:', itemId, 'to:', newCompletedState);
+      console.log('🔒 Securely toggling completion for item:', itemId, 'to:', newCompletedState);
       
-      // Use the same endpoint as home screen for consistency
+      // Get auth token
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session?.access_token) {
+        throw new Error('Session expired. Please sign in again.');
+      }
+      
+      // Use secure API call for toggle completion
       const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
         },
         body: JSON.stringify({
           itemId: itemId,
-          completed: newCompletedState,
-          userId: userId
+          completed: newCompletedState
+          // Note: Removed userId - comes from token now
         })
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.');
+        }
         throw new Error(`HTTP ${response.status}: Failed to update item`);
       }
 
       const result = await response.json();
-      console.log('Successfully toggled completion in search:', result);
+      console.log('✅ Successfully toggled completion securely:', result);
       
       // IMPORTANT: Trigger home screen refresh to sync the changes
       if ((window as any).refreshHomeScreen) {
@@ -307,7 +338,8 @@ const formatTimeAgo = (dateString: string): string => {
         )
       );
       
-      alert('Failed to update item. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update item. Please try again.';
+      alert(errorMessage);
     }
   };
 
@@ -407,7 +439,7 @@ const formatTimeAgo = (dateString: string): string => {
       <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Loading your content...</p>
+          <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>🔒 Loading your content securely...</p>
         </div>
       </div>
     );
@@ -421,7 +453,9 @@ const formatTimeAgo = (dateString: string): string => {
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <X className="w-8 h-8 text-red-600" />
           </div>
-          <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>Connection Error</h3>
+          <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'} mb-2`}>
+            {error.includes('Authentication') ? 'Authentication Error' : 'Connection Error'}
+          </h3>
           <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-4`}>{error}</p>
           <button
             onClick={() => loadContentItems()}
@@ -449,7 +483,7 @@ const formatTimeAgo = (dateString: string): string => {
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h1 className={`text-3xl tracking-tight font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              Search & Filter
+              🔒 Search & Filter
             </h1>
             <div className="flex items-center gap-2">
               <button
@@ -462,6 +496,7 @@ const formatTimeAgo = (dateString: string): string => {
                       ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                 } shadow-sm hover:shadow-md hover:scale-105`}
+                title="🔒 Refresh Securely"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
@@ -487,7 +522,7 @@ const formatTimeAgo = (dateString: string): string => {
             }`} />
             <input
               type="text"
-              placeholder="Search your saved content..."
+              placeholder="🔒 Search your saved content securely..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full ${darkMode 

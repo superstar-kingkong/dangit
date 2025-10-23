@@ -1,5 +1,6 @@
 import { API_URL } from '../config';
 import React, { useState, useEffect, useMemo } from "react";
+import { supabase } from '../lib/supabase';
 import {
   Search,
   X,
@@ -187,13 +188,30 @@ const formatTimeAgo = (dateString: string): string => {
     }
     
     try {
-      console.log('Loading content items for user:', userId);
-      
-      const response = await fetch(`${API_URL}/api/saved-items?userId=${encodeURIComponent(userId)}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+  console.log('🔒 Loading content items securely for user:', userId);
+  
+  // Get auth token
+  const { data: { session }, error } = await supabase.auth.getSession();
+  
+  if (error || !session?.access_token) {
+    throw new Error('Authentication required. Please sign in again.');
+  }
+  
+  const response = await fetch(`${API_URL}/api/saved-items`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+    }
+    // Note: Removed userId from query - comes from token now
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Session expired. Please sign in again.');
+    }
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
       
       const result = await response.json();
       console.log('Server response:', result);
@@ -220,7 +238,7 @@ const formatTimeAgo = (dateString: string): string => {
         setContentItems([]);
       }
     } catch (error) {
-      console.error('Error loading content for user:', userId, error);
+  console.error('Error loading content:', error);
       
       let errorMessage = 'Failed to load content.';
       if (error instanceof Error) {
