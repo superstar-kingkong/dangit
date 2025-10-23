@@ -1,13 +1,7 @@
 import { API_URL } from '../config';
-import { createClient } from '@supabase/supabase-js'; // Add this import
+import { supabase } from '../lib/supabase'; // 🔧 Use your existing supabase client
 import React, { useState, useRef } from 'react';
 import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles } from 'lucide-react';
-
-// Add Supabase client setup at the top
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface AddContentScreenProps {
   userId: string;
@@ -63,7 +57,7 @@ export function AddContentScreen({
     });
   };
 
-  // 🔒 NEW: Function to get auth token
+  // 🔒 Function to get auth token using your existing supabase client
   const getAuthToken = async (): Promise<string | null> => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -143,7 +137,7 @@ export function AddContentScreen({
           return;
       }
 
-      // 🔒 UPDATED: Send request with authentication token
+      // 🔒 SECURE: Send request with authentication token
       const response = await fetch(`${API_URL}/api/process-content`, {
         method: 'POST',
         headers: {
@@ -498,7 +492,7 @@ export function AddContentScreen({
         )}
       </div>
 
-      {/* FIXED BOTTOM BUTTON - Complete gradient fix */}
+      {/* FIXED BOTTOM BUTTON */}
       <div className={`absolute bottom-20 left-0 right-0 px-6 pb-4 z-50 ${
         darkMode 
           ? 'bg-gradient-to-t from-gray-900 via-gray-900 to-transparent' 
