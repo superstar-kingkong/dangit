@@ -14,7 +14,7 @@ import { supabase } from '../lib/supabase';
 
 interface ContentDetailViewProps {
   content: {
-    id: string;
+    id: number;
     type: string;
     title: string;
     description: string;
@@ -37,7 +37,7 @@ interface ContentDetailViewProps {
     } | string;
   };
   onClose: () => void;
-  onToggleComplete?: (id: string) => void;
+  onToggleComplete?: (id: number) => void;
   onContentUpdate?: (updatedContent: any) => void;
   darkMode?: boolean;
   onEdit?: () => void;

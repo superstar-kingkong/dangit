@@ -16,7 +16,7 @@ import {
 
 
 interface HomeScreenProps {
-  onShowContentDetail: (content: string) => void;
+  onShowContentDetail: (content: any) => void;
   darkMode?: boolean;
   currentTime?: Date;
   userId?: string;
@@ -24,7 +24,7 @@ interface HomeScreenProps {
 
 
 interface ContentItem {
-  id: string;
+  id: number;
   type: string;
   title: string;
   description: string;
@@ -330,7 +330,7 @@ export function HomeScreen({
 
 
   // 🔒 UPDATED: Handle completion toggle with secure authentication
-  const handleToggleComplete = async (itemId: string, newCompletedState: boolean) => {
+  const handleToggleComplete = async (itemId: number, newCompletedState: boolean) => {
     if (!userId) return;
 
     // Optimistic update
