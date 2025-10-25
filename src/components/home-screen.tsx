@@ -35,6 +35,12 @@ interface ContentItem {
   borderColor: string;
   priority?: "high" | "medium" | "low";
   aiScore?: number;
+
+  originalUrl?: string;
+  image_url?: string;
+  content_type?: string;
+  original_content?: string;
+  created_at?: string;
 }
 
 
@@ -227,7 +233,7 @@ export function HomeScreen({
       
       if (result.data && Array.isArray(result.data)) {
         const transformedItems: ContentItem[] = result.data.map((item: any) => ({
-          id: item.id.toString(),
+          id: item.id,
           type: item.content_type || 'text',
           title: item.title || 'Untitled',
           description: item.ai_summary || 'No description available',
@@ -237,7 +243,13 @@ export function HomeScreen({
           category: item.ai_category || 'Other',
           borderColor: getCategoryColor(item.ai_category || 'Other'),
           priority: determinePriority(item.ai_category || 'Other', item.created_at),
-          aiScore: 8.0
+          aiScore: 8.0,
+
+          originalUrl: item.original_content || null, // URL goes here
+          image_url: item.original_image_url || null, // Image URL here
+          content_type: item.content_type || 'text', // Type
+          original_content: item.original_content || null, // Raw content
+          created_at: item.created_at // Full timestamp
         }));
         
         console.log(`Successfully loaded ${transformedItems.length} items for user:`, userId);
