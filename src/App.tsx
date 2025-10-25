@@ -24,7 +24,7 @@ type MainScreen = 'home' | 'search' | 'add' | 'profile';
 
 // FIXED: Updated ContentItem interface to match ContentDetailView expectations exactly
 interface ContentItem {
-  id: number;
+  id: string;
   type: string;
   title: string;
   description: string;
