@@ -21,6 +21,10 @@ interface ContentItem {
   borderColor: string;
   priority?: "high" | "medium" | "low";
   aiScore?: number;
+  originalUrl?: string;
+  image_url?: string;
+  content_type?: string;
+  original_content?: string;
   createdAt?: string;
 }
 
@@ -220,7 +224,11 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: S
           borderColor: categoryColors[item.ai_category] || categoryColors['Other'],
           priority: determinePriority(item.ai_category, item.created_at),
           aiScore: 8.0,
-          createdAt: item.created_at
+          originalUrl: item.original_content || null, // URL goes here
+          image_url: item.original_image_url || null, // Image URL here
+          content_type: item.content_type || 'text', // Type
+          original_content: item.original_content || null, // Raw content
+          created_at: item.created_at // Full timestamp
         }));
         
         setContentItems(transformedItems);
@@ -483,7 +491,7 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: S
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h1 className={`text-3xl tracking-tight font-bold ${darkMode ? 'text-white' : 'text-slate-900'}`}>
-              🔒 Search & Filter
+              Search & Filter
             </h1>
             <div className="flex items-center gap-2">
               <button
@@ -496,7 +504,7 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: S
                       ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                 } shadow-sm hover:shadow-md hover:scale-105`}
-                title="🔒 Refresh Securely"
+                title="Refresh Securely"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </button>
@@ -522,7 +530,7 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: S
             }`} />
             <input
               type="text"
-              placeholder="🔒 Search your saved content securely..."
+              placeholder="Search your saved content"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={`w-full ${darkMode 

@@ -16,7 +16,7 @@ import {
 
 
 interface HomeScreenProps {
-  onShowContentDetail: (content: any) => void;
+  onShowContentDetail: (content: string) => void;
   darkMode?: boolean;
   currentTime?: Date;
   userId?: string;
@@ -464,7 +464,7 @@ export function HomeScreen({
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            🔒 Loading your content securely...
+            Loading your content...
           </p>
         </div>
       </div>
@@ -541,7 +541,7 @@ export function HomeScreen({
                       ? 'bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm' 
                       : 'bg-white/80 hover:bg-white backdrop-blur-sm'
                   } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
-                  title="🔒 Refresh Securely"
+                  title="Refresh Securely"
                 >
                   <RefreshCw className={`w-5 h-5 ${
                     darkMode ? 'text-indigo-300' : 'text-slate-700'
@@ -560,7 +560,7 @@ export function HomeScreen({
               </div>
               <input
                 type="text"
-                placeholder="🔒 Search your saved content securely..."
+                placeholder="Search your undone content"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
