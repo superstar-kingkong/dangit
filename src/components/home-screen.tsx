@@ -14,7 +14,6 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-
 interface HomeScreenProps {
   onShowContentDetail: (content: any) => void;
   darkMode?: boolean;
@@ -22,9 +21,8 @@ interface HomeScreenProps {
   userId?: string;
 }
 
-
 interface ContentItem {
-  id: number;
+  id: string; // ✅ Changed to string for UUID
   type: string;
   title: string;
   description: string;
@@ -35,14 +33,12 @@ interface ContentItem {
   borderColor: string;
   priority?: "high" | "medium" | "low";
   aiScore?: number;
-
   originalUrl?: string;
   image_url?: string;
   content_type?: string;
   original_content?: string;
   created_at?: string;
 }
-
 
 // ContentCard component
 const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
@@ -52,7 +48,6 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
       onToggleComplete(content.id, !content.completed);
     }
   };
-
 
   return (
     <div 
@@ -99,7 +94,6 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
   );
 };
 
-
 export function HomeScreen({
   onShowContentDetail,
   darkMode = false,
@@ -116,7 +110,6 @@ export function HomeScreen({
   const [refreshing, setRefreshing] = useState(false);
   
   const currentTime = externalCurrentTime || new Date();
-
 
   // UPDATED: Unified Category color mapping (consistent across all screens)
   const getCategoryColor = (category: string): string => {
@@ -141,7 +134,6 @@ export function HomeScreen({
     };
     return colorMap[category] || '#6B7280';
   };
-
 
   // UPDATED: Format timestamp to short format
   const formatTimeAgo = (dateString: string): string => {
@@ -177,7 +169,6 @@ export function HomeScreen({
     }
   };
 
-
   // Determine priority
   const determinePriority = (category: string, createdAt: string): 'high' | 'medium' | 'low' => {
     const highPriorityCategories = ['Work', 'Finance', 'Coupons & Deals'];
@@ -188,7 +179,6 @@ export function HomeScreen({
     if (isRecent) return 'medium';
     return 'low';
   };
-
 
   // Load content from server
   const loadContentItems = async (showLoader = true) => {
@@ -205,7 +195,6 @@ export function HomeScreen({
     try {
       console.log('🔒 Loading content items securely for user:', userId);
       
-      // Get auth token
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error || !session?.access_token) {
@@ -216,9 +205,8 @@ export function HomeScreen({
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+          'Authorization': `Bearer ${session.access_token}`
         }
-        // Note: Removed userId from query - comes from token now
       });
       
       if (!response.ok) {
@@ -229,11 +217,10 @@ export function HomeScreen({
       }
       
       const result = await response.json();
-      console.log('Server response:', result);
       
       if (result.data && Array.isArray(result.data)) {
         const transformedItems: ContentItem[] = result.data.map((item: any) => ({
-          id: item.id,
+          id: String(item.id), // ✅ Convert to string (handles both UUID and numbers)
           type: item.content_type || 'text',
           title: item.title || 'Untitled',
           description: item.ai_summary || 'No description available',
@@ -244,12 +231,11 @@ export function HomeScreen({
           borderColor: getCategoryColor(item.ai_category || 'Other'),
           priority: determinePriority(item.ai_category || 'Other', item.created_at),
           aiScore: 8.0,
-
-          originalUrl: item.original_content || null, // URL goes here
-          image_url: item.original_image_url || null, // Image URL here
-          content_type: item.content_type || 'text', // Type
-          original_content: item.original_content || null, // Raw content
-          created_at: item.created_at // Full timestamp
+          originalUrl: item.original_content || null,
+          image_url: item.original_image_url || null,
+          content_type: item.content_type || 'text',
+          original_content: item.original_content || null,
+          created_at: item.created_at
         }));
         
         console.log(`Successfully loaded ${transformedItems.length} items for user:`, userId);
@@ -284,14 +270,12 @@ export function HomeScreen({
     }
   };
 
-
   // Manual refresh
   const handleRefresh = async () => {
     if (!userId) return;
     setRefreshing(true);
     await loadContentItems(false);
   };
-
 
   // Load data on component mount
   useEffect(() => {
@@ -303,7 +287,6 @@ export function HomeScreen({
     }
   }, [userId]);
 
-
   // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!loading && userId) {
@@ -314,7 +297,6 @@ export function HomeScreen({
       return () => clearInterval(interval);
     }
   }, [loading, userId]);
-
 
   // Expose refresh function globally
   useEffect(() => {
@@ -328,12 +310,10 @@ export function HomeScreen({
     };
   }, [userId]);
 
-
-  // 🔒 UPDATED: Handle completion toggle with secure authentication
-  const handleToggleComplete = async (itemId: number, newCompletedState: boolean) => {
+  // ✅ FIXED: Handle completion toggle - accepts string UUID
+  const handleToggleComplete = async (itemId: string, newCompletedState: boolean) => {
     if (!userId) return;
 
-    // Optimistic update
     setContentItems(prev => 
       prev.map(item => 
         item.id === itemId 
@@ -345,24 +325,21 @@ export function HomeScreen({
     try {
       console.log('🔒 Securely toggling completion for item:', itemId, 'to:', newCompletedState);
       
-      // Get auth token
       const { data: { session }, error: authError } = await supabase.auth.getSession();
       
       if (authError || !session?.access_token) {
         throw new Error('Session expired. Please sign in again.');
       }
       
-      // Make secure API call with auth token
       const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          itemId: itemId,
+          itemId: itemId, // ✅ Send as string (UUID)
           completed: newCompletedState
-          // Note: Removed userId - comes from token now
         })
       });
 
@@ -377,19 +354,16 @@ export function HomeScreen({
       const result = await response.json();
       console.log('✅ Successfully toggled completion securely:', result);
       
-      // Trigger search screen refresh if it exists
       if ((window as any).refreshSearchScreen) {
         console.log('Triggering search screen refresh from home');
         (window as any).refreshSearchScreen();
       }
       
-      // Refresh list after small delay to ensure backend is updated
       setTimeout(() => loadContentItems(false), 500);
       
     } catch (error) {
       console.error('Error toggling completion:', error);
       
-      // Revert optimistic update
       setContentItems(prev => 
         prev.map(item => 
           item.id === itemId 
@@ -403,12 +377,10 @@ export function HomeScreen({
     }
   };
 
-
   // Filter to show only UNCOMPLETED items on home screen
   const uncompletedItems = useMemo(() => {
     return contentItems.filter(item => !item.completed);
   }, [contentItems]);
-
 
   // Smart filtering and sorting (only on uncompleted items)
   const filteredAndSortedItems = useMemo(() => {
@@ -435,14 +407,12 @@ export function HomeScreen({
     });
   }, [uncompletedItems, searchQuery, selectedFilter]);
 
-
   const getGreeting = () => {
     const hour = currentTime.getHours();
     if (hour < 12) return "Good morning";
     if (hour < 17) return "Good afternoon";
     return "Good evening";
   };
-
 
   const getQuickStats = () => {
     const total = contentItems.length;
@@ -453,9 +423,7 @@ export function HomeScreen({
     return { total, completed, pending, highPriority };
   };
 
-
   const stats = getQuickStats();
-
 
   // Show loading state
   if (loading) {
@@ -470,7 +438,6 @@ export function HomeScreen({
       </div>
     );
   }
-
 
   // Show error state
   if (error) {
@@ -500,19 +467,16 @@ export function HomeScreen({
     );
   }
 
-
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      {/* Scrollable Content */}
+      {/* REST OF YOUR UI CODE - KEEPING EXACTLY AS IS */}
       <div className="overflow-y-auto h-screen">
-        {/* UPDATED: Header with unified gradient and fixed DANGIT visibility */}
         <div className={`relative overflow-hidden ${
           darkMode
             ? "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"
             : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
         }`}>
           <div className="relative px-5 pt-6 pb-6">
-            {/* UPDATED: Header with removed settings button and fixed DANGIT text */}
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h1 className="text-3xl tracking-tight font-bold">
@@ -531,7 +495,6 @@ export function HomeScreen({
                   {getGreeting()}, ready to organize?
                 </p>
               </div>
-              {/* UPDATED: Removed settings button, kept only refresh */}
               <div className="flex items-center gap-3">
                 <button 
                   onClick={handleRefresh}
@@ -550,8 +513,6 @@ export function HomeScreen({
               </div>
             </div>
 
-
-            {/* Search Bar */}
             <div className="relative mb-4">
               <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-200 ${
                 isSearchFocused ? 'text-indigo-500 scale-110' : darkMode ? 'text-gray-400' : 'text-slate-400'
@@ -579,8 +540,6 @@ export function HomeScreen({
               />
             </div>
 
-
-            {/* Filter Pills */}
             <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
               {[
                 { key: "all", label: "All", icon: null },
@@ -608,10 +567,7 @@ export function HomeScreen({
           </div>
         </div>
 
-
-        {/* Main Content */}
         <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
-          {/* UPDATED: Enhanced PWA Install Banner with clearer instructions */}
           {showNotificationBanner && (
             <div className={`${
               darkMode
@@ -678,8 +634,6 @@ export function HomeScreen({
             </div>
           )}
 
-
-          {/* Stats Card */}
           {stats.total > 0 && (
             <div className={`${
               darkMode
@@ -712,8 +666,6 @@ export function HomeScreen({
             </div>
           )}
 
-
-          {/* Content Cards - Only Uncompleted */}
           <div className="space-y-4">
             {filteredAndSortedItems.length === 0 ? (
               <div className="text-center py-12">
