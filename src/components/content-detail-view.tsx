@@ -179,62 +179,88 @@ export function ContentDetailView({
     setTimeout(() => onClose(), 200);
   };
 
-  // 🔒 FIXED: Handle completion toggle with proper authentication
-  const handleToggleComplete = async () => {
-    const newCompletedState = !isCompleted;
-    setIsCompleted(newCompletedState);
+// 🔒 FIXED: Handle completion toggle with proper data validation
+const handleToggleComplete = async () => {
+  const newCompletedState = !isCompleted;
+  setIsCompleted(newCompletedState);
+  
+  try {
+    // 🔍 Validate data before sending
+    if (!content.id) {
+      throw new Error('No item ID available');
+    }
     
-    try {
-      console.log('🔒 Securely toggling completion for item:', content.id);
+    if (typeof newCompletedState !== 'boolean') {
+      throw new Error('Invalid completion state');
+    }
+    
+    console.log('🔒 Securely toggling completion for item:', content.id, 'to:', newCompletedState);
+    console.log('🔍 Item ID type:', typeof content.id, 'Length:', content.id?.length);
+    
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    
+    if (authError || !session?.access_token) {
+      throw new Error('Session expired. Please sign in again.');
+    }
+
+    // ✅ Create request body explicitly
+    const requestBody = {
+      itemId: content.id,
+      completed: newCompletedState
+    };
+    
+    console.log('📤 Sending request body:', requestBody);
+
+    const response = await fetch(`${API_URL}/api/toggle-completion`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Response error:', errorText);
       
-      const { data: { session }, error: authError } = await supabase.auth.getSession();
-      
-      if (authError || !session?.access_token) {
+      if (response.status === 401) {
         throw new Error('Session expired. Please sign in again.');
       }
-
-      const response = await fetch(`${API_URL}/api/toggle-completion`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
-        },
-        body: JSON.stringify({
-          itemId: content.id,
-          completed: newCompletedState
-          // Note: Removed userId - comes from token now
-        })
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('Session expired. Please sign in again.');
-        }
-        if (response.status === 404) {
-          throw new Error('Item not found or access denied');
-        }
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+      if (response.status === 404) {
+        throw new Error('Item not found or access denied');
       }
-
-      const result = await response.json();
-      console.log('✅ Successfully toggled completion:', result);
-
-      if ((window as any).refreshHomeScreen) {
-        (window as any).refreshHomeScreen();
-      }
-      if ((window as any).refreshSearchScreen) {
-        (window as any).refreshSearchScreen();
-      }
-
-      onToggleComplete?.(content.id);
       
-    } catch (error) {
-      console.error('Error toggling completion:', error);
-      setIsCompleted(!newCompletedState);
-      alert(`Failed to update completion status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { error: errorText };
+      }
+      
+      throw new Error(errorData.error || `HTTP ${response.status}`);
     }
-  };
+
+    const result = await response.json();
+    console.log('✅ Successfully toggled completion:', result);
+
+    if ((window as any).refreshHomeScreen) {
+      (window as any).refreshHomeScreen();
+    }
+    if ((window as any).refreshSearchScreen) {
+      (window as any).refreshSearchScreen();
+    }
+
+    onToggleComplete?.(content.id);
+    
+  } catch (error) {
+    console.error('Error toggling completion:', error);
+    setIsCompleted(!newCompletedState);
+    alert(`Failed to update completion status: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+
 
   const handleCopyContent = () => {
     navigator.clipboard.writeText(content.description);
