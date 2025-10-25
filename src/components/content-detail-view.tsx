@@ -4,12 +4,13 @@ import {
   ExternalLink, Copy, Heart, Bookmark, Clock, Eye, PlayCircle, 
   PauseCircle, Volume2, Download, Star, Tag, Calendar, Link as LinkIcon,
   Image, Mic, FileText, Zap, Sparkles, CheckCircle2, AlertCircle, Save, X,
-  Bell, BellOff, Clock3, Repeat, Smartphone
+  Bell, BellOff, Clock3, Repeat, Smartphone, Globe
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
 import { API_URL } from '../config';
+import { supabase } from '../lib/supabase'; // Import your supabase client
 
 interface ContentDetailViewProps {
   content: {
@@ -25,6 +26,8 @@ interface ContentDetailViewProps {
     originalUrl?: string;
     aiSummary?: string;
     created_at?: string;
+    image_url?: string; // 🆕 Add this for screenshot URLs
+    content_type?: string; // 🆕 Add this to distinguish URL/image/text
     notifications?: {
       enabled: boolean;
       frequency: 'once' | 'daily' | 'weekly';
@@ -61,20 +64,18 @@ export function ContentDetailView({
   const [isFavorited, setIsFavorited] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   
+  // 🆕 New state for media loading
+  const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
+  const [urlPreview, setUrlPreview] = useState<any>(null);
+  const [urlPreviewLoading, setUrlPreviewLoading] = useState(false);
+  
   // Edit mode state
   const [isEditing, setIsEditing] = useState(false);
   const [editedTitle, setEditedTitle] = useState(content.title);
   const [editedDescription, setEditedDescription] = useState(content.description);
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
-  
-  // Parse content state on mount
-  useEffect(() => {
-    setIsCompleted(content.completed);  
-    setEditedTitle(content.title);
-    setEditedDescription(content.description);
-    setEditedTags(content.tags);
-  }, [content]);
   
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -83,10 +84,51 @@ export function ContentDetailView({
     url: { icon: LinkIcon, color: 'from-blue-500 to-cyan-500', bg: 'bg-blue-50' },
     screenshot: { icon: Image, color: 'from-green-500 to-emerald-500', bg: 'bg-green-50' },
     voice: { icon: Mic, color: 'from-red-500 to-pink-500', bg: 'bg-red-50' },
-    manual: { icon: FileText, color: 'from-purple-500 to-violet-500', bg: 'bg-purple-50' }
+    manual: { icon: FileText, color: 'from-purple-500 to-violet-500', bg: 'bg-purple-50' },
+    image: { icon: Image, color: 'from-green-500 to-emerald-500', bg: 'bg-green-50' },
+    text: { icon: FileText, color: 'from-purple-500 to-violet-500', bg: 'bg-purple-50' }
   };
 
   const currentType = typeConfig[content.type as keyof typeof typeConfig] || typeConfig.manual;
+
+  // 🆕 Fetch URL preview for URL type content
+  useEffect(() => {
+    if (content.content_type === 'url' && content.originalUrl) {
+      fetchUrlPreview(content.originalUrl);
+    }
+  }, [content.originalUrl, content.content_type]);
+
+  // 🆕 Function to fetch URL preview
+  const fetchUrlPreview = async (url: string) => {
+    setUrlPreviewLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const response = await fetch(`${API_URL}/api/url-preview?url=${encodeURIComponent(url)}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUrlPreview(data.preview);
+      }
+    } catch (error) {
+      console.error('Error fetching URL preview:', error);
+    } finally {
+      setUrlPreviewLoading(false);
+    }
+  };
+
+  // Parse content state on mount
+  useEffect(() => {
+    setIsCompleted(content.completed);  
+    setEditedTitle(content.title);
+    setEditedDescription(content.description);
+    setEditedTags(content.tags);
+  }, [content]);
 
   // Animate entrance
   useEffect(() => {
@@ -128,15 +170,20 @@ export function ContentDetailView({
     setIsCompleted(newCompletedState);
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
           itemId: content.id,
-          completed: newCompletedState,
-          userId: userId
+          completed: newCompletedState
         })
       });
 
@@ -144,8 +191,6 @@ export function ContentDetailView({
         const errorData = await response.json();
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
-
-      const result = await response.json();
 
       if ((window as any).refreshHomeScreen) {
         (window as any).refreshHomeScreen();
@@ -190,70 +235,66 @@ export function ContentDetailView({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-// FIXED: Format time display - handle already formatted timestamps
-const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
-  try {
-    const dateString = createdAt || fallbackTimestamp;
-    
-    if (!dateString) return 'Unknown time';
-    
-    // If timestamp is already formatted (like "6h", "30m", etc.), return as is
-    if (dateString.includes('ago') || dateString.includes('now') || 
-        /\d+[smhdwy](\s|$)/.test(dateString) || // matches "6h", "30m", "2d", etc.
-        dateString.includes('Just now')) {
-      return dateString;
-    }
-    
-    const now = new Date();
-    const date = new Date(dateString);
-    
-    if (isNaN(date.getTime())) {
-      return 'Invalid date';
-    }
-    
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInSeconds = Math.floor(diffInMs / 1000);
-    
-    // Handle future dates
-    if (diffInMs < 0) {
-      const absDiffInSeconds = Math.abs(diffInSeconds);
-      const absDiffInMinutes = Math.floor(absDiffInSeconds / 60);
-      const absDiffInHours = Math.floor(absDiffInMinutes / 60);
-      const absDiffInDays = Math.floor(absDiffInHours / 24);
+  // Format time display
+  const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
+    try {
+      const dateString = createdAt || fallbackTimestamp;
+      
+      if (!dateString) return 'Unknown time';
+      
+      if (dateString.includes('ago') || dateString.includes('now') || 
+          /\d+[smhdwy](\s|$)/.test(dateString) ||
+          dateString.includes('Just now')) {
+        return dateString;
+      }
+      
+      const now = new Date();
+      const date = new Date(dateString);
+      
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInSeconds = Math.floor(diffInMs / 1000);
+      
+      if (diffInMs < 0) {
+        const absDiffInSeconds = Math.abs(diffInSeconds);
+        const absDiffInMinutes = Math.floor(absDiffInSeconds / 60);
+        const absDiffInHours = Math.floor(absDiffInMinutes / 60);
+        const absDiffInDays = Math.floor(absDiffInHours / 24);
 
-      if (absDiffInSeconds < 60) return 'soon';
-      if (absDiffInMinutes < 60) return `${absDiffInMinutes}m`;
-      if (absDiffInHours < 24) return `${absDiffInHours}h`;
-      return `${absDiffInDays}d`;
+        if (absDiffInSeconds < 60) return 'soon';
+        if (absDiffInMinutes < 60) return `${absDiffInMinutes}m`;
+        if (absDiffInHours < 24) return `${absDiffInHours}h`;
+        return `${absDiffInDays}d`;
+      }
+      
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      const diffInDays = Math.floor(diffInHours / 24);
+      const diffInMonths = Math.floor(diffInDays / 30);
+      
+      if (diffInSeconds < 60) {
+        return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+      } else if (diffInMinutes < 60) {
+        return `${diffInMinutes}m`;
+      } else if (diffInHours < 24) {
+        return `${diffInHours}h`;
+      } else if (diffInDays < 7) {
+        return `${diffInDays}d`;
+      } else if (diffInDays < 30) {
+        return `${diffInDays}d`;
+      } else if (diffInMonths < 12) {
+        return `${diffInMonths}mo`;
+      } else {
+        const diffInYears = Math.floor(diffInMonths / 12);
+        return `${diffInYears}y`;
+      }
+    } catch (error) {
+      return 'Time error';
     }
-    
-    // Handle past dates - SHORT FORMAT
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-    const diffInMonths = Math.floor(diffInDays / 30);
-    
-    if (diffInSeconds < 60) {
-      return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
-    } else if (diffInMinutes < 60) {
-      return `${diffInMinutes}m`;
-    } else if (diffInHours < 24) {
-      return `${diffInHours}h`;
-    } else if (diffInDays < 7) {
-      return `${diffInDays}d`;
-    } else if (diffInDays < 30) {
-      return `${diffInDays}d`;
-    } else if (diffInMonths < 12) {
-      return `${diffInMonths}mo`;
-    } else {
-      const diffInYears = Math.floor(diffInMonths / 12);
-      return `${diffInYears}y`;
-    }
-  } catch (error) {
-    return 'Time error';
-  }
-};
-
+  };
 
   return (
     <div className={`
@@ -387,7 +428,7 @@ const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
             <div className={`absolute right-4 top-20 rounded-2xl shadow-xl border py-2 z-10 min-w-48 animate-in slide-in-from-top-2 ${
               darkMode 
                 ? 'bg-gray-800 border-gray-700' 
-                : 'bg-white border-gray-100'
+                  : 'bg-white border-gray-100'
             }`}>
               <button 
                 onClick={() => {
@@ -415,14 +456,19 @@ const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
                 <span>Copy Text</span>
               </button>
               {content.originalUrl && (
-                <button className={`w-full px-4 py-3 text-left flex items-center gap-3 ${
-                  darkMode 
-                    ? 'hover:bg-gray-700 text-gray-300' 
-                    : 'hover:bg-gray-50 text-gray-900'
-                }`}>
+                <a 
+                  href={content.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`w-full px-4 py-3 text-left flex items-center gap-3 ${
+                    darkMode 
+                      ? 'hover:bg-gray-700 text-gray-300' 
+                      : 'hover:bg-gray-50 text-gray-900'
+                  }`}
+                >
                   <ExternalLink className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                   <span>Open Original</span>
-                </button>
+                </a>
               )}
               <div className={`h-px my-1 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`} />
               <button 
@@ -448,6 +494,130 @@ const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
         }}
       >
         <div className="p-6 space-y-6">
+          {/* 🆕 Screenshot Preview Section */}
+          {content.image_url && content.content_type === 'image' && (
+            <div className={`rounded-2xl border overflow-hidden shadow-lg ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <div className={`px-5 py-3 border-b flex items-center gap-2 ${
+                darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50'
+              }`}>
+                <Image className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Screenshot
+                </h3>
+              </div>
+              <div className="relative">
+                {imageLoading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                  </div>
+                )}
+                {imageError ? (
+                  <div className="flex flex-col items-center justify-center py-12 px-4">
+                    <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+                    <p className={`text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Failed to load image
+                    </p>
+                  </div>
+                ) : (
+                  <img
+                    src={content.image_url}
+                    alt={content.title}
+                    className="w-full h-auto"
+                    onLoad={() => setImageLoading(false)}
+                    onError={() => {
+                      setImageLoading(false);
+                      setImageError(true);
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* 🆕 URL Preview Section */}
+          {content.content_type === 'url' && content.originalUrl && (
+            <div className={`rounded-2xl border overflow-hidden shadow-lg ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <div className={`px-5 py-3 border-b flex items-center justify-between ${
+                darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <Globe className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                  <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Link Preview
+                  </h3>
+                </div>
+                <a
+                  href={content.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  <ExternalLink className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                </a>
+              </div>
+              
+              {urlPreviewLoading ? (
+                <div className="p-8 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : urlPreview ? (
+                <a
+                  href={content.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  {urlPreview.image && (
+                    <img
+                      src={urlPreview.image}
+                      alt={urlPreview.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
+                  <div className="p-4">
+                    <h4 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {urlPreview.title || 'No title'}
+                    </h4>
+                    {urlPreview.description && (
+                      <p className={`text-sm line-clamp-2 mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {urlPreview.description}
+                      </p>
+                    )}
+                    <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                      {new URL(content.originalUrl).hostname}
+                    </p>
+                  </div>
+                </a>
+              ) : (
+                <a
+                  href={content.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      <LinkIcon className={`w-6 h-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {content.originalUrl}
+                      </p>
+                      <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        Click to open
+                      </p>
+                    </div>
+                    <ExternalLink className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                  </div>
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Title with completion state */}
           <div className="relative">
             {isEditing ? (
@@ -574,7 +744,7 @@ const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
             </div>
           </div>
 
-          {/* UPDATED: Coming Soon Notifications */}
+          {/* Notifications Section */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
             darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           }`}>
@@ -583,7 +753,6 @@ const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
               📱 Reminders
             </h3>
             
-            {/* Coming Soon Card */}
             <div className={`p-6 rounded-xl border-2 border-dashed transition-all duration-300 ${
               darkMode 
                 ? 'border-gray-600 bg-gray-700/30 hover:border-gray-500' 
@@ -625,7 +794,6 @@ const formatTimeAgo = (createdAt?: string, fallbackTimestamp?: string) => {
               </div>
             </div>
             
-            {/* Feature Preview */}
             <div className={`mt-4 p-4 rounded-xl ${
               darkMode ? 'bg-gray-700/20' : 'bg-slate-50'
             }`}>

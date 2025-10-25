@@ -14,12 +14,14 @@ import {
   MoreVertical,
 } from "lucide-react";
 
+
 interface HomeScreenProps {
   onShowContentDetail: (content: any) => void;
   darkMode?: boolean;
   currentTime?: Date;
   userId?: string;
 }
+
 
 interface ContentItem {
   id: string;
@@ -35,6 +37,7 @@ interface ContentItem {
   aiScore?: number;
 }
 
+
 // ContentCard component
 const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
   const handleCheckboxClick = (e: React.MouseEvent) => {
@@ -43,6 +46,7 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
       onToggleComplete(content.id, !content.completed);
     }
   };
+
 
   return (
     <div 
@@ -89,6 +93,7 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
   );
 };
 
+
 export function HomeScreen({
   onShowContentDetail,
   darkMode = false,
@@ -106,63 +111,66 @@ export function HomeScreen({
   
   const currentTime = externalCurrentTime || new Date();
 
+
   // UPDATED: Unified Category color mapping (consistent across all screens)
   const getCategoryColor = (category: string): string => {
     const colorMap: { [key: string]: string } = {
-      'Work': '#2563EB',           // Blue
-      'Personal': '#10B981',       // Green  
-      'Ideas': '#8B5CF6',          // Purple
-      'Research': '#F59E0B',       // Orange/Amber
-      'Learning': '#10B981',       // Green
-      'Shopping': '#EC4899',       // Pink
-      'Travel': '#06B6D4',         // Cyan
-      'Health': '#EF4444',         // Red
-      'Food': '#84CC16',           // Lime
-      'Entertainment': '#EF4444',  // Red
-      'Finance': '#F59E0B',        // Orange
-      'AI Tools': '#6366F1',       // Indigo
-      'Productivity': '#2563EB',   // Blue
-      'Health & Fitness': '#EF4444', // Red
-      'Food & Dining': '#84CC16',  // Lime
-      'Coupons & Deals': '#F59E0B', // Orange
-      'Other': '#6B7280'           // Gray
+      'Work': '#2563EB',
+      'Personal': '#10B981',
+      'Ideas': '#8B5CF6',
+      'Research': '#F59E0B',
+      'Learning': '#10B981',
+      'Shopping': '#EC4899',
+      'Travel': '#06B6D4',
+      'Health': '#EF4444',
+      'Food': '#84CC16',
+      'Entertainment': '#EF4444',
+      'Finance': '#F59E0B',
+      'AI Tools': '#6366F1',
+      'Productivity': '#2563EB',
+      'Health & Fitness': '#EF4444',
+      'Food & Dining': '#84CC16',
+      'Coupons & Deals': '#F59E0B',
+      'Other': '#6B7280'
     };
     return colorMap[category] || '#6B7280';
   };
 
- // UPDATED: Format timestamp to short format
-const formatTimeAgo = (dateString: string): string => {
-  try {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInSeconds = Math.floor(diffInMs / 1000);
 
-    if (diffInSeconds < 60) {
-      return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+  // UPDATED: Format timestamp to short format
+  const formatTimeAgo = (dateString: string): string => {
+    try {
+      const now = new Date();
+      const date = new Date(dateString);
+      const diffInMs = now.getTime() - date.getTime();
+      const diffInSeconds = Math.floor(diffInMs / 1000);
+
+      if (diffInSeconds < 60) {
+        return diffInSeconds <= 5 ? 'now' : `${diffInSeconds}s`;
+      }
+      
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      if (diffInMinutes < 60) return `${diffInMinutes}m`;
+      
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) return `${diffInHours}h`;
+      
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) return `${diffInDays}d`;
+      
+      const diffInWeeks = Math.floor(diffInDays / 7);
+      if (diffInWeeks < 4) return `${diffInWeeks}w`;
+      
+      const diffInMonths = Math.floor(diffInDays / 30);
+      if (diffInMonths < 12) return `${diffInMonths}mo`;
+      
+      const diffInYears = Math.floor(diffInMonths / 12);
+      return `${diffInYears}y`;
+    } catch (error) {
+      return 'Unknown';
     }
-    
-    const diffInMinutes = Math.floor(diffInSeconds / 60);
-    if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h`;
-    
-    const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d`;
-    
-    const diffInWeeks = Math.floor(diffInDays / 7);
-    if (diffInWeeks < 4) return `${diffInWeeks}w`;
-    
-    const diffInMonths = Math.floor(diffInDays / 30);
-    if (diffInMonths < 12) return `${diffInMonths}mo`;
-    
-    const diffInYears = Math.floor(diffInMonths / 12);
-    return `${diffInYears}y`;
-  } catch (error) {
-    return 'Unknown';
-  }
-};
+  };
+
 
   // Determine priority
   const determinePriority = (category: string, createdAt: string): 'high' | 'medium' | 'low' => {
@@ -174,6 +182,7 @@ const formatTimeAgo = (dateString: string): string => {
     if (isRecent) return 'medium';
     return 'low';
   };
+
 
   // Load content from server
   const loadContentItems = async (showLoader = true) => {
@@ -188,30 +197,30 @@ const formatTimeAgo = (dateString: string): string => {
     }
     
     try {
-  console.log('🔒 Loading content items securely for user:', userId);
-  
-  // Get auth token
-  const { data: { session }, error } = await supabase.auth.getSession();
-  
-  if (error || !session?.access_token) {
-    throw new Error('Authentication required. Please sign in again.');
-  }
-  
-  const response = await fetch(`${API_URL}/api/saved-items`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
-    }
-    // Note: Removed userId from query - comes from token now
-  });
-  
-  if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error('Session expired. Please sign in again.');
-    }
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-  }
+      console.log('🔒 Loading content items securely for user:', userId);
+      
+      // Get auth token
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error || !session?.access_token) {
+        throw new Error('Authentication required. Please sign in again.');
+      }
+      
+      const response = await fetch(`${API_URL}/api/saved-items`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+        }
+        // Note: Removed userId from query - comes from token now
+      });
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.');
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       
       const result = await response.json();
       console.log('Server response:', result);
@@ -238,7 +247,7 @@ const formatTimeAgo = (dateString: string): string => {
         setContentItems([]);
       }
     } catch (error) {
-  console.error('Error loading content:', error);
+      console.error('Error loading content:', error);
       
       let errorMessage = 'Failed to load content.';
       if (error instanceof Error) {
@@ -263,12 +272,14 @@ const formatTimeAgo = (dateString: string): string => {
     }
   };
 
+
   // Manual refresh
   const handleRefresh = async () => {
     if (!userId) return;
     setRefreshing(true);
     await loadContentItems(false);
   };
+
 
   // Load data on component mount
   useEffect(() => {
@@ -280,6 +291,7 @@ const formatTimeAgo = (dateString: string): string => {
     }
   }, [userId]);
 
+
   // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!loading && userId) {
@@ -290,6 +302,7 @@ const formatTimeAgo = (dateString: string): string => {
       return () => clearInterval(interval);
     }
   }, [loading, userId]);
+
 
   // Expose refresh function globally
   useEffect(() => {
@@ -303,7 +316,8 @@ const formatTimeAgo = (dateString: string): string => {
     };
   }, [userId]);
 
-  // Handle completion toggle - FIXED
+
+  // 🔒 UPDATED: Handle completion toggle with secure authentication
   const handleToggleComplete = async (itemId: string, newCompletedState: boolean) => {
     if (!userId) return;
 
@@ -317,27 +331,45 @@ const formatTimeAgo = (dateString: string): string => {
     );
 
     try {
-      console.log('Toggling completion for item:', itemId, 'to:', newCompletedState);
+      console.log('🔒 Securely toggling completion for item:', itemId, 'to:', newCompletedState);
       
-      // Use correct endpoint: /api/toggle-completion
+      // Get auth token
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session?.access_token) {
+        throw new Error('Session expired. Please sign in again.');
+      }
+      
+      // Make secure API call with auth token
       const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
         },
         body: JSON.stringify({
           itemId: itemId,
-          completed: newCompletedState,
-          userId: userId
+          completed: newCompletedState
+          // Note: Removed userId - comes from token now
         })
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to update item`);
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.');
+        }
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to update item`);
       }
 
       const result = await response.json();
-      console.log('Successfully toggled completion:', result);
+      console.log('✅ Successfully toggled completion securely:', result);
+      
+      // Trigger search screen refresh if it exists
+      if ((window as any).refreshSearchScreen) {
+        console.log('Triggering search screen refresh from home');
+        (window as any).refreshSearchScreen();
+      }
       
       // Refresh list after small delay to ensure backend is updated
       setTimeout(() => loadContentItems(false), 500);
@@ -354,14 +386,17 @@ const formatTimeAgo = (dateString: string): string => {
         )
       );
       
-      alert('Failed to update item. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update item. Please try again.';
+      alert(errorMessage);
     }
   };
+
 
   // Filter to show only UNCOMPLETED items on home screen
   const uncompletedItems = useMemo(() => {
     return contentItems.filter(item => !item.completed);
   }, [contentItems]);
+
 
   // Smart filtering and sorting (only on uncompleted items)
   const filteredAndSortedItems = useMemo(() => {
@@ -388,12 +423,14 @@ const formatTimeAgo = (dateString: string): string => {
     });
   }, [uncompletedItems, searchQuery, selectedFilter]);
 
+
   const getGreeting = () => {
     const hour = currentTime.getHours();
     if (hour < 12) return "Good morning";
     if (hour < 17) return "Good afternoon";
     return "Good evening";
   };
+
 
   const getQuickStats = () => {
     const total = contentItems.length;
@@ -404,7 +441,9 @@ const formatTimeAgo = (dateString: string): string => {
     return { total, completed, pending, highPriority };
   };
 
+
   const stats = getQuickStats();
+
 
   // Show loading state
   if (loading) {
@@ -413,12 +452,13 @@ const formatTimeAgo = (dateString: string): string => {
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
           <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Loading your content...
+            🔒 Loading your content securely...
           </p>
         </div>
       </div>
     );
   }
+
 
   // Show error state
   if (error) {
@@ -427,7 +467,7 @@ const formatTimeAgo = (dateString: string): string => {
         <div className="text-center p-6 max-w-md">
           <div className="text-red-500 mb-4 text-4xl">⚠️</div>
           <h3 className={`${darkMode ? 'text-white' : 'text-gray-900'} font-semibold mb-2`}>
-            Connection Error
+            {error.includes('Authentication') ? 'Authentication Error' : 'Connection Error'}
           </h3>
           <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mb-4 text-sm`}>
             {error}
@@ -447,6 +487,7 @@ const formatTimeAgo = (dateString: string): string => {
       </div>
     );
   }
+
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
@@ -488,7 +529,7 @@ const formatTimeAgo = (dateString: string): string => {
                       ? 'bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm' 
                       : 'bg-white/80 hover:bg-white backdrop-blur-sm'
                   } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
-                  title="Refresh"
+                  title="🔒 Refresh Securely"
                 >
                   <RefreshCw className={`w-5 h-5 ${
                     darkMode ? 'text-indigo-300' : 'text-slate-700'
@@ -496,6 +537,7 @@ const formatTimeAgo = (dateString: string): string => {
                 </button>
               </div>
             </div>
+
 
             {/* Search Bar */}
             <div className="relative mb-4">
@@ -506,7 +548,7 @@ const formatTimeAgo = (dateString: string): string => {
               </div>
               <input
                 type="text"
-                placeholder="Search your saved content..."
+                placeholder="🔒 Search your saved content securely..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
@@ -524,6 +566,7 @@ const formatTimeAgo = (dateString: string): string => {
                 }`}
               />
             </div>
+
 
             {/* Filter Pills */}
             <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
@@ -552,6 +595,7 @@ const formatTimeAgo = (dateString: string): string => {
             </div>
           </div>
         </div>
+
 
         {/* Main Content */}
         <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
@@ -622,6 +666,7 @@ const formatTimeAgo = (dateString: string): string => {
             </div>
           )}
 
+
           {/* Stats Card */}
           {stats.total > 0 && (
             <div className={`${
@@ -654,6 +699,7 @@ const formatTimeAgo = (dateString: string): string => {
               </div>
             </div>
           )}
+
 
           {/* Content Cards - Only Uncompleted */}
           <div className="space-y-4">
