@@ -10,7 +10,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Switch } from './ui/switch';
 import { API_URL } from '../config';
-import { supabase } from '../lib/supabase'; // Import your supabase client
+import { supabase } from '../lib/supabase';
 
 interface ContentDetailViewProps {
   content: {
@@ -26,8 +26,9 @@ interface ContentDetailViewProps {
     originalUrl?: string;
     aiSummary?: string;
     created_at?: string;
-    image_url?: string; // 🆕 Add this for screenshot URLs
-    content_type?: string; // 🆕 Add this to distinguish URL/image/text
+    image_url?: string;
+    content_type?: string;
+    original_content?: string; // 🆕 Add this - needed for URLs
     notifications?: {
       enabled: boolean;
       frequency: 'once' | 'daily' | 'weekly';
@@ -91,20 +92,31 @@ export function ContentDetailView({
 
   const currentType = typeConfig[content.type as keyof typeof typeConfig] || typeConfig.manual;
 
-  // 🆕 Fetch URL preview for URL type content
+  // 🔒 FIXED: Fetch URL preview for URL type content with proper authentication
   useEffect(() => {
-    if (content.content_type === 'url' && content.originalUrl) {
-      fetchUrlPreview(content.originalUrl);
+    // Check multiple ways a URL might be stored
+    const urlToFetch = content.originalUrl || content.original_content;
+    const isUrlContent = content.content_type === 'url' || content.type === 'url';
+    
+    if (isUrlContent && urlToFetch) {
+      console.log('🔗 Fetching URL preview for:', urlToFetch);
+      fetchUrlPreview(urlToFetch);
     }
-  }, [content.originalUrl, content.content_type]);
+  }, [content.originalUrl, content.original_content, content.content_type, content.type]);
 
-  // 🆕 Function to fetch URL preview
+  // 🔒 FIXED: Function to fetch URL preview with proper authentication
   const fetchUrlPreview = async (url: string) => {
     setUrlPreviewLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session?.access_token) {
+        console.warn('No auth session for URL preview');
+        setUrlPreviewLoading(false);
+        return;
+      }
 
+      console.log('🔒 Fetching URL preview securely');
       const response = await fetch(`${API_URL}/api/url-preview?url=${encodeURIComponent(url)}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -113,7 +125,10 @@ export function ContentDetailView({
       
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ URL preview fetched:', data);
         setUrlPreview(data.preview);
+      } else {
+        console.warn('URL preview fetch failed:', response.status);
       }
     } catch (error) {
       console.error('Error fetching URL preview:', error);
@@ -164,33 +179,46 @@ export function ContentDetailView({
     setTimeout(() => onClose(), 200);
   };
 
-  // Handle completion toggle
+  // 🔒 FIXED: Handle completion toggle with proper authentication
   const handleToggleComplete = async () => {
     const newCompletedState = !isCompleted;
     setIsCompleted(newCompletedState);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        throw new Error('Not authenticated');
+      console.log('🔒 Securely toggling completion for item:', content.id);
+      
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session?.access_token) {
+        throw new Error('Session expired. Please sign in again.');
       }
 
       const response = await fetch(`${API_URL}/api/toggle-completion`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
         },
         body: JSON.stringify({
           itemId: content.id,
           completed: newCompletedState
+          // Note: Removed userId - comes from token now
         })
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.');
+        }
+        if (response.status === 404) {
+          throw new Error('Item not found or access denied');
+        }
         const errorData = await response.json();
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
+
+      const result = await response.json();
+      console.log('✅ Successfully toggled completion:', result);
 
       if ((window as any).refreshHomeScreen) {
         (window as any).refreshHomeScreen();
@@ -295,6 +323,10 @@ export function ContentDetailView({
       return 'Time error';
     }
   };
+
+  // 🔒 Get the URL for display
+  const displayUrl = content.originalUrl || content.original_content;
+  const isUrlType = content.content_type === 'url' || content.type === 'url';
 
   return (
     <div className={`
@@ -455,9 +487,9 @@ export function ContentDetailView({
                 <Copy className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                 <span>Copy Text</span>
               </button>
-              {content.originalUrl && (
+              {displayUrl && (
                 <a 
-                  href={content.originalUrl}
+                  href={displayUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`w-full px-4 py-3 text-left flex items-center gap-3 ${
@@ -536,8 +568,8 @@ export function ContentDetailView({
             </div>
           )}
 
-          {/* 🆕 URL Preview Section */}
-          {content.content_type === 'url' && content.originalUrl && (
+          {/* 🔒 FIXED: URL Preview Section with proper checks */}
+          {isUrlType && displayUrl && (
             <div className={`rounded-2xl border overflow-hidden shadow-lg ${
               darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}>
@@ -547,11 +579,11 @@ export function ContentDetailView({
                 <div className="flex items-center gap-2">
                   <Globe className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                   <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Link Preview
+                    🔒 Link Preview
                   </h3>
                 </div>
                 <a
-                  href={content.originalUrl}
+                  href={displayUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
@@ -563,10 +595,13 @@ export function ContentDetailView({
               {urlPreviewLoading ? (
                 <div className="p-8 flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  <p className={`ml-3 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Loading preview...
+                  </p>
                 </div>
               ) : urlPreview ? (
                 <a
-                  href={content.originalUrl}
+                  href={displayUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -576,6 +611,9 @@ export function ContentDetailView({
                       src={urlPreview.image}
                       alt={urlPreview.title}
                       className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   )}
                   <div className="p-4">
@@ -587,14 +625,21 @@ export function ContentDetailView({
                         {urlPreview.description}
                       </p>
                     )}
-                    <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                      {new URL(content.originalUrl).hostname}
+                    <p className={`text-xs flex items-center gap-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                      <Globe className="w-3 h-3" />
+                      {urlPreview.siteName || (() => {
+                        try {
+                          return new URL(displayUrl).hostname;
+                        } catch {
+                          return displayUrl;
+                        }
+                      })()}
                     </p>
                   </div>
                 </a>
               ) : (
                 <a
-                  href={content.originalUrl}
+                  href={displayUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -605,13 +650,13 @@ export function ContentDetailView({
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`font-medium truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {content.originalUrl}
+                        {displayUrl}
                       </p>
                       <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                        Click to open
+                        Click to open link
                       </p>
                     </div>
-                    <ExternalLink className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                    <ExternalLink className={`w-5 h-5 flex-shrink-0 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
                   </div>
                 </a>
               )}
@@ -679,7 +724,7 @@ export function ContentDetailView({
               </div>
             )}
             
-            {!showFullDescription && !isEditing && (
+            {!showFullDescription && !isEditing && editedDescription.length > 200 && (
               <button 
                 onClick={() => setShowFullDescription(true)}
                 className="mt-3 text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
