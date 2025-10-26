@@ -1,7 +1,7 @@
 {
   "name": "DANGIT - Smart Content Saver",
   "short_name": "DANGIT",
-  "description": "Save anything, organize everything with AI - Now with mobile reminders!",
+  "description": "Save anything, organize everything with AI - Instagram posts, screenshots, links & more!",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#6366F1",
@@ -82,8 +82,30 @@
           "sizes": "96x96"
         }
       ]
+    },
+    {
+      "name": "Share to DANGIT",
+      "short_name": "Share",
+      "description": "Save Instagram posts and links",
+      "url": "/share",
+      "icons": [
+        {
+          "src": "/icons/favicon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "related_applications": [],
   "permissions": [
     "notifications",
