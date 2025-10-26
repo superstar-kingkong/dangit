@@ -9,6 +9,8 @@ import { EditProfileScreen } from './components/edit-profile-screen';
 import { ContentDetailView } from './components/content-detail-view';
 import { BottomNavigation } from './components/bottom-navigation';
 import { FloatingAddButton } from './components/floating-add-button';
+import { ShareScreen } from './components/ShareScreen';
+
 
 // User type for authentication
 interface User {
@@ -18,9 +20,11 @@ interface User {
   joinDate: string;
 }
 
-// FIXED: Updated types to match actual usage
-type AppScreen = 'onboarding' | 'signup' | 'home' | 'search' | 'add' | 'profile' | 'editProfile';
+
+// ✅ UPDATED: Added 'share' to AppScreen type
+type AppScreen = 'onboarding' | 'signup' | 'home' | 'search' | 'add' | 'profile' | 'editProfile' | 'share';
 type MainScreen = 'home' | 'search' | 'add' | 'profile';
+
 
 // FIXED: Updated ContentItem interface to match ContentDetailView expectations exactly
 interface ContentItem {
@@ -48,6 +52,7 @@ interface ContentItem {
   };
 }
 
+
 function AppContent() {
   // Authentication state
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -72,7 +77,6 @@ function AppContent() {
   // Responsive viewport detection
   const [viewportHeight, setViewportHeight] = useState(window.innerHeight);
   const [screenSize, setScreenSize] = useState<'small' | 'medium' | 'large'>('medium');
-
 
   // Handle viewport changes for better mobile experience
   useEffect(() => {
@@ -106,6 +110,19 @@ function AppContent() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
+
+  // ✅ NEW: Handle share URLs (for PWA sharing)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedUrl = urlParams.get('url') || urlParams.get('text');
+    
+    if (sharedUrl && isAuthenticated && currentUser) {
+      console.log('Shared content detected:', sharedUrl);
+      setCurrentScreen('share');
+      // Store the shared content for the ShareScreen to pick up
+      sessionStorage.setItem('dangit-shared-content', sharedUrl);
+    }
+  }, [isAuthenticated, currentUser]);
 
   // Check for existing user session on app start
   useEffect(() => {
@@ -229,12 +246,23 @@ function AppContent() {
     }, 150);
   };
 
+  // ✅ NEW: Handle share navigation
+  const handleShare = () => {
+    if (isTransitioning) return;
+    
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentScreen('share');
+      setIsTransitioning(false);
+    }, 150);
+  };
+
   // FIXED: Updated to match ContentDetailView expectations exactly
   const handleShowContentDetail = (content: any) => {
     // Transform the content to match ContentDetailView interface
     const transformedContent: ContentItem = {
       ...content,
-      id: typeof content.id === 'string' ? parseInt(content.id) : content.id,
+      id: typeof content.id === 'string' ? content.id : String(content.id), // ✅ Keep as string
       originalUrl: content.original_content || content.originalUrl,
       aiSummary: content.ai_summary || content.description,
       created_at: content.created_at || content.timestamp,
@@ -476,10 +504,22 @@ function AppContent() {
                   />
                 </div>
               )}
+
+              {/* ✅ NEW: ShareScreen */}
+              {currentScreen === 'share' && (
+                <div className="animate-in fade-in-0 duration-300">
+                  <ShareScreen 
+                    user={currentUser}
+                    onClose={() => handleNavigate('home')}
+                    onContentSaved={handleContentSaved}
+                    darkMode={darkMode}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* FIXED: Enhanced Bottom Navigation with proper type handling */}
-            {currentScreen !== 'editProfile' && (
+            {/* ✅ UPDATED: Enhanced Bottom Navigation with proper type handling */}
+            {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
               <BottomNavigation
                 currentScreen={
                   // Ensure we only pass valid MainScreen types to BottomNavigation
@@ -495,8 +535,8 @@ function AppContent() {
               />
             )}
 
-            {/* Smart Floating Add Button */}
-            {currentScreen !== 'add' && currentScreen !== 'editProfile' && !showContentDetail && (
+            {/* ✅ UPDATED: Smart Floating Add Button */}
+            {currentScreen !== 'add' && currentScreen !== 'editProfile' && currentScreen !== 'share' && !showContentDetail && (
               <FloatingAddButton onClick={() => handleNavigate('add')} />
             )}
           </>
