@@ -1,7 +1,7 @@
 import { API_URL } from '../config';
 import { supabase } from '../lib/supabase'; // 🔧 Use your existing supabase client
 import React, { useState, useRef } from 'react';
-import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles } from 'lucide-react';
+import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles, Instagram } from 'lucide-react';
 
 interface AddContentScreenProps {
   userId: string;
@@ -23,6 +23,11 @@ export function AddContentScreen({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // ✅ NEW: Instagram title prompt state
+  const [showTitlePrompt, setShowTitlePrompt] = useState(false);
+  const [customTitle, setCustomTitle] = useState('');
+  const [pendingInstagramUrl, setPendingInstagramUrl] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,9 +86,22 @@ export function AddContentScreen({
     }
   };
 
-  const handleSave = async () => {
+  // ✅ NEW: Function to check if URL is Instagram
+  const isInstagramUrl = (url: string): boolean => {
+    return url.includes('instagram.com') || url.includes('instagr.am');
+  };
+
+  // ✅ NEW: Modified handleSave with Instagram detection
+  const handleSave = async (customInstagramTitle?: string) => {
     if (isProcessing || !hasContent() || analysisResult !== null) {
       return;
+    }
+
+    // ✅ Check for Instagram URL and show title prompt
+    if (activeTab === 'url' && url.trim() && isInstagramUrl(url.trim()) && !customInstagramTitle) {
+      setPendingInstagramUrl(url.trim());
+      setShowTitlePrompt(true);
+      return; // Don't proceed with save yet
     }
 
     setIsProcessing(true);
@@ -102,12 +120,13 @@ export function AddContentScreen({
 
       switch (activeTab) {
         case 'url':
-          if (!url.trim()) {
+          const urlToSave = pendingInstagramUrl || url.trim();
+          if (!urlToSave) {
             setErrorMessage('Please enter a URL');
             setIsProcessing(false);
             return;
           }
-          content = url.trim();
+          content = urlToSave;
           contentType = 'url';
           break;
 
@@ -161,12 +180,42 @@ export function AddContentScreen({
       }
 
       if (response.ok && result.success) {
+        // ✅ If we have a custom Instagram title, update it
+        if (customInstagramTitle && isInstagramUrl(pendingInstagramUrl || url)) {
+          try {
+            const updateResponse = await fetch(`${API_URL}/api/update-title`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+              },
+              body: JSON.stringify({
+                itemId: result.data.id,
+                title: customInstagramTitle
+              })
+            });
+
+            if (updateResponse.ok) {
+              console.log('✅ Instagram title updated successfully');
+            } else {
+              console.warn('Failed to update Instagram title, but item was saved');
+            }
+          } catch (error) {
+            console.warn('Error updating Instagram title:', error);
+            // Don't fail the whole operation for this
+          }
+        }
+
         setAnalysisResult({
-          title: result.data.title,
+          title: customInstagramTitle || result.data.title,
           summary: result.data.ai_summary,
           category: result.data.ai_category,
           tags: result.data.ai_tags,
         });
+        
+        // Reset Instagram-specific state
+        setPendingInstagramUrl('');
+        setCustomTitle('');
         
         setTimeout(() => {
           onClose();
@@ -206,6 +255,78 @@ export function AddContentScreen({
 
   return (
     <div className={`h-screen flex flex-col overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+
+      {/* ✅ NEW: Instagram Title Prompt Modal */}
+      {showTitlePrompt && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-2xl p-6 max-w-md w-full animate-in zoom-in-95 fade-in-0 ${
+            darkMode ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                <Instagram className="w-8 h-8 text-white" />
+              </div>
+              <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                What's this reel about?
+              </h3>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Give this Instagram reel a quick description so you can find it later!
+              </p>
+            </div>
+            
+            <input
+              type="text"
+              value={customTitle}
+              onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder="e.g. Pasta recipe tutorial, Morning workout, Travel tips"
+              className={`w-full px-4 py-3 border-2 rounded-xl mb-4 transition-all ${
+                darkMode 
+                  ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-pink-500' 
+                  : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-pink-500'
+              }`}
+              autoFocus
+              maxLength={80}
+            />
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const title = customTitle.trim() || 'Instagram Reel';
+                  setShowTitlePrompt(false);
+                  handleSave(title);
+                }}
+                className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
+              >
+                {customTitle.trim() ? 'Save with Title' : 'Save'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowTitlePrompt(false);
+                  setCustomTitle('');
+                  setPendingInstagramUrl('');
+                }}
+                className={`px-6 py-3 rounded-xl font-semibold transition-colors ${
+                  darkMode 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                Cancel
+              </button>
+            </div>
+            
+            <div className={`mt-3 p-3 rounded-xl ${
+              darkMode ? 'bg-gray-700/50' : 'bg-blue-50'
+            }`}>
+              <p className={`text-xs text-center ${
+                darkMode ? 'text-gray-400' : 'text-blue-600'
+              }`}>
+                💡 You can always edit this title later in the detail view
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {errorMessage && (
@@ -255,6 +376,10 @@ export function AddContentScreen({
                   setActiveTab(tab.id as any);
                   setErrorMessage('');
                   setAnalysisResult(null);
+                  // Reset Instagram state when switching tabs
+                  setShowTitlePrompt(false);
+                  setCustomTitle('');
+                  setPendingInstagramUrl('');
                 }}
                 className={`flex items-center justify-center gap-2 py-4 rounded-xl transition-all ${
                   activeTab === tab.id
@@ -294,9 +419,18 @@ export function AddContentScreen({
                 }`}
                 autoFocus
               />
-              <p className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                Save articles, videos, tweets, or any webpage
-              </p>
+              <div className="flex items-center justify-between mt-2">
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Save articles, videos, tweets, or any webpage
+                </p>
+                {/* ✅ Instagram indicator */}
+                {url.trim() && isInstagramUrl(url.trim()) && (
+                  <div className="flex items-center gap-1 text-pink-500">
+                    <Instagram className="w-4 h-4" />
+                    <span className="text-xs font-medium">Instagram</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {analysisResult && (
@@ -500,7 +634,7 @@ export function AddContentScreen({
       } pt-8`}>
         <button
           type="button"
-          onClick={handleSave}
+          onClick={() => handleSave()}
           disabled={isProcessing || !hasContent() || analysisResult !== null}
           className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-xl ${
             isProcessing || !hasContent() || analysisResult !== null
@@ -523,7 +657,9 @@ export function AddContentScreen({
           ) : (
             <>
               <Sparkles className="w-6 h-6" strokeWidth={2.5} />
-              <span>Save to DANGIT</span>
+              <span>
+                {url.trim() && isInstagramUrl(url.trim()) ? 'Save Instagram Reel' : 'Save to DANGIT'}
+              </span>
             </>
           )}
         </button>
