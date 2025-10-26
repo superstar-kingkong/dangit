@@ -111,67 +111,98 @@ function AppContent() {
     };
   }, []);
 
-  // ✅ NEW: Handle share URLs (for PWA sharing)
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedUrl = urlParams.get('url') || urlParams.get('text');
+  // ✅ FIXED: Handle share URLs BEFORE and AFTER authentication
+useEffect(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedUrl = urlParams.get('url') || urlParams.get('text');
+  
+  if (sharedUrl) {
+    console.log('🔗 Shared content detected:', sharedUrl);
+    // Always store the shared content
+    sessionStorage.setItem('dangit-shared-content', sharedUrl);
     
-    if (sharedUrl && isAuthenticated && currentUser) {
-      console.log('Shared content detected:', sharedUrl);
+    // If user is authenticated, go to share screen immediately
+    if (isAuthenticated && currentUser) {
+      console.log('✅ User authenticated - opening ShareScreen');
       setCurrentScreen('share');
-      // Store the shared content for the ShareScreen to pick up
-      sessionStorage.setItem('dangit-shared-content', sharedUrl);
+    } else {
+      console.log('⏳ User not authenticated - will redirect after login');
+      // The share will happen after authentication in the next useEffect
     }
-  }, [isAuthenticated, currentUser]);
+  }
+}, [isAuthenticated, currentUser]);
 
-  // Check for existing user session on app start
-  useEffect(() => {
-    const checkUserSession = async () => {
-      setIsLoadingUser(true);
-      
-      try {
-        const savedUser = localStorage.getItem('dangit-user');
-        if (savedUser) {
-          const userData = JSON.parse(savedUser);
-          
-          // Validate user data structure
-          if (userData.email && userData.name) {
-            // Generate a consistent ID based on email if not present
-            if (!userData.id) {
-              userData.id = userData.email.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            }
-            
-            setCurrentUser(userData);
-            setIsAuthenticated(true);
-            setShowOnboarding(false);
-            setShowSignUp(false);
-            setCurrentScreen('home');
-            
-            console.log('User session restored:', { 
-              name: userData.name, 
-              email: userData.email,
-              id: userData.id 
-            });
-          } else {
-            throw new Error('Invalid user data structure');
+// ✅ NEW: Check for pending shares after authentication
+useEffect(() => {
+  const pendingShare = sessionStorage.getItem('dangit-shared-content');
+  
+  if (pendingShare && isAuthenticated && currentUser && !showOnboarding && !showSignUp) {
+    console.log('🚀 Processing pending share after authentication:', pendingShare);
+    setCurrentScreen('share');
+    
+    // Optional: Clear the URL params to clean up
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }
+}, [isAuthenticated, currentUser, showOnboarding, showSignUp]);
+
+// Check for existing user session on app start
+useEffect(() => {
+  const checkUserSession = async () => {
+    setIsLoadingUser(true);
+    
+    try {
+      const savedUser = localStorage.getItem('dangit-user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        
+        // Validate user data structure
+        if (userData.email && userData.name) {
+          // Generate a consistent ID based on email if not present
+          if (!userData.id) {
+            userData.id = userData.email.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
           }
+          
+          setCurrentUser(userData);
+          setIsAuthenticated(true);
+          setShowOnboarding(false);
+          setShowSignUp(false);
+          
+          // ✅ FIXED: Don't automatically set to 'home' - let share handling decide
+          const pendingShare = sessionStorage.getItem('dangit-shared-content');
+          if (pendingShare) {
+            console.log('📱 User has pending share - will open ShareScreen');
+            setCurrentScreen('share');
+          } else {
+            setCurrentScreen('home');
+          }
+          
+          console.log('User session restored:', { 
+            name: userData.name, 
+            email: userData.email,
+            id: userData.id 
+          });
         } else {
-          // No saved user, show onboarding
-          setShowOnboarding(true);
-          setCurrentScreen('onboarding');
+          throw new Error('Invalid user data structure');
         }
-      } catch (error) {
-        console.error('Error loading user session:', error);
-        localStorage.removeItem('dangit-user');
+      } else {
+        // No saved user, show onboarding
         setShowOnboarding(true);
         setCurrentScreen('onboarding');
-      } finally {
-        setIsLoadingUser(false);
       }
-    };
+    } catch (error) {
+      console.error('Error loading user session:', error);
+      localStorage.removeItem('dangit-user');
+      setShowOnboarding(true);
+      setCurrentScreen('onboarding');
+    } finally {
+      setIsLoadingUser(false);
+    }
+  };
 
-    checkUserSession();
-  }, []);
+  checkUserSession();
+}, []);
 
   // Screen transition handlers with smooth animations
   const handleCompleteOnboarding = () => {
