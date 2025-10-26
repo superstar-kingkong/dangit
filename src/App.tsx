@@ -9,7 +9,7 @@ import { EditProfileScreen } from './components/edit-profile-screen';
 import { ContentDetailView } from './components/content-detail-view';
 import { BottomNavigation } from './components/bottom-navigation';
 import { FloatingAddButton } from './components/floating-add-button';
-import { ShareScreen } from './components/ShareScreen';
+import ShareScreen from './components/ShareScreen';
 
 
 // User type for authentication
