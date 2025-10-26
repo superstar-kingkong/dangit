@@ -4,7 +4,7 @@ import {
   ExternalLink, Copy, Heart, Bookmark, Clock, Eye, PlayCircle, 
   PauseCircle, Volume2, Download, Star, Tag, Calendar, Link as LinkIcon,
   Image, Mic, FileText, Zap, Sparkles, CheckCircle2, AlertCircle, Save, X,
-  Bell, BellOff, Clock3, Repeat, Smartphone, Globe
+  Bell, BellOff, Clock3, Repeat, Smartphone, Globe, Edit2, Check, Instagram
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -29,6 +29,7 @@ interface ContentDetailViewProps {
     image_url?: string;
     content_type?: string;
     original_content?: string; // 🆕 Add this - needed for URLs
+    preview_data?: any; // ✅ Added for Instagram data
     notifications?: {
       enabled: boolean;
       frequency: 'once' | 'daily' | 'weekly';
@@ -78,6 +79,10 @@ export function ContentDetailView({
   const [editedTags, setEditedTags] = useState(content.tags);
   const [newTag, setNewTag] = useState('');
   
+  // ✅ NEW: Instagram-specific editing state
+  const [isEditingInstagram, setIsEditingInstagram] = useState(false);
+  const [instagramTitle, setInstagramTitle] = useState(content.title);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Content type icons and colors
@@ -92,13 +97,88 @@ export function ContentDetailView({
 
   const currentType = typeConfig[content.type as keyof typeof typeConfig] || typeConfig.manual;
 
+  // ✅ NEW: Check if content is Instagram
+  const isInstagramContent = content.original_content?.includes('instagram.com') || 
+                            content.originalUrl?.includes('instagram.com') ||
+                            content.preview_data?.url?.includes('instagram.com');
+
+  // ✅ NEW: Extract Instagram post ID
+  const getInstagramPostId = () => {
+    const url = content.original_content || content.originalUrl || content.preview_data?.url;
+    if (!url) return null;
+    
+    const postMatch = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/);
+    return postMatch ? postMatch[2] : null;
+  };
+
+  // ✅ FIXED: Handle Instagram title update using the correct endpoint
+const handleInstagramTitleSave = async () => {
+  try {
+    const { data: { session }, error: authError } = await supabase.auth.getSession();
+    
+    if (authError || !session?.access_token) {
+      throw new Error('Session expired. Please sign in again.');
+    }
+
+    console.log('🔒 Updating Instagram title via API endpoint');
+
+    // ✅ Use the correct /api/update-title endpoint
+    const response = await fetch(`${API_URL}/api/update-title`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ 
+        itemId: content.id, 
+        title: instagramTitle 
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update title');
+    }
+
+    const result = await response.json();
+    console.log('✅ Instagram title updated successfully:', result);
+
+    // Update local state
+    setEditedTitle(instagramTitle);
+    setIsEditingInstagram(false);
+    
+    // Notify parent component
+    if (onContentUpdate) {
+      onContentUpdate({
+        ...content,
+        title: instagramTitle
+      });
+    }
+
+    // Refresh screens
+    if ((window as any).refreshHomeScreen) {
+      (window as any).refreshHomeScreen();
+    }
+    if ((window as any).refreshSearchScreen) {
+      (window as any).refreshSearchScreen();
+    }
+
+    // Success feedback
+    console.log('✅ Instagram title updated successfully');
+    
+  } catch (error) {
+    console.error('Error updating Instagram title:', error);
+    alert(`Failed to update title: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
   // 🔒 FIXED: Fetch URL preview for URL type content with proper authentication
   useEffect(() => {
     // Check multiple ways a URL might be stored
     const urlToFetch = content.originalUrl || content.original_content;
     const isUrlContent = content.content_type === 'url' || content.type === 'url';
     
-    if (isUrlContent && urlToFetch) {
+    if (isUrlContent && urlToFetch && !isInstagramContent) { // Don't fetch preview for Instagram
       console.log('🔗 Fetching URL preview for:', urlToFetch);
       fetchUrlPreview(urlToFetch);
     }
@@ -143,6 +223,7 @@ export function ContentDetailView({
     setEditedTitle(content.title);
     setEditedDescription(content.description);
     setEditedTags(content.tags);
+    setInstagramTitle(content.title); // ✅ Initialize Instagram title
   }, [content]);
 
   // Animate entrance
@@ -171,96 +252,95 @@ export function ContentDetailView({
   }, []);
 
   const handleClose = () => {
-    if (isEditing) {
+    if (isEditing || isEditingInstagram) { // ✅ Also check Instagram editing
       setIsEditing(false);
+      setIsEditingInstagram(false);
       return;
     }
     setIsClosing(true);
     setTimeout(() => onClose(), 200);
   };
 
-// 🔒 FIXED: Handle completion toggle with proper data validation
-const handleToggleComplete = async () => {
-  const newCompletedState = !isCompleted;
-  setIsCompleted(newCompletedState);
-  
-  try {
-    // 🔍 Validate data before sending
-    if (!content.id) {
-      throw new Error('No item ID available');
-    }
+  // 🔒 FIXED: Handle completion toggle with proper data validation
+  const handleToggleComplete = async () => {
+    const newCompletedState = !isCompleted;
+    setIsCompleted(newCompletedState);
     
-    if (typeof newCompletedState !== 'boolean') {
-      throw new Error('Invalid completion state');
-    }
-    
-    console.log('🔒 Securely toggling completion for item:', content.id, 'to:', newCompletedState);
-    console.log('🔍 Item ID type:', typeof content.id, 'Length:', content.id?.length);
-    
-    const { data: { session }, error: authError } = await supabase.auth.getSession();
-    
-    if (authError || !session?.access_token) {
-      throw new Error('Session expired. Please sign in again.');
-    }
-
-    // ✅ Create request body explicitly
-    const requestBody = {
-      itemId: content.id,
-      completed: newCompletedState
-    };
-    
-    console.log('📤 Sending request body:', requestBody);
-
-    const response = await fetch(`${API_URL}/api/toggle-completion`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ Response error:', errorText);
+    try {
+      // 🔍 Validate data before sending
+      if (!content.id) {
+        throw new Error('No item ID available');
+      }
       
-      if (response.status === 401) {
+      if (typeof newCompletedState !== 'boolean') {
+        throw new Error('Invalid completion state');
+      }
+      
+      console.log('🔒 Securely toggling completion for item:', content.id, 'to:', newCompletedState);
+      console.log('🔍 Item ID type:', typeof content.id, 'Length:', content.id?.length);
+      
+      const { data: { session }, error: authError } = await supabase.auth.getSession();
+      
+      if (authError || !session?.access_token) {
         throw new Error('Session expired. Please sign in again.');
       }
-      if (response.status === 404) {
-        throw new Error('Item not found or access denied');
-      }
+
+      // ✅ Create request body explicitly
+      const requestBody = {
+        itemId: content.id,
+        completed: newCompletedState
+      };
       
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch {
-        errorData = { error: errorText };
+      console.log('📤 Sending request body:', requestBody);
+
+      const response = await fetch(`${API_URL}/api/toggle-completion`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response error:', errorText);
+        
+        if (response.status === 401) {
+          throw new Error('Session expired. Please sign in again.');
+        }
+        if (response.status === 404) {
+          throw new Error('Item not found or access denied');
+        }
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
+
+      const result = await response.json();
+      console.log('✅ Successfully toggled completion:', result);
+
+      if ((window as any).refreshHomeScreen) {
+        (window as any).refreshHomeScreen();
+      }
+      if ((window as any).refreshSearchScreen) {
+        (window as any).refreshSearchScreen();
+      }
+
+      onToggleComplete?.(content.id);
       
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+    } catch (error) {
+      console.error('Error toggling completion:', error);
+      setIsCompleted(!newCompletedState);
+      alert(`Failed to update completion status: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    const result = await response.json();
-    console.log('✅ Successfully toggled completion:', result);
-
-    if ((window as any).refreshHomeScreen) {
-      (window as any).refreshHomeScreen();
-    }
-    if ((window as any).refreshSearchScreen) {
-      (window as any).refreshSearchScreen();
-    }
-
-    onToggleComplete?.(content.id);
-    
-  } catch (error) {
-    console.error('Error toggling completion:', error);
-    setIsCompleted(!newCompletedState);
-    alert(`Failed to update completion status: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-};
-
-
+  };
 
   const handleCopyContent = () => {
     navigator.clipboard.writeText(content.description);
@@ -403,12 +483,12 @@ const handleToggleComplete = async () => {
                   : 'bg-white/80 hover:bg-white text-gray-700'
               }`}
             >
-              {isEditing ? <X className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
+              {(isEditing || isEditingInstagram) ? <X className="w-5 h-5" /> : <ArrowLeft className="w-5 h-5" />}
             </button>
             
-            {isEditing ? (
+            {(isEditing || isEditingInstagram) ? (
               <Button
-                onClick={handleSaveEdit}
+                onClick={isEditingInstagram ? handleInstagramTitleSave : handleSaveEdit}
                 className="rounded-full bg-green-600 hover:bg-green-700 text-white"
               >
                 <Save className="w-4 h-4 mr-2" />
@@ -482,7 +562,7 @@ const handleToggleComplete = async () => {
           </div>
 
           {/* Actions dropdown */}
-          {showActions && !isEditing && (
+          {showActions && !isEditing && !isEditingInstagram && (
             <div className={`absolute right-4 top-20 rounded-2xl shadow-xl border py-2 z-10 min-w-48 animate-in slide-in-from-top-2 ${
               darkMode 
                 ? 'bg-gray-800 border-gray-700' 
@@ -490,7 +570,11 @@ const handleToggleComplete = async () => {
             }`}>
               <button 
                 onClick={() => {
-                  setIsEditing(true);
+                  if (isInstagramContent) {
+                    setIsEditingInstagram(true);
+                  } else {
+                    setIsEditing(true);
+                  }
                   setShowActions(false);
                 }}
                 className={`w-full px-4 py-3 text-left flex items-center gap-3 ${
@@ -500,7 +584,7 @@ const handleToggleComplete = async () => {
                 }`}
               >
                 <Edit3 className={`w-4 h-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                <span>Edit Content</span>
+                <span>{isInstagramContent ? 'Edit Title' : 'Edit Content'}</span>
               </button>
               <button 
                 onClick={handleCopyContent}
@@ -552,6 +636,96 @@ const handleToggleComplete = async () => {
         }}
       >
         <div className="p-6 space-y-6">
+          
+          {/* ✅ NEW: Instagram Content Section */}
+          {isInstagramContent && (
+            <div className="space-y-4">
+              {/* Editable Instagram Title */}
+              <div className={`flex items-center gap-3 bg-gradient-to-r ${
+                darkMode 
+                  ? 'from-purple-900/20 to-pink-900/20 border border-purple-800/30' 
+                  : 'from-purple-50 to-pink-50'
+              } p-4 rounded-xl`}>
+                <Instagram className="text-pink-500" size={24} />
+                {isEditingInstagram ? (
+                  <div className="flex-1 flex gap-2">
+                    <input
+                      type="text"
+                      value={instagramTitle}
+                      onChange={(e) => setInstagramTitle(e.target.value)}
+                      className={`flex-1 px-3 py-2 border rounded-lg ${
+                        darkMode 
+                          ? 'bg-gray-800 border-gray-600 text-white' 
+                          : 'bg-white border-gray-300 text-gray-900'
+                      }`}
+                      placeholder="Describe this reel..."
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleInstagramTitleSave}
+                      className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      <Check size={20} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-between">
+                    <h3 className={`font-semibold text-lg ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {instagramTitle}
+                    </h3>
+                    <button
+                      onClick={() => setIsEditingInstagram(true)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        darkMode 
+                          ? 'hover:bg-gray-800/50' 
+                          : 'hover:bg-white/50'
+                      }`}
+                    >
+                      <Edit2 size={18} className={darkMode ? 'text-gray-400' : 'text-gray-600'} />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Instagram Embed */}
+              {(() => {
+                const postId = getInstagramPostId();
+                return postId ? (
+                  <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                    <iframe
+                      src={`https://www.instagram.com/p/${postId}/embed`}
+                      width="100%"
+                      height="600"
+                      frameBorder="0"
+                      scrolling="no"
+                      className="rounded-lg"
+                      title="Instagram post"
+                    />
+                  </div>
+                ) : null;
+              })()}
+
+              {/* Open in Instagram Button */}
+              <a
+                href={displayUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-medium hover:shadow-lg transition-all"
+              >
+                Open in Instagram <ExternalLink size={18} />
+              </a>
+
+              {/* Tip */}
+              <div className={`border rounded-lg p-3 text-sm ${
+                darkMode 
+                  ? 'bg-blue-900/20 border-blue-800/30 text-blue-300' 
+                  : 'bg-blue-50 border-blue-200 text-blue-800'
+              }`}>
+                💡 <strong>Tip:</strong> Click the edit button to add your own description for this reel!
+              </div>
+            </div>
+          )}
+
           {/* 🆕 Screenshot Preview Section */}
           {content.image_url && content.content_type === 'image' && (
             <div className={`rounded-2xl border overflow-hidden shadow-lg ${
@@ -594,8 +768,8 @@ const handleToggleComplete = async () => {
             </div>
           )}
 
-          {/* 🔒 FIXED: URL Preview Section with proper checks */}
-          {isUrlType && displayUrl && (
+          {/* 🔒 FIXED: URL Preview Section - Only for non-Instagram URLs */}
+          {isUrlType && displayUrl && !isInstagramContent && (
             <div className={`rounded-2xl border overflow-hidden shadow-lg ${
               darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
             }`}>
@@ -689,76 +863,80 @@ const handleToggleComplete = async () => {
             </div>
           )}
 
-          {/* Title with completion state */}
-          <div className="relative">
-            {isEditing ? (
-              <textarea
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                className={`w-full text-2xl font-bold leading-tight resize-none border-2 rounded-lg p-3 transition-all duration-300 ${
-                  darkMode 
-                    ? 'bg-gray-800 border-gray-600 text-white focus:border-indigo-400' 
-                    : 'bg-white border-gray-200 text-gray-900 focus:border-indigo-400'
-                }`}
-                rows={2}
-              />
-            ) : (
-              <h1 className={`text-2xl font-bold leading-tight transition-all duration-300 ${
-                isCompleted 
-                  ? darkMode ? 'text-gray-500 line-through opacity-60' : 'text-gray-500 line-through opacity-60'
-                  : darkMode ? 'text-white' : 'text-gray-900'
-              }`}>
-                {editedTitle}
-              </h1>
-            )}
-            {isCompleted && !isEditing && (
-              <div className="absolute -right-2 -top-2">
-                <CheckCircle2 className="w-8 h-8 text-green-500 animate-in zoom-in-50" />
-              </div>
-            )}
-          </div>
+          {/* Title with completion state - Skip for Instagram (shown above) */}
+          {!isInstagramContent && (
+            <div className="relative">
+              {isEditing ? (
+                <textarea
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  className={`w-full text-2xl font-bold leading-tight resize-none border-2 rounded-lg p-3 transition-all duration-300 ${
+                    darkMode 
+                      ? 'bg-gray-800 border-gray-600 text-white focus:border-indigo-400' 
+                      : 'bg-white border-gray-200 text-gray-900 focus:border-indigo-400'
+                  }`}
+                  rows={2}
+                />
+              ) : (
+                <h1 className={`text-2xl font-bold leading-tight transition-all duration-300 ${
+                  isCompleted 
+                    ? darkMode ? 'text-gray-500 line-through opacity-60' : 'text-gray-500 line-through opacity-60'
+                    : darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  {editedTitle}
+                </h1>
+              )}
+              {isCompleted && !isEditing && (
+                <div className="absolute -right-2 -top-2">
+                  <CheckCircle2 className="w-8 h-8 text-green-500 animate-in zoom-in-50" />
+                </div>
+              )}
+            </div>
+          )}
 
-          {/* Content Details section */}
-          <div className={`rounded-2xl border p-5 shadow-sm ${
-            darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-          }`}>
-            <h3 className={`font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              <FileText className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-              Content Details
-            </h3>
-            
-            {isEditing ? (
-              <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
-                className={`w-full h-48 resize-none border-2 rounded-lg p-3 transition-all duration-300 ${
-                  darkMode 
-                    ? 'bg-gray-700 border-gray-600 text-gray-300 focus:border-indigo-400' 
-                    : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-indigo-400'
-                }`}
-                placeholder="Enter content description..."
-              />
-            ) : (
-              <div className={`leading-relaxed transition-all duration-300 ${
-                showFullDescription ? '' : 'line-clamp-4'
-              } ${
-                isCompleted 
-                  ? darkMode ? 'text-gray-500 opacity-60' : 'text-gray-500 opacity-60'
-                  : darkMode ? 'text-gray-300' : 'text-gray-700'
-              }`}>
-                <p>{editedDescription}</p>
-              </div>
-            )}
-            
-            {!showFullDescription && !isEditing && editedDescription.length > 200 && (
-              <button 
-                onClick={() => setShowFullDescription(true)}
-                className="mt-3 text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
-              >
-                Read more...
-              </button>
-            )}
-          </div>
+          {/* Content Details section - Skip for Instagram */}
+          {!isInstagramContent && (
+            <div className={`rounded-2xl border p-5 shadow-sm ${
+              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <h3 className={`font-semibold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <FileText className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                Content Details
+              </h3>
+              
+              {isEditing ? (
+                <textarea
+                  value={editedDescription}
+                  onChange={(e) => setEditedDescription(e.target.value)}
+                  className={`w-full h-48 resize-none border-2 rounded-lg p-3 transition-all duration-300 ${
+                    darkMode 
+                      ? 'bg-gray-700 border-gray-600 text-gray-300 focus:border-indigo-400' 
+                      : 'bg-gray-50 border-gray-200 text-gray-700 focus:border-indigo-400'
+                  }`}
+                  placeholder="Enter content description..."
+                />
+              ) : (
+                <div className={`leading-relaxed transition-all duration-300 ${
+                  showFullDescription ? '' : 'line-clamp-4'
+                } ${
+                  isCompleted 
+                    ? darkMode ? 'text-gray-500 opacity-60' : 'text-gray-500 opacity-60'
+                    : darkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  <p>{editedDescription}</p>
+                </div>
+              )}
+              
+              {!showFullDescription && !isEditing && editedDescription.length > 200 && (
+                <button 
+                  onClick={() => setShowFullDescription(true)}
+                  className="mt-3 text-indigo-600 font-medium hover:text-indigo-700 transition-colors"
+                >
+                  Read more...
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Tags Section */}
           <div className={`rounded-2xl border p-5 shadow-sm ${
@@ -921,12 +1099,25 @@ const handleToggleComplete = async () => {
             </div>
           </div>
 
-          {!isEditing && (
+          {!isEditing && !isEditingInstagram && (
             <div className="flex gap-3">
-              <Button variant="outline" className={`flex-1 rounded-2xl h-12 backdrop-blur-sm text-base font-medium ${darkMode ? 'bg-gray-800/80 border-gray-700 text-gray-300 hover:bg-gray-700' : 'bg-white/80 border-gray-200 text-gray-900 hover:bg-gray-50'}`} onClick={() => setIsEditing(true)}>
-                <Edit3 className="w-4 h-4 mr-2" />Edit
+              <Button 
+                variant="outline" 
+                className={`flex-1 rounded-2xl h-12 backdrop-blur-sm text-base font-medium ${
+                  darkMode ? 'bg-gray-800/80 border-gray-700 text-gray-300 hover:bg-gray-700' : 'bg-white/80 border-gray-200 text-gray-900 hover:bg-gray-50'
+                }`} 
+                onClick={() => isInstagramContent ? setIsEditingInstagram(true) : setIsEditing(true)}
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                {isInstagramContent ? 'Edit Title' : 'Edit'}
               </Button>
-              <Button variant="outline" className={`flex-1 rounded-2xl h-12 backdrop-blur-sm text-base font-medium ${darkMode ? 'bg-gray-800/80 border-gray-700 text-gray-300 hover:bg-gray-700' : 'bg-white/80 border-gray-200 text-gray-900 hover:bg-gray-50'}`} onClick={onShare}>
+              <Button 
+                variant="outline" 
+                className={`flex-1 rounded-2xl h-12 backdrop-blur-sm text-base font-medium ${
+                  darkMode ? 'bg-gray-800/80 border-gray-700 text-gray-300 hover:bg-gray-700' : 'bg-white/80 border-gray-200 text-gray-900 hover:bg-gray-50'
+                }`} 
+                onClick={onShare}
+              >
                 <Share className="w-4 h-4 mr-2" />Share
               </Button>
             </div>
