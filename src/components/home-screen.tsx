@@ -1,3 +1,4 @@
+import { PWAInstallBanner } from './PWAInstallBanner';
 import { API_URL } from '../config';
 import React, { useState, useEffect, useMemo } from "react";
 import { supabase } from '../lib/supabase';
@@ -568,71 +569,8 @@ export function HomeScreen({
         </div>
 
         <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
-          {showNotificationBanner && (
-            <div className={`${
-              darkMode
-                ? "bg-gradient-to-r from-indigo-900/60 to-purple-900/60 border border-indigo-700"
-                : "bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100"
-            } rounded-2xl p-5 mb-6 relative shadow-sm`}>
-              <button
-                onClick={() => setShowNotificationBanner(false)}
-                className={`absolute top-4 right-4 ${
-                  darkMode
-                    ? "text-indigo-400 hover:text-indigo-300 hover:bg-indigo-800/50"
-                    : "text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100"
-                } transition-colors p-1.5 rounded-lg`}
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className="flex items-start gap-4 pr-10">
-                <div className={`p-3 ${
-                  darkMode ? "bg-indigo-800/60" : "bg-indigo-100"
-                } rounded-xl flex-shrink-0`}>
-                  <Download className={`w-5 h-5 ${
-                    darkMode ? "text-indigo-300" : "text-indigo-600"
-                  }`} />
-                </div>
-                <div className="flex-1">
-                  <h4 className={`${
-                    darkMode ? "text-indigo-200" : "text-indigo-900"
-                  } font-bold mb-2 text-lg`}>
-                    📱 Install DANGIT App
-                  </h4>
-                  <p className={`${
-                    darkMode ? "text-indigo-300" : "text-indigo-800"
-                  } text-sm leading-relaxed mb-3`}>
-                    Add to your home screen for quick access. Works like a native app!
-                  </p>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
-                      darkMode 
-                        ? "bg-gray-800/50 text-gray-300" 
-                        : "bg-white/80 text-slate-600"
-                    }`}>
-                      <Share className="w-3 h-3" />
-                      Tap Share
-                    </div>
-                    <span className={`text-xs ${darkMode ? "text-indigo-400" : "text-indigo-600"}`}>
-                      →
-                    </span>
-                    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
-                      darkMode 
-                        ? "bg-gray-800/50 text-gray-300" 
-                        : "bg-white/80 text-slate-600"
-                    }`}>
-                      <Download className="w-3 h-3" />
-                      Add to Home Screen
-                    </div>
-                  </div>
-                  <p className={`text-xs ${
-                    darkMode ? "text-indigo-400/80" : "text-indigo-600/80"
-                  }`}>
-                    Or use your browser's menu button
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* ✅ ADD: Smart PWA Install Banner */}
+          <PWAInstallBanner darkMode={darkMode} />
 
           {stats.total > 0 && (
             <div className={`${
