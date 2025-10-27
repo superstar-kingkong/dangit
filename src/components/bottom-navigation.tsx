@@ -229,13 +229,13 @@ export function BottomNavigation({ currentScreen, onNavigate, darkMode = false }
       </div>
 
       {/* CRITICAL: Bottom spacer to prevent content overlap */}
-      <div 
-        className="bottom-navigation-spacer"
-        style={{
-          height: 'calc(80px + env(safe-area-inset-bottom, 0px))',
-          minHeight: '80px'
-        }}
-      />
+          <div 
+      className="bottom-navigation-spacer"
+      style={{
+        height: 'calc(70px + env(safe-area-inset-bottom, 0px))', // Reduced from 80px
+        minHeight: '70px'
+      }}
+    />
     </>
   );
 }

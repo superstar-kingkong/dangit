@@ -52,21 +52,31 @@ interface MenuSection {
   items: MenuItem[];
 }
 
-// Better Switch Component
+// ✅ FIXED: Improved Switch Component with better visual feedback
 const Switch = ({ checked, onCheckedChange, darkMode }: any) => (
   <button
     onClick={() => onCheckedChange(!checked)}
-    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors shadow-inner ${
+    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 shadow-inner focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+      darkMode ? 'focus:ring-offset-gray-800' : 'focus:ring-offset-white'
+    } ${
       checked 
-        ? 'bg-gradient-to-r from-indigo-500 to-purple-600' 
-        : darkMode ? 'bg-gray-700' : 'bg-gray-300'
+        ? 'bg-gradient-to-r from-indigo-500 to-purple-600 shadow-lg' 
+        : darkMode ? 'bg-gray-600' : 'bg-gray-300'
     }`}
+    role="switch"
+    aria-checked={checked}
   >
     <span
-      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform ${
-        checked ? 'translate-x-6' : 'translate-x-1'
+      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-all duration-300 ${
+        checked ? 'translate-x-6 shadow-xl' : 'translate-x-1'
       }`}
     />
+    {/* Visual indicator dot */}
+    <span className={`absolute inset-0 rounded-full transition-opacity duration-300 ${
+      checked ? 'opacity-100' : 'opacity-0'
+    }`}>
+      <span className="absolute top-1.5 left-2 w-1 h-1 bg-white/40 rounded-full"></span>
+    </span>
   </button>
 );
 
@@ -227,7 +237,13 @@ export function ProfileScreen({
     }
   };
 
-  // ✅ UPDATED: Menu sections with feedback button and removed notifications
+  // ✅ FIXED: Dark mode toggle handler with proper callback
+  const handleDarkModeToggle = (newValue: boolean) => {
+    console.log('Dark mode toggle:', newValue);
+    onDarkModeToggle(newValue);
+  };
+
+  // ✅ UPDATED: Menu sections with working dark mode toggle
   const menuSections: MenuSection[] = [
     {
       title: 'Preferences',
@@ -238,7 +254,7 @@ export function ProfileScreen({
           color: darkMode ? 'text-indigo-400' : 'text-indigo-600', 
           hasSwitch: true, 
           value: darkMode, 
-          setter: onDarkModeToggle
+          setter: handleDarkModeToggle
         } as SwitchMenuItem
       ]
     },
@@ -616,7 +632,7 @@ export function ProfileScreen({
           ))}
         </div>
 
-        {/* ✅ FIXED: Reduced footer padding */}
+        {/* ✅ FIXED: Removed lock emoji from footer */}
         <div className="px-6 pb-6 text-center">
           <div className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="text-3xl font-black mb-2">
@@ -624,7 +640,7 @@ export function ProfileScreen({
               <span className="text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">IT</span>
             </div>
             <p className={`text-sm mb-1 font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Version 1.0.0 🔒 Secure
+              Version 1.0.0
             </p>
             <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
               Made with ❤️ for productivity enthusiasts
@@ -650,13 +666,13 @@ export function ProfileScreen({
       )}
 
       {showWhatsNew && (
-      <WhatsNewScreen 
-        darkMode={darkMode}
-        onClose={() => setShowWhatsNew(false)}
-        onOpenFeedback={() => {
-          setShowWhatsNew(false);
-          setShowFeedback(true);
-        }}
+        <WhatsNewScreen 
+          darkMode={darkMode}
+          onClose={() => setShowWhatsNew(false)}
+          onOpenFeedback={() => {
+            setShowWhatsNew(false);
+            setShowFeedback(true);
+          }}
         />
       )}
 

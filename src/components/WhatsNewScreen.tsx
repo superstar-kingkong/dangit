@@ -1,5 +1,5 @@
 // components/WhatsNewScreen.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Clock, Zap } from 'lucide-react';
 
 interface WhatsNewScreenProps {
@@ -9,6 +9,21 @@ interface WhatsNewScreenProps {
 }
 
 export function WhatsNewScreen({ darkMode, onClose, onOpenFeedback }: WhatsNewScreenProps) {
+  // ✅ CRITICAL: Prevent body scroll when modal opens
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
   const recentFeatures = [
     {
       title: 'Secure Authentication',
@@ -73,122 +88,135 @@ export function WhatsNewScreen({ darkMode, onClose, onOpenFeedback }: WhatsNewSc
   };
 
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-      {/* ✅ FIXED: Header */}
-      <div className={`flex-shrink-0 px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-        <div className="flex items-center justify-between">
-          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-            What's New
-          </h1>
-          <button
-            onClick={onClose}
-            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
-          >
-            <X className="w-5 h-5" />
-          </button>
+    <div 
+      className={`fixed inset-0 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+      style={{ 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 60,
+        overflow: 'hidden'
+      }}
+    >
+      <div className="h-screen flex flex-col">
+        {/* Header - Fixed */}
+        <div className={`flex-shrink-0 px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <div className="flex items-center justify-between">
+            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              What's New
+            </h1>
+            <button
+              onClick={onClose}
+              className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* ✅ FIXED: Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 pb-24">
-          {/* Recent Updates */}
-          <div className="mb-8">
-            <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              Recent Updates
-            </h2>
-            <div className="space-y-4">
-              {recentFeatures.map((feature, index) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-xl border-l-4 border-green-500 ${
-                    darkMode ? 'bg-gray-800' : 'bg-green-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {feature.title}
-                      </h3>
-                      <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {feature.description}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Live
-                        </span>
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {/* Recent Updates */}
+            <div className="mb-8">
+              <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <CheckCircle className="w-5 h-5 text-green-500" />
+                Recent Updates
+              </h2>
+              <div className="space-y-4">
+                {recentFeatures.map((feature, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-xl border-l-4 border-green-500 ${
+                      darkMode ? 'bg-gray-800' : 'bg-green-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {feature.title}
+                        </h3>
+                        <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {feature.description}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                            Live
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Coming Soon */}
-          <div>
-            <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              <Clock className="w-5 h-5 text-blue-500" />
-              Coming Soon
-            </h2>
-            <div className="space-y-4">
-              {upcomingFeatures.map((feature, index) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-xl border-l-4 border-blue-500 ${
-                    darkMode ? 'bg-gray-800' : 'bg-blue-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        {feature.title}
-                      </h3>
-                      <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        {feature.description}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                          Planned
-                        </span>
+            {/* Coming Soon */}
+            <div>
+              <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <Clock className="w-5 h-5 text-blue-500" />
+                Coming Soon
+              </h2>
+              <div className="space-y-4">
+                {upcomingFeatures.map((feature, index) => (
+                  <div
+                    key={index}
+                    className={`p-4 rounded-xl border-l-4 border-blue-500 ${
+                      darkMode ? 'bg-gray-800' : 'bg-blue-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {feature.title}
+                        </h3>
+                        <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {feature.description}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                            Planned
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Vote for Features */}
-          <div className={`mt-8 p-4 rounded-xl border-2 border-dashed ${
-            darkMode ? 'border-purple-600 bg-purple-900/20' : 'border-purple-300 bg-purple-50'
-          }`}>
-            <div className="text-center">
-              <Sparkles className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-              <h3 className={`font-bold mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>
-                Have a Feature Idea?
-              </h3>
-              <p className={`text-sm mb-3 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-                Share your suggestions and vote on features in the Feedback section!
-              </p>
-              <button
-                onClick={handleSuggestFeature}
-                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-              >
-                Suggest Feature
-              </button>
+            {/* Vote for Features */}
+            <div className={`mt-8 p-4 rounded-xl border-2 border-dashed ${
+              darkMode ? 'border-purple-600 bg-purple-900/20' : 'border-purple-300 bg-purple-50'
+            }`}>
+              <div className="text-center">
+                <Sparkles className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+                <h3 className={`font-bold mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>
+                  Have a Feature Idea?
+                </h3>
+                <p className={`text-sm mb-3 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                  Share your suggestions and vote on features in the Feedback section!
+                </p>
+                <button
+                  onClick={handleSuggestFeature}
+                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Suggest Feature
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ✅ NEW: Footer */}
-      <div className={`flex-shrink-0 px-6 py-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
-        <div className="text-center">
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            More exciting features coming soon! Stay tuned...
-          </p>
+        {/* Footer - Fixed */}
+        <div className={`flex-shrink-0 px-6 py-3 border-t ${darkMode ? 'border-gray-700 bg-gray-800/80' : 'border-gray-200 bg-gray-50/80'}`}>
+          <div className="text-center">
+            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              More exciting features coming soon! Stay tuned...
+            </p>
+          </div>
         </div>
       </div>
     </div>
