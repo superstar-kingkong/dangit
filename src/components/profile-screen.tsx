@@ -1,5 +1,5 @@
 import { API_URL } from '../config';
-import { supabase } from '../lib/supabase'; // 🔒 Import your existing supabase client
+import { supabase } from '../lib/supabase';
 import React, { useState, useEffect } from 'react';
 import { 
   User, Settings, HelpCircle, Shield, Trash2, LogOut, BarChart3, 
@@ -27,7 +27,6 @@ interface ProfileScreenProps {
   };
 }
 
-// FIXED: Define proper types for menu items
 interface SwitchMenuItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -52,7 +51,6 @@ interface MenuSection {
   items: MenuItem[];
 }
 
-// ✅ FIXED: Improved Switch Component with better visual feedback
 const Switch = ({ checked, onCheckedChange, darkMode }: any) => (
   <button
     onClick={() => onCheckedChange(!checked)}
@@ -71,7 +69,6 @@ const Switch = ({ checked, onCheckedChange, darkMode }: any) => (
         checked ? 'translate-x-6 shadow-xl' : 'translate-x-1'
       }`}
     />
-    {/* Visual indicator dot */}
     <span className={`absolute inset-0 rounded-full transition-opacity duration-300 ${
       checked ? 'opacity-100' : 'opacity-0'
     }`}>
@@ -97,13 +94,9 @@ export function ProfileScreen({
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState(0);
   
-  // ✅ NEW: Modal states
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-  const [showWhatsNew, setShowWhatsNew] = useState(false);
-  const [showPrivacy, setShowPrivacy] = useState(false);
+  // ✅ FIXED: Single modal state - only one can be open at a time
+  const [currentModal, setCurrentModal] = useState<'feedback' | 'help' | 'whatsNew' | 'privacy' | null>(null);
 
-  // Calculate real streak from user activity
   const calculateStreak = (items: any[]) => {
     if (!items || items.length === 0) return 0;
     
@@ -113,13 +106,11 @@ export function ProfileScreen({
     let currentStreak = 0;
     let checkDate = new Date(today);
     
-    // Sort items by date
     const sortedItems = items
       .map(item => new Date(item.created_at))
       .sort((a, b) => b.getTime() - a.getTime());
     
-    // Check consecutive days
-    for (let i = 0; i < 30; i++) { // Check last 30 days max
+    for (let i = 0; i < 30; i++) {
       const hasActivity = sortedItems.some(date => {
         const itemDate = new Date(date);
         itemDate.setHours(0, 0, 0, 0);
@@ -137,13 +128,11 @@ export function ProfileScreen({
     return currentStreak;
   };
 
-  // 🔒 SECURE: Load user stats from server with authentication
   const loadUserStats = async () => {
     try {
       setLoading(true);
       console.log('🔒 Loading profile stats securely...');
       
-      // Get auth token
       const { data: { session }, error: authError } = await supabase.auth.getSession();
       
       if (authError || !session?.access_token) {
@@ -152,12 +141,11 @@ export function ProfileScreen({
         return;
       }
       
-      // Get stats with authentication
       const statsResponse = await fetch(`${API_URL}/api/user-stats`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       
@@ -170,12 +158,11 @@ export function ProfileScreen({
         console.error('Session expired in profile stats');
       }
       
-      // Get all items to calculate streak with authentication
       const itemsResponse = await fetch(`${API_URL}/api/saved-items`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
+          'Authorization': `Bearer ${session.access_token}`
         }
       });
       
@@ -200,7 +187,6 @@ export function ProfileScreen({
     loadUserStats();
   }, [userProfile.email]);
 
-  // Convert category breakdown to array
   const categoryArray = Object.entries(stats.categoryBreakdown || {}).map(([name, count]) => {
     const colors = {
       'Work': '#2563EB',
@@ -237,13 +223,11 @@ export function ProfileScreen({
     }
   };
 
-  // ✅ FIXED: Dark mode toggle handler with proper callback
   const handleDarkModeToggle = (newValue: boolean) => {
     console.log('Dark mode toggle:', newValue);
     onDarkModeToggle(newValue);
   };
 
-  // ✅ UPDATED: Menu sections with working dark mode toggle
   const menuSections: MenuSection[] = [
     {
       title: 'Preferences',
@@ -284,47 +268,58 @@ export function ProfileScreen({
     }
   ];
 
+  // ✅ FIXED: Proper modal handling with delay to prevent overlaps
   const handleAction = (action: string) => {
-    switch (action) {
-      case 'feedback':
-        setShowFeedback(true);
-        break;
-      case 'help':
-        setShowHelp(true);
-        break;
-      case 'updates':
-        setShowWhatsNew(true);
-        break;
-      case 'privacy':
-        setShowPrivacy(true);
-        break;
-      case 'edit':
-        onEditProfile();
-        break;
-      case 'logout':
-        handleSignOut();
-        break;
-      case 'clear':
-        handleClearData();
-        break;
-      case 'export':
-        alert('Data export would start here');
-        break;
-      case 'share':
-        if (navigator.share) {
-          navigator.share({
-            title: 'DANGIT - Smart Content Organizer',
-            text: 'Check out this amazing app for organizing your content!',
-            url: window.location.href
-          });
-        } else {
-          alert('Share functionality would open here');
-        }
-        break;
-    }
+    // Close any existing modal first
+    setCurrentModal(null);
+    
+    // Add small delay then open requested modal
+    setTimeout(() => {
+      switch (action) {
+        case 'feedback':
+          setCurrentModal('feedback');
+          break;
+        case 'help':
+          setCurrentModal('help');
+          break;
+        case 'updates':
+          setCurrentModal('whatsNew');
+          break;
+        case 'privacy':
+          setCurrentModal('privacy');
+          break;
+        case 'edit':
+          onEditProfile();
+          break;
+        case 'logout':
+          handleSignOut();
+          break;
+        case 'clear':
+          handleClearData();
+          break;
+        case 'export':
+          alert('Data export would start here');
+          break;
+        case 'share':
+          if (navigator.share) {
+            navigator.share({
+              title: 'DANGIT - Smart Content Organizer',
+              text: 'Check out this amazing app for organizing your content!',
+              url: window.location.href
+            });
+          } else {
+            alert('Share functionality would open here');
+          }
+          break;
+      }
+    }, 50);
   };
 
-  // FIXED: Type guard functions to check menu item types
+  // ✅ FIXED: Single close handler for all modals
+  const closeModal = () => {
+    setCurrentModal(null);
+  };
+
   const isSwitchMenuItem = (item: MenuItem): item is SwitchMenuItem => {
     return item.hasSwitch === true;
   };
@@ -335,9 +330,7 @@ export function ProfileScreen({
 
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      
-      {/* ✅ FIXED: Proper scrolling container with reduced bottom padding */}
-      <div className="overflow-y-auto pb-20"> {/* Reduced from excessive padding */}
+      <div className="overflow-y-auto pb-20">
         
         {/* Header with User Info */}
         <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 px-6 pt-8 pb-8">
@@ -438,7 +431,7 @@ export function ProfileScreen({
           </div>
         </div>
 
-        {/* Analytics Section - Only show if user has content */}
+        {/* Analytics Section */}
         {!loading && stats.totalItems > 0 && (
           <div className="px-6 py-6">
             <h3 className={`text-xl font-black mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -446,7 +439,6 @@ export function ProfileScreen({
               Your Analytics
             </h3>
             
-            {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-blue-50 to-blue-100'}`}>
                 <div className="flex items-center justify-between mb-3">
@@ -509,7 +501,6 @@ export function ProfileScreen({
               </div>
             </div>
 
-            {/* Categories */}
             {categoryArray.length > 0 && (
               <div className={`p-5 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
                 <h4 className={`text-lg font-black mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -569,7 +560,6 @@ export function ProfileScreen({
                 {section.items.map((item, index) => {
                   const Icon = item.icon;
                   
-                  // FIXED: Use type guards to safely access properties
                   if (isSwitchMenuItem(item)) {
                     return (
                       <div
@@ -632,7 +622,6 @@ export function ProfileScreen({
           ))}
         </div>
 
-        {/* ✅ FIXED: Removed lock emoji from footer */}
         <div className="px-6 pb-6 text-center">
           <div className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="text-3xl font-black mb-2">
@@ -649,37 +638,37 @@ export function ProfileScreen({
         </div>
       </div>
 
-      {/* ✅ NEW: Modal screens */}
-      {showFeedback && (
+      {/* ✅ FIXED: Single modal rendering - no overlaps */}
+      {currentModal === 'feedback' && (
         <FeedbackSystem 
           userId={userProfile.email} 
           darkMode={darkMode}
-          onClose={() => setShowFeedback(false)}
+          onClose={closeModal}
         />
       )}
 
-      {showHelp && (
+      {currentModal === 'help' && (
         <HelpScreen 
           darkMode={darkMode}
-          onClose={() => setShowHelp(false)}
+          onClose={closeModal}
         />
       )}
 
-      {showWhatsNew && (
+      {currentModal === 'whatsNew' && (
         <WhatsNewScreen 
           darkMode={darkMode}
-          onClose={() => setShowWhatsNew(false)}
+          onClose={closeModal}
           onOpenFeedback={() => {
-            setShowWhatsNew(false);
-            setShowFeedback(true);
+            setCurrentModal(null);
+            setTimeout(() => setCurrentModal('feedback'), 50);
           }}
         />
       )}
 
-      {showPrivacy && (
+      {currentModal === 'privacy' && (
         <PrivacyScreen 
           darkMode={darkMode}
-          onClose={() => setShowPrivacy(false)}
+          onClose={closeModal}
         />
       )}
     </div>
