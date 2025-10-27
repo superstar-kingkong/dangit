@@ -638,38 +638,42 @@ export function ProfileScreen({
         </div>
       </div>
 
-      {/* ✅ FIXED: Single modal rendering - no overlaps */}
-      {currentModal === 'feedback' && (
-        <FeedbackSystem 
-          userId={userProfile.email} 
-          darkMode={darkMode}
-          onClose={closeModal}
-        />
-      )}
+      {/* Modal Rendering - FIXED */}
+      {currentModal && (
+        <div className="fixed inset-0 z-[9999]">
+          {currentModal === 'feedback' && (
+            <FeedbackSystem 
+              userId={userProfile.email} 
+              darkMode={darkMode}
+              onClose={closeModal}
+            />
+          )}
 
-      {currentModal === 'help' && (
-        <HelpScreen 
-          darkMode={darkMode}
-          onClose={closeModal}
-        />
-      )}
+          {currentModal === 'help' && (
+            <HelpScreen 
+              darkMode={darkMode}
+              onClose={closeModal}
+            />
+          )}
 
-      {currentModal === 'whatsNew' && (
-        <WhatsNewScreen 
-          darkMode={darkMode}
-          onClose={closeModal}
-          onOpenFeedback={() => {
-            setCurrentModal(null);
-            setTimeout(() => setCurrentModal('feedback'), 50);
-          }}
-        />
-      )}
+          {currentModal === 'whatsNew' && (
+            <WhatsNewScreen 
+              darkMode={darkMode}
+              onClose={closeModal}
+              onOpenFeedback={() => {
+                setCurrentModal(null);
+                setTimeout(() => setCurrentModal('feedback'), 100);
+              }}
+            />
+          )}
 
-      {currentModal === 'privacy' && (
-        <PrivacyScreen 
-          darkMode={darkMode}
-          onClose={closeModal}
-        />
+          {currentModal === 'privacy' && (
+            <PrivacyScreen 
+              darkMode={darkMode}
+              onClose={closeModal}
+            />
+          )}
+        </div>
       )}
     </div>
   );
