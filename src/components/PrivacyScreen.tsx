@@ -57,24 +57,25 @@ export function PrivacyScreen({ darkMode, onClose }: PrivacyScreenProps) {
   ];
 
   return (
-    <div className={`fixed inset-0 z-50 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              🔐 Privacy & Security
-            </h1>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <div className={`fixed inset-0 z-50 flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      {/* ✅ FIXED: Header */}
+      <div className={`flex-shrink-0 px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between">
+          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Privacy & Security
+          </h1>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+      {/* ✅ FIXED: Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 pb-24">
           {/* Security Features */}
           <div className="mb-8">
             <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -113,7 +114,7 @@ export function PrivacyScreen({ darkMode, onClose }: PrivacyScreenProps) {
               darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-orange-50 border border-orange-200'
             }`}>
               <h3 className={`font-bold mb-3 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
-                ✅ What We Collect
+                What We Collect
               </h3>
               <ul className="space-y-2">
                 {dataWeCollect.map((item, index) => (
@@ -130,7 +131,7 @@ export function PrivacyScreen({ darkMode, onClose }: PrivacyScreenProps) {
               darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-green-50 border border-green-200'
             }`}>
               <h3 className={`font-bold mb-3 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                ❌ What We Never Collect
+                What We Never Collect
               </h3>
               <ul className="space-y-2">
                 {dataWeNeverCollect.map((item, index) => (
@@ -159,10 +160,19 @@ export function PrivacyScreen({ darkMode, onClose }: PrivacyScreenProps) {
                 onClick={() => window.open('mailto:dangit.app@gmail.com?subject=Privacy Question', '_blank')}
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
-                📧 Contact Privacy Team
+                Contact Privacy Team
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ✅ NEW: Footer */}
+      <div className={`flex-shrink-0 px-6 py-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
+        <div className="text-center">
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Your privacy and security are our top priorities
+          </p>
         </div>
       </div>
     </div>

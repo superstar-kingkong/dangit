@@ -14,7 +14,7 @@ export function HelpScreen({ darkMode, onClose }: HelpScreenProps) {
 
   const helpSections = [
     {
-      title: '📧 Email Support',
+      title: 'Email Support',
       description: 'Get direct help from our team',
       action: 'Email Us',
       onClick: handleEmailSupport,
@@ -22,7 +22,7 @@ export function HelpScreen({ darkMode, onClose }: HelpScreenProps) {
       color: 'bg-blue-500'
     },
     {
-      title: '📸 Report Issue with Screenshot',
+      title: 'Report Issue with Screenshot',
       description: 'Take a screenshot and email it to us for faster resolution',
       action: 'dangit.app@gmail.com',
       onClick: handleEmailSupport,
@@ -30,7 +30,7 @@ export function HelpScreen({ darkMode, onClose }: HelpScreenProps) {
       color: 'bg-green-500'
     },
     {
-      title: '💬 General Questions',
+      title: 'General Questions',
       description: 'Ask us anything about DANGIT features',
       action: 'Ask Question',
       onClick: handleEmailSupport,
@@ -63,24 +63,25 @@ export function HelpScreen({ darkMode, onClose }: HelpScreenProps) {
   ];
 
   return (
-    <div className={`fixed inset-0 z-50 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              🆘 Help & Support
-            </h1>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <div className={`fixed inset-0 z-50 flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      {/* ✅ FIXED: Header */}
+      <div className={`flex-shrink-0 px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between">
+          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Help & Support
+          </h1>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+      {/* ✅ FIXED: Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 pb-24">
           {/* Contact Options */}
           <div className="space-y-4 mb-8">
             <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -165,6 +166,15 @@ export function HelpScreen({ darkMode, onClose }: HelpScreenProps) {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* ✅ NEW: Footer */}
+      <div className={`flex-shrink-0 px-6 py-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
+        <div className="text-center">
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Need more help? Email us at <strong>dangit.app@gmail.com</strong>
+          </p>
         </div>
       </div>
     </div>

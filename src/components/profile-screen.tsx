@@ -650,9 +650,13 @@ export function ProfileScreen({
       )}
 
       {showWhatsNew && (
-        <WhatsNewScreen 
-          darkMode={darkMode}
-          onClose={() => setShowWhatsNew(false)}
+      <WhatsNewScreen 
+        darkMode={darkMode}
+        onClose={() => setShowWhatsNew(false)}
+        onOpenFeedback={() => {
+          setShowWhatsNew(false);
+          setShowFeedback(true);
+        }}
         />
       )}
 

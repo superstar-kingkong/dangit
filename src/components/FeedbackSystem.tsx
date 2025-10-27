@@ -14,28 +14,20 @@ interface FeedbackSystemProps {
 }
 
 export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSystemProps) {
-  const [activeTab, setActiveTab] = useState<'feedback' | 'features'>('feedback');
+  const [activeTab, setActiveTab] = useState<'feedback' | 'features' | 'bug'>('feedback');
   const [rating, setRating] = useState(0);
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('general');
+  const [bugReport, setBugReport] = useState({ title: '', description: '', steps: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [features, setFeatures] = useState<any[]>([]);
   const [newFeature, setNewFeature] = useState({ title: '', description: '' });
 
   const feedbackCategories = [
-    { id: 'ui', label: '🎨 Design & UI', icon: '🎨' },
-    { id: 'performance', label: '⚡ Speed & Performance', icon: '⚡' },
-    { id: 'features', label: '✨ Features & Functionality', icon: '✨' },
-    { id: 'bugs', label: '🐛 Bugs & Issues', icon: '🐛' },
-    { id: 'general', label: '💬 General Feedback', icon: '💬' }
-  ];
-
-  const quickFeedback = [
-    { emoji: '😍', label: 'Love it!', category: 'general', message: 'I love using DANGIT! Great app!' },
-    { emoji: '🚀', label: 'Fast & Smooth', category: 'performance', message: 'The app is super fast and smooth!' },
-    { emoji: '🤔', label: 'Could be better', category: 'general', message: 'The app is good but could use some improvements.' },
-    { emoji: '🐛', label: 'Found a bug', category: 'bugs', message: 'I found a bug in the app.' },
-    { emoji: '💡', label: 'Have an idea', category: 'features', message: 'I have a feature suggestion.' }
+    { id: 'ui', label: 'Design & UI' },
+    { id: 'performance', label: 'Speed & Performance' },
+    { id: 'features', label: 'Features & Functionality' },
+    { id: 'general', label: 'General Feedback' }
   ];
 
   // Load features for voting
@@ -96,6 +88,38 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
     }
   };
 
+  const submitBugReport = async () => {
+    if (!bugReport.title.trim() || !bugReport.description.trim()) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${API_URL}/api/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          feedback_type: 'bug_report',
+          message: `Title: ${bugReport.title}\n\nDescription: ${bugReport.description}\n\nSteps: ${bugReport.steps}`,
+          category: 'bugs'
+        })
+      });
+
+      if (response.ok) {
+        setBugReport({ title: '', description: '', steps: '' });
+        alert('Bug report submitted! We\'ll look into it. 🐛');
+      }
+    } catch (error) {
+      console.error('Error submitting bug report:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const submitFeature = async () => {
     if (!newFeature.title.trim()) return;
     
@@ -148,73 +172,51 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
   };
 
   return (
-    <div className={`fixed inset-0 z-50 ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className={`px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              💬 Feedback & Ideas
-            </h1>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
-            >
-              ✕
-            </button>
-          </div>
-          
-          {/* Tabs */}
-          <div className="flex mt-4 space-x-1">
-            {['feedback', 'features'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as any)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-                  activeTab === tab
-                    ? 'bg-indigo-500 text-white'
-                    : darkMode
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                {tab === 'feedback' ? '⭐ Give Feedback' : '💡 Feature Ideas'}
-              </button>
-            ))}
-          </div>
+    <div className={`fixed inset-0 z-50 flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+      {/* ✅ FIXED: Header - Fixed height */}
+      <div className={`flex-shrink-0 px-6 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between">
+          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Feedback & Ideas
+          </h1>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}
+          >
+            ✕
+          </button>
         </div>
+        
+        {/* Tabs */}
+        <div className="flex mt-4 space-x-1">
+          {[
+            { key: 'feedback', label: 'Give Feedback' },
+            { key: 'bug', label: 'Report Bug' },
+            { key: 'features', label: 'Feature Ideas' }
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                activeTab === tab.key
+                  ? 'bg-indigo-500 text-white'
+                  : darkMode
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+      {/* ✅ FIXED: Content - Flexible with proper scrolling */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 pb-24">
           {/* Feedback Tab */}
           {activeTab === 'feedback' && (
             <div className="space-y-6">
-              {/* Quick Feedback */}
-              <div>
-                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Quick Feedback
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {quickFeedback.map((item) => (
-                    <button
-                      key={item.label}
-                      onClick={() => {
-                        setFeedbackMessage(item.message);
-                        setSelectedCategory(item.category);
-                        setRating(item.emoji === '😍' ? 5 : item.emoji === '🚀' ? 4 : 3);
-                      }}
-                      className={`p-3 rounded-xl text-center transition-all ${
-                        darkMode
-                          ? 'bg-gray-800 hover:bg-gray-700 text-white'
-                          : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <div className="text-2xl mb-1">{item.emoji}</div>
-                      <div className="text-sm font-medium">{item.label}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               {/* Rating */}
               <div>
                 <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -262,7 +264,7 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
               {/* Message */}
               <div>
                 <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Tell us more (optional)
+                  Tell us more
                 </h3>
                 <textarea
                   value={feedbackMessage}
@@ -273,21 +275,78 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
                       ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
                       : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
                   }`}
+                  required
                 />
               </div>
 
               {/* Submit Button */}
               <button
                 onClick={submitFeedback}
-                disabled={isSubmitting || (!rating && !feedbackMessage.trim())}
+                disabled={isSubmitting || !rating || !feedbackMessage.trim()}
                 className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                  isSubmitting || (!rating && !feedbackMessage.trim())
+                  isSubmitting || !rating || !feedbackMessage.trim()
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-indigo-500 hover:bg-indigo-600 text-white'
                 }`}
               >
-                {isSubmitting ? 'Sending...' : '📤 Send Feedback'}
+                {isSubmitting ? 'Sending...' : 'Send Feedback'}
               </button>
+            </div>
+          )}
+
+          {/* Bug Report Tab */}
+          {activeTab === 'bug' && (
+            <div className="space-y-6">
+              <div className={`p-4 rounded-xl border-2 border-dashed border-red-300 ${
+                darkMode ? 'bg-red-900/20' : 'bg-red-50'
+              }`}>
+                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
+                  Report a Bug
+                </h3>
+                <input
+                  value={bugReport.title}
+                  onChange={(e) => setBugReport({...bugReport, title: e.target.value})}
+                  placeholder="Bug title (e.g., App crashes when saving images)"
+                  className={`w-full p-3 rounded-lg border mb-3 ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                  required
+                />
+                <textarea
+                  value={bugReport.description}
+                  onChange={(e) => setBugReport({...bugReport, description: e.target.value})}
+                  placeholder="Describe what happened..."
+                  className={`w-full h-20 p-3 rounded-lg border mb-3 ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                  required
+                />
+                <textarea
+                  value={bugReport.steps}
+                  onChange={(e) => setBugReport({...bugReport, steps: e.target.value})}
+                  placeholder="Steps to reproduce (optional)"
+                  className={`w-full h-16 p-3 rounded-lg border mb-3 ${
+                    darkMode
+                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                  }`}
+                />
+                <button
+                  onClick={submitBugReport}
+                  disabled={isSubmitting || !bugReport.title.trim() || !bugReport.description.trim()}
+                  className={`w-full py-2 rounded-lg font-medium transition-all ${
+                    isSubmitting || !bugReport.title.trim() || !bugReport.description.trim()
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-red-500 hover:bg-red-600 text-white'
+                  }`}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Report Bug'}
+                </button>
+              </div>
             </div>
           )}
 
@@ -299,7 +358,7 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
                 darkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'
               }`}>
                 <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  💡 Suggest a New Feature
+                  Suggest a New Feature
                 </h3>
                 <input
                   value={newFeature.title}
@@ -330,14 +389,14 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
                       : 'bg-green-500 hover:bg-green-600 text-white'
                   }`}
                 >
-                  {isSubmitting ? 'Submitting...' : '✨ Suggest Feature'}
+                  {isSubmitting ? 'Submitting...' : 'Suggest Feature'}
                 </button>
               </div>
 
               {/* Feature List */}
               <div>
                 <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  🗳️ Vote on Feature Ideas
+                  Vote on Feature Ideas
                 </h3>
                 <div className="space-y-3">
                   {features.map((feature) => (
@@ -368,10 +427,10 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
                                   ? 'bg-blue-100 text-blue-800' 
                                   : 'bg-gray-100 text-gray-800'
                             }`}>
-                              {feature.status === 'completed' && '✅ Done'}
-                              {feature.status === 'in_development' && '🚧 Building'}
-                              {feature.status === 'planned' && '📋 Planned'}
-                              {feature.status === 'suggested' && '💭 Suggested'}
+                              {feature.status === 'completed' && 'Done'}
+                              {feature.status === 'in_development' && 'Building'}
+                              {feature.status === 'planned' && 'Planned'}
+                              {feature.status === 'suggested' && 'Suggested'}
                             </span>
                           </div>
                         </div>
@@ -404,6 +463,15 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* ✅ NEW: Footer */}
+      <div className={`flex-shrink-0 px-6 py-4 border-t ${darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-200 bg-gray-50'}`}>
+        <div className="text-center">
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Your feedback helps us make DANGIT better for everyone!
+          </p>
         </div>
       </div>
     </div>
