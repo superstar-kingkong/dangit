@@ -9,17 +9,15 @@ interface WhatsNewScreenProps {
 }
 
 export function WhatsNewScreen({ darkMode, onClose, onOpenFeedback }: WhatsNewScreenProps) {
-  // ✅ CRITICAL: Lock body scroll and reset to top
   useEffect(() => {
-    const scrollY = window.scrollY;
+    const originalScrollY = window.scrollY;
     document.body.classList.add('modal-open');
-    document.body.style.top = `-${scrollY}px`;
-    window.scrollTo(0, 0);
+    document.body.style.top = `-${originalScrollY}px`;
     
     return () => {
       document.body.classList.remove('modal-open');
       document.body.style.top = '';
-      window.scrollTo(0, scrollY);
+      window.scrollTo(0, originalScrollY);
     };
   }, []);
 
@@ -88,111 +86,96 @@ export function WhatsNewScreen({ darkMode, onClose, onOpenFeedback }: WhatsNewSc
 
   return (
     <div 
-      className="modal-overlay"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 9999,
-        backgroundColor: darkMode ? '#111827' : '#ffffff'
-      }}
+      className={`modal-container ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+      style={{ backgroundColor: darkMode ? '#111827' : '#ffffff' }}
     >
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className={`flex-shrink-0 px-4 py-4 border-b bg-inherit ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              What's New
-            </h1>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-800 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
+      <div className={`modal-header px-4 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between">
+          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            What's New
+          </h1>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-inherit">
-          <div className="px-4 py-4">
-            {/* Recent Updates */}
-            <div className="mb-8">
-              <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                Recent Updates
-              </h2>
-              <div className="space-y-4">
-                {recentFeatures.map((feature, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-xl border-l-4 border-green-500 ${
-                      darkMode ? 'bg-gray-800' : 'bg-green-50'
-                    }`}
-                  >
-                    <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {feature.title}
-                    </h3>
-                    <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {feature.description}
-                    </p>
-                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                      Live
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Coming Soon */}
-            <div className="mb-8">
-              <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                <Clock className="w-5 h-5 text-blue-500" />
-                Coming Soon
-              </h2>
-              <div className="space-y-4">
-                {upcomingFeatures.map((feature, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-xl border-l-4 border-blue-500 ${
-                      darkMode ? 'bg-gray-800' : 'bg-blue-50'
-                    }`}
-                  >
-                    <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      {feature.title}
-                    </h3>
-                    <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {feature.description}
-                    </p>
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                      Planned
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Vote for Features */}
-            <div className={`p-4 rounded-xl border-2 border-dashed ${
-              darkMode ? 'border-purple-600 bg-purple-900/20' : 'border-purple-300 bg-purple-50'
-            }`}>
-              <div className="text-center">
-                <Sparkles className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-                <h3 className={`font-bold mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>
-                  Have a Feature Idea?
-                </h3>
-                <p className={`text-sm mb-3 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
-                  Share your suggestions and vote on features in the Feedback section!
-                </p>
-                <button
-                  onClick={handleSuggestFeature}
-                  className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+      <div className="modal-content">
+        <div className="px-4 py-6">
+          <div className="mb-8">
+            <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              Recent Updates
+            </h2>
+            <div className="space-y-4">
+              {recentFeatures.map((feature, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-xl border-l-4 border-green-500 ${
+                    darkMode ? 'bg-gray-800' : 'bg-green-50'
+                  }`}
                 >
-                  Suggest Feature
-                </button>
-              </div>
+                  <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {feature.title}
+                  </h3>
+                  <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {feature.description}
+                  </p>
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Live
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              <Clock className="w-5 h-5 text-blue-500" />
+              Coming Soon
+            </h2>
+            <div className="space-y-4">
+              {upcomingFeatures.map((feature, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-xl border-l-4 border-blue-500 ${
+                    darkMode ? 'bg-gray-800' : 'bg-blue-50'
+                  }`}
+                >
+                  <h3 className={`font-semibold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {feature.title}
+                  </h3>
+                  <p className={`text-sm mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {feature.description}
+                  </p>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    Planned
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-xl border-2 border-dashed ${
+            darkMode ? 'border-purple-600 bg-purple-900/20' : 'border-purple-300 bg-purple-50'
+          }`}>
+            <div className="text-center">
+              <Sparkles className="w-8 h-8 text-purple-500 mx-auto mb-2" />
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-purple-300' : 'text-purple-700'}`}>
+                Have a Feature Idea?
+              </h3>
+              <p className={`text-sm mb-3 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`}>
+                Share your suggestions and vote on features in the Feedback section!
+              </p>
+              <button
+                onClick={handleSuggestFeature}
+                className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium"
+              >
+                Suggest Feature
+              </button>
             </div>
           </div>
         </div>

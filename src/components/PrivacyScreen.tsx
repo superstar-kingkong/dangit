@@ -8,17 +8,15 @@ interface PrivacyScreenProps {
 }
 
 export function PrivacyScreen({ darkMode, onClose }: PrivacyScreenProps) {
-  // ✅ CRITICAL: Lock body scroll and reset to top
   useEffect(() => {
-    const scrollY = window.scrollY;
+    const originalScrollY = window.scrollY;
     document.body.classList.add('modal-open');
-    document.body.style.top = `-${scrollY}px`;
-    window.scrollTo(0, 0);
+    document.body.style.top = `-${originalScrollY}px`;
     
     return () => {
       document.body.classList.remove('modal-open');
       document.body.style.top = '';
-      window.scrollTo(0, scrollY);
+      window.scrollTo(0, originalScrollY);
     };
   }, []);
 
@@ -72,123 +70,106 @@ export function PrivacyScreen({ darkMode, onClose }: PrivacyScreenProps) {
 
   return (
     <div 
-      className="modal-overlay"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 9999,
-        backgroundColor: darkMode ? '#111827' : '#ffffff'
-      }}
+      className={`modal-container ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
+      style={{ backgroundColor: darkMode ? '#111827' : '#ffffff' }}
     >
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className={`flex-shrink-0 px-4 py-4 border-b bg-inherit ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              Privacy & Security
-            </h1>
-            <button
-              onClick={onClose}
-              className={`p-2 rounded-lg transition-colors ${darkMode ? 'hover:bg-gray-800 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
+      <div className={`modal-header px-4 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between">
+          <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            Privacy & Security
+          </h1>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-800 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
+          >
+            <X className="w-6 h-6" />
+          </button>
         </div>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-inherit">
-          <div className="px-4 py-4">
-            {/* Security Features */}
-            <div className="mb-8">
-              <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                How We Protect You
-              </h2>
-              <div className="space-y-4">
-                {privacySections.map((section, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-xl ${
-                      darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-xl ${section.color} flex-shrink-0`}>
-                        <section.icon className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {section.title}
-                        </h3>
-                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {section.description}
-                        </p>
-                      </div>
+      <div className="modal-content">
+        <div className="px-4 py-6">
+          <div className="mb-8">
+            <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              How We Protect You
+            </h2>
+            <div className="space-y-4">
+              {privacySections.map((section, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-xl ${
+                    darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`p-3 rounded-xl ${section.color} flex-shrink-0`}>
+                      <section.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {section.title}
+                      </h3>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {section.description}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
+          </div>
 
-            {/* Data Collection */}
-            <div className="grid grid-cols-1 gap-6 mb-8">
-              {/* What We Collect */}
-              <div className={`p-4 rounded-xl ${
-                darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-orange-50 border border-orange-200'
-              }`}>
-                <h3 className={`font-bold mb-3 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
-                  What We Collect
-                </h3>
-                <ul className="space-y-2">
-                  {dataWeCollect.map((item, index) => (
-                    <li key={index} className={`text-sm flex items-start gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <span className="text-orange-500 mt-0.5">•</span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* What We Never Collect */}
-              <div className={`p-4 rounded-xl ${
-                darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-green-50 border border-green-200'
-              }`}>
-                <h3 className={`font-bold mb-3 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
-                  What We Never Collect
-                </h3>
-                <ul className="space-y-2">
-                  {dataWeNeverCollect.map((item, index) => (
-                    <li key={index} className={`text-sm flex items-start gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      <span className="text-green-500 mt-0.5">•</span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Contact */}
-            <div className={`p-4 rounded-xl border-2 border-dashed ${
-              darkMode ? 'border-blue-600 bg-blue-900/20' : 'border-blue-300 bg-blue-50'
+          <div className="grid grid-cols-1 gap-6 mb-8">
+            <div className={`p-4 rounded-xl ${
+              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-orange-50 border border-orange-200'
             }`}>
-              <div className="text-center">
-                <Shield className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                <h3 className={`font-bold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                  Questions About Privacy?
-                </h3>
-                <p className={`text-sm mb-3 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
-                  We're committed to transparency. Reach out with any privacy concerns.
-                </p>
-                <button
-                  onClick={() => window.open('mailto:dangit.app@gmail.com?subject=Privacy Question', '_blank')}
-                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-                >
-                  Contact Privacy Team
-                </button>
-              </div>
+              <h3 className={`font-bold mb-3 ${darkMode ? 'text-orange-400' : 'text-orange-700'}`}>
+                What We Collect
+              </h3>
+              <ul className="space-y-2">
+                {dataWeCollect.map((item, index) => (
+                  <li key={index} className={`text-sm flex items-start gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <span className="text-orange-500 mt-0.5">•</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={`p-4 rounded-xl ${
+              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-green-50 border border-green-200'
+            }`}>
+              <h3 className={`font-bold mb-3 ${darkMode ? 'text-green-400' : 'text-green-700'}`}>
+                What We Never Collect
+              </h3>
+              <ul className="space-y-2">
+                {dataWeNeverCollect.map((item, index) => (
+                  <li key={index} className={`text-sm flex items-start gap-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <span className="text-green-500 mt-0.5">•</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className={`p-4 rounded-xl border-2 border-dashed ${
+            darkMode ? 'border-blue-600 bg-blue-900/20' : 'border-blue-300 bg-blue-50'
+          }`}>
+            <div className="text-center">
+              <Shield className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+              <h3 className={`font-bold mb-2 ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                Questions About Privacy?
+              </h3>
+              <p className={`text-sm mb-3 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
+                We're committed to transparency. Reach out with any privacy concerns.
+              </p>
+              <button
+                onClick={() => window.open('mailto:dangit.app@gmail.com?subject=Privacy Question', '_blank')}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium"
+              >
+                Contact Privacy Team
+              </button>
             </div>
           </div>
         </div>
