@@ -10,6 +10,7 @@ import { FeedbackSystem } from './FeedbackSystem';
 import { HelpScreen } from './HelpScreen';
 import { WhatsNewScreen } from './WhatsNewScreen';
 import { PrivacyScreen } from './PrivacyScreen';
+import { ModalPortal } from './ModalPortal';
 
 interface ProfileScreenProps {
   darkMode: boolean;
@@ -329,318 +330,321 @@ export function ProfileScreen({
   };
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="overflow-y-auto pb-20">
-        
-        {/* Header with User Info */}
-        <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 px-6 pt-8 pb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-black text-white">Profile</h1>
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={loadUserStats}
-                disabled={loading}
-                className="p-2.5 bg-white/20 rounded-xl hover:bg-white/30 transition-colors active:scale-95 disabled:opacity-50"
-                title="🔒 Refresh Stats Securely"
-              >
-                <RefreshCw className={`w-5 h-5 text-white ${loading ? 'animate-spin' : ''}`} />
-              </button>
-              <button 
-                onClick={onEditProfile}
-                className="p-2.5 bg-white/20 rounded-xl hover:bg-white/30 transition-colors active:scale-95"
-              >
-                <Edit className="w-5 h-5 text-white" />
-              </button>
-            </div>
-          </div>
-
-          {/* User Card */}
-          <div className={`backdrop-blur-sm rounded-3xl p-6 shadow-xl ${
-            darkMode ? 'bg-gray-800/95' : 'bg-white/95'
-          }`}>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                  <User className="w-10 h-10 text-white" />
-                </div>
-                {stats.totalItems > 0 && (
-                  <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
-                    <Award className="w-3 h-3 text-white" />
-                  </div>
-                )}
+    <>
+      {/* Main Profile Content */}
+      <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="overflow-y-auto pb-20">
+          
+          {/* Header with User Info */}
+          <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 px-6 pt-8 pb-8">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl font-black text-white">Profile</h1>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={loadUserStats}
+                  disabled={loading}
+                  className="p-2.5 bg-white/20 rounded-xl hover:bg-white/30 transition-colors active:scale-95 disabled:opacity-50"
+                  title="🔒 Refresh Stats Securely"
+                >
+                  <RefreshCw className={`w-5 h-5 text-white ${loading ? 'animate-spin' : ''}`} />
+                </button>
+                <button 
+                  onClick={onEditProfile}
+                  className="p-2.5 bg-white/20 rounded-xl hover:bg-white/30 transition-colors active:scale-95"
+                >
+                  <Edit className="w-5 h-5 text-white" />
+                </button>
               </div>
-              <div className="flex-1">
-                <h2 className={`text-xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  {userProfile.name}
-                </h2>
-                <p className={`text-sm mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {userProfile.email}
-                </p>
-                <div className="flex items-center gap-3 text-sm">
+            </div>
+
+            {/* User Card */}
+            <div className={`backdrop-blur-sm rounded-3xl p-6 shadow-xl ${
+              darkMode ? 'bg-gray-800/95' : 'bg-white/95'
+            }`}>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <User className="w-10 h-10 text-white" />
+                  </div>
                   {stats.totalItems > 0 && (
-                    <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold">
-                      {userProfile.level}
-                    </span>
-                  )}
-                  {streak > 0 && (
-                    <div className="flex items-center gap-1.5 bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-semibold">
-                      <span className="text-base">🔥</span>
-                      <span>{streak} day{streak !== 1 ? 's' : ''}</span>
+                    <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 rounded-full border-4 border-white flex items-center justify-center">
+                      <Award className="w-3 h-3 text-white" />
                     </div>
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            {loading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
-                <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  🔒 Loading your stats securely...
-                </p>
-              </div>
-            ) : (
-              <div className={`grid grid-cols-3 gap-4 pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
-                <div className="text-center">
-                  <div className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    {stats.totalItems}
-                  </div>
-                  <div className={`text-xs font-semibold mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Items Saved
+                <div className="flex-1">
+                  <h2 className={`text-xl font-bold mb-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {userProfile.name}
+                  </h2>
+                  <p className={`text-sm mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {userProfile.email}
+                  </p>
+                  <div className="flex items-center gap-3 text-sm">
+                    {stats.totalItems > 0 && (
+                      <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold">
+                        {userProfile.level}
+                      </span>
+                    )}
+                    {streak > 0 && (
+                      <div className="flex items-center gap-1.5 bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-semibold">
+                        <span className="text-base">🔥</span>
+                        <span>{streak} day{streak !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black text-green-600">
-                    {stats.completionRate}%
+              </div>
+
+              {/* Quick Stats */}
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
+                  <p className={`mt-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    🔒 Loading your stats securely...
+                  </p>
+                </div>
+              ) : (
+                <div className={`grid grid-cols-3 gap-4 pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-100'}`}>
+                  <div className="text-center">
+                    <div className={`text-3xl font-black ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                      {stats.totalItems}
+                    </div>
+                    <div className={`text-xs font-semibold mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Items Saved
+                    </div>
                   </div>
-                  <div className={`text-xs font-semibold mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className="text-center">
+                    <div className="text-3xl font-black text-green-600">
+                      {stats.completionRate}%
+                    </div>
+                    <div className={`text-xs font-semibold mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Completed
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-black text-purple-600">
+                      {stats.pendingItems}
+                    </div>
+                    <div className={`text-xs font-semibold mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Pending
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Analytics Section */}
+          {!loading && stats.totalItems > 0 && (
+            <div className="px-6 py-6">
+              <h3 className={`text-xl font-black mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <BarChart3 className="w-5 h-5 text-indigo-600" />
+                Your Analytics
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-blue-50 to-blue-100'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-md">
+                      <BarChart3 className="w-5 h-5 text-white" />
+                    </div>
+                    <TrendingUp className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-blue-400' : 'text-blue-900'}`}>
+                    {stats.totalItems}
+                  </div>
+                  <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-blue-600'}`}>
+                    Total Saved
+                  </div>
+                </div>
+
+                <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-green-50 to-green-100'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center shadow-md">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <Award className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-green-400' : 'text-green-900'}`}>
+                    {stats.completedItems}
+                  </div>
+                  <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-green-600'}`}>
                     Completed
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-black text-purple-600">
+
+                <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-purple-50 to-purple-100'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center shadow-md">
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
+                    <Target className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-purple-400' : 'text-purple-900'}`}>
                     {stats.pendingItems}
                   </div>
-                  <div className={`text-xs font-semibold mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-purple-600'}`}>
                     Pending
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Analytics Section */}
-        {!loading && stats.totalItems > 0 && (
-          <div className="px-6 py-6">
-            <h3 className={`text-xl font-black mb-4 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              <BarChart3 className="w-5 h-5 text-indigo-600" />
-              Your Analytics
-            </h3>
-            
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-blue-50 to-blue-100'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center shadow-md">
-                    <BarChart3 className="w-5 h-5 text-white" />
-                  </div>
-                  <TrendingUp className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-blue-400' : 'text-blue-900'}`}>
-                  {stats.totalItems}
-                </div>
-                <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-blue-600'}`}>
-                  Total Saved
-                </div>
-              </div>
-
-              <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-green-50 to-green-100'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-green-500 flex items-center justify-center shadow-md">
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </div>
-                  <Award className="w-4 h-4 text-green-600" />
-                </div>
-                <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-green-400' : 'text-green-900'}`}>
-                  {stats.completedItems}
-                </div>
-                <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-green-600'}`}>
-                  Completed
-                </div>
-              </div>
-
-              <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-purple-50 to-purple-100'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center shadow-md">
-                    <Clock className="w-5 h-5 text-white" />
-                  </div>
-                  <Target className="w-4 h-4 text-purple-600" />
-                </div>
-                <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-purple-400' : 'text-purple-900'}`}>
-                  {stats.pendingItems}
-                </div>
-                <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-purple-600'}`}>
-                  Pending
-                </div>
-              </div>
-
-              <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-orange-50 to-orange-100'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-md">
-                    <Target className="w-5 h-5 text-white" />
-                  </div>
-                  <TrendingUp className="w-4 h-4 text-orange-600" />
-                </div>
-                <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-orange-400' : 'text-orange-900'}`}>
-                  {stats.completionRate}%
-                </div>
-                <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-orange-600'}`}>
-                  Success Rate
-                </div>
-              </div>
-            </div>
-
-            {categoryArray.length > 0 && (
-              <div className={`p-5 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
-                <h4 className={`text-lg font-black mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Top Categories
-                </h4>
-                <div className="space-y-4">
-                  {categoryArray.map((category) => (
-                    <div key={category.name} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div 
-                            className="w-3 h-3 rounded-full shadow-sm"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {category.name}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                            {category.percentage}%
-                          </span>
-                          <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {category.count}
-                          </span>
-                        </div>
-                      </div>
-                      <div className={`w-full rounded-full h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
-                        <div 
-                          className="h-2 rounded-full transition-all duration-500"
-                          style={{ 
-                            width: `${category.percentage}%`,
-                            backgroundColor: category.color 
-                          }}
-                        />
-                      </div>
+                <div className={`p-4 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-orange-50 to-orange-100'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center shadow-md">
+                      <Target className="w-5 h-5 text-white" />
                     </div>
-                  ))}
+                    <TrendingUp className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div className={`text-2xl font-black mb-1 ${darkMode ? 'text-orange-400' : 'text-orange-900'}`}>
+                    {stats.completionRate}%
+                  </div>
+                  <div className={`text-sm font-semibold ${darkMode ? 'text-gray-400' : 'text-orange-600'}`}>
+                    Success Rate
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        )}
 
-        {/* Settings Sections */}
-        <div className="px-6 pb-6">
-          {menuSections.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="mb-6">
-              <h3 className={`text-sm font-black uppercase tracking-wide mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
-                {section.title}
-              </h3>
-              <div className={`divide-y rounded-2xl shadow-sm overflow-hidden ${
-                darkMode 
-                  ? 'bg-gray-800 border border-gray-700 divide-gray-700' 
-                  : 'bg-white border border-gray-200 divide-gray-100'
-              }`}>
-                {section.items.map((item, index) => {
-                  const Icon = item.icon;
-                  
-                  if (isSwitchMenuItem(item)) {
-                    return (
-                      <div
-                        key={index}
-                        className={`p-4 flex items-center justify-between transition-colors ${
-                          darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className={`p-2.5 rounded-xl ${
-                            darkMode ? 'bg-gray-700' : 'bg-gray-100'
-                          }`}>
-                            <Icon className={`w-5 h-5 ${item.color}`} />
+              {categoryArray.length > 0 && (
+                <div className={`p-5 rounded-2xl shadow-sm ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+                  <h4 className={`text-lg font-black mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Top Categories
+                  </h4>
+                  <div className="space-y-4">
+                    {categoryArray.map((category) => (
+                      <div key={category.name} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-3 h-3 rounded-full shadow-sm"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {category.name}
+                            </span>
                           </div>
-                          <div className="flex-1">
-                            <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                              {item.label}
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {category.percentage}%
+                            </span>
+                            <span className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                              {category.count}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={`w-full rounded-full h-2 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}>
+                          <div 
+                            className="h-2 rounded-full transition-all duration-500"
+                            style={{ 
+                              width: `${category.percentage}%`,
+                              backgroundColor: category.color 
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Settings Sections */}
+          <div className="px-6 pb-6">
+            {menuSections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="mb-6">
+                <h3 className={`text-sm font-black uppercase tracking-wide mb-3 ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
+                  {section.title}
+                </h3>
+                <div className={`divide-y rounded-2xl shadow-sm overflow-hidden ${
+                  darkMode 
+                    ? 'bg-gray-800 border border-gray-700 divide-gray-700' 
+                    : 'bg-white border border-gray-200 divide-gray-100'
+                }`}>
+                  {section.items.map((item, index) => {
+                    const Icon = item.icon;
+                    
+                    if (isSwitchMenuItem(item)) {
+                      return (
+                        <div
+                          key={index}
+                          className={`p-4 flex items-center justify-between transition-colors ${
+                            darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className={`p-2.5 rounded-xl ${
+                              darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                            }`}>
+                              <Icon className={`w-5 h-5 ${item.color}`} />
+                            </div>
+                            <div className="flex-1">
+                              <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {item.label}
+                              </div>
                             </div>
                           </div>
+                          <Switch 
+                            checked={item.value} 
+                            onCheckedChange={item.setter}
+                            darkMode={darkMode}
+                          />
                         </div>
-                        <Switch 
-                          checked={item.value} 
-                          onCheckedChange={item.setter}
-                          darkMode={darkMode}
-                        />
-                      </div>
-                    );
-                  }
-                  
-                  if (isActionMenuItem(item)) {
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => handleAction(item.action)}
-                        className={`w-full p-4 flex items-center justify-between transition-colors ${
-                          darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`p-2.5 rounded-xl ${
-                            item.color === 'text-red-500' 
-                              ? 'bg-red-50' 
-                              : item.action === 'feedback'
-                                ? 'bg-pink-50'
-                                : darkMode ? 'bg-gray-700' : 'bg-gray-100'
-                          }`}>
-                            <Icon className={`w-5 h-5 ${item.color}`} />
+                      );
+                    }
+                    
+                    if (isActionMenuItem(item)) {
+                      return (
+                        <button
+                          key={index}
+                          onClick={() => handleAction(item.action)}
+                          className={`w-full p-4 flex items-center justify-between transition-colors ${
+                            darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`p-2.5 rounded-xl ${
+                              item.color === 'text-red-500' 
+                                ? 'bg-red-50' 
+                                : item.action === 'feedback'
+                                  ? 'bg-pink-50'
+                                  : darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                            }`}>
+                              <Icon className={`w-5 h-5 ${item.color}`} />
+                            </div>
+                            <span className={`font-semibold ${item.color}`}>{item.label}</span>
                           </div>
-                          <span className={`font-semibold ${item.color}`}>{item.label}</span>
-                        </div>
-                        <ChevronRight className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
-                      </button>
-                    );
-                  }
-                  
-                  return null;
-                })}
+                          <ChevronRight className={`w-5 h-5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`} />
+                        </button>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <div className="px-6 pb-6 text-center">
-          <div className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
-            <div className="text-3xl font-black mb-2">
-              <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">DANG</span>
-              <span className="text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">IT</span>
+          <div className="px-6 pb-6 text-center">
+            <div className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
+              <div className="text-3xl font-black mb-2">
+                <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">DANG</span>
+                <span className="text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text">IT</span>
+              </div>
+              <p className={`text-sm mb-1 font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Version 1.0.0
+              </p>
+              <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                Made with ❤️ for productivity enthusiasts
+              </p>
             </div>
-            <p className={`text-sm mb-1 font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Version 1.0.0
-            </p>
-            <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-              Made with ❤️ for productivity enthusiasts
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Modal Rendering - FIXED */}
+      {/* Modals - Rendered via Portal OUTSIDE the profile container */}
       {currentModal && (
-        <div className="fixed inset-0 z-[9999]">
+        <ModalPortal>
           {currentModal === 'feedback' && (
             <FeedbackSystem 
               userId={userProfile.email} 
@@ -673,8 +677,8 @@ export function ProfileScreen({
               onClose={closeModal}
             />
           )}
-        </div>
+        </ModalPortal>
       )}
-    </div>
+    </>
   );
 }
