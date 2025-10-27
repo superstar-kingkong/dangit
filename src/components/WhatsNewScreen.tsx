@@ -1,5 +1,6 @@
+// components/WhatsNewScreen.tsx - SCROLLING FIXED
 import React, { useEffect } from 'react';
-import { X, Sparkles, CheckCircle, Clock } from 'lucide-react';
+import { X, Sparkles, CheckCircle, Clock, ArrowLeft } from 'lucide-react';
 
 interface WhatsNewScreenProps {
   darkMode: boolean;
@@ -9,277 +10,221 @@ interface WhatsNewScreenProps {
 
 export function WhatsNewScreen({ darkMode, onClose, onOpenFeedback }: WhatsNewScreenProps) {
   useEffect(() => {
-    // Lock body scroll
+    // Prevent background scroll
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = '0';
+    
     return () => {
       document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.top = '';
     };
   }, []);
 
   const recentFeatures = [
     {
       title: 'Secure Authentication',
-      description: 'Enhanced security with proper user authentication and data protection',
-      emoji: '🔒'
+      description: 'Enhanced security with proper user authentication and data protection'
     },
     {
       title: 'Instagram Reel Support',
-      description: 'Save Instagram reels with custom titles and AI-powered organization',
-      emoji: '📸'
+      description: 'Save Instagram reels with custom titles and AI-powered organization'
     },
     {
       title: 'Dark Mode',
-      description: 'Beautiful dark theme for comfortable viewing in any lighting',
-      emoji: '🌙'
+      description: 'Beautiful dark theme for comfortable viewing'
     },
     {
       title: 'AI Content Analysis',
-      description: 'Smart categorization and tagging of your saved content',
-      emoji: '🤖'
+      description: 'Smart categorization and tagging of your saved content'
     },
     {
       title: 'Personal Analytics',
-      description: 'Track your saving habits and completion rates with detailed stats',
-      emoji: '📊'
-    },
-    {
-      title: 'Quick Image Save',
-      description: 'Screenshot capturing with secure cloud storage',
-      emoji: '⚡'
+      description: 'Track your saving habits with detailed stats'
     }
   ];
 
   const upcomingFeatures = [
     {
       title: 'Smart Reminders',
-      description: 'AI-powered reminders for time-sensitive saved content',
-      emoji: '⏰'
+      description: 'AI-powered reminders for your saved content'
     },
     {
-      title: 'Collections & Tags',
-      description: 'Organize content into custom collections with smart tags',
-      emoji: '🏷️'
-    },
-    {
-      title: 'Share Collections',
-      description: 'Share curated collections with friends and teams',
-      emoji: '🤝'
+      title: 'Collections Sharing',
+      description: 'Create and share curated collections with friends'
     },
     {
       title: 'Achievement System',
-      description: 'Unlock badges and achievements as you use DANGIT',
-      emoji: '🏆'
+      description: 'Unlock badges and achievements as you use DANGIT'
     },
     {
       title: 'Native Mobile App',
-      description: 'Dedicated iOS and Android apps with offline support',
-      emoji: '📱'
+      description: 'Dedicated iOS and Android apps for even better performance'
     },
     {
       title: 'Voice Notes',
-      description: 'Record and save voice notes with AI transcription',
-      emoji: '🎤'
-    },
-    {
-      title: 'Browser Extension',
-      description: 'Save content from any website with one click',
-      emoji: '🔌'
-    },
-    {
-      title: 'Export & Backup',
-      description: 'Export your data to PDF, Notion, or other formats',
-      emoji: '💾'
+      description: 'Record and save voice notes with transcription'
     }
   ];
 
   return (
-    // FULL SCREEN container
     <div 
       className={`fixed inset-0 z-[99999] ${
-        darkMode ? 'bg-gray-900' : 'bg-gray-50'
+        darkMode ? 'bg-gray-900' : 'bg-white'
       }`}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '100vh',
+        width: '100vw',
+        overflow: 'hidden'
+      }}
     >
-      {/* Header - Fixed at top */}
-      <div className={`sticky top-0 z-10 ${
-        darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-      } border-b`}>
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className={`text-2xl font-bold ${
-              darkMode ? 'text-white' : 'text-gray-900'
-            }`}>
-              What's New in DANGIT
-            </h1>
-            <p className={`text-sm mt-1 ${
-              darkMode ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              Latest features and upcoming updates
-            </p>
-          </div>
+      {/* FIXED Header */}
+      <div 
+        className={`px-4 py-3 border-b ${
+          darkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 10,
+          backgroundColor: darkMode ? '#111827' : '#ffffff'
+        }}
+      >
+        <div className="flex items-center justify-between">
           <button
             onClick={onClose}
-            className={`p-2.5 rounded-xl transition-colors ${
-              darkMode 
-                ? 'hover:bg-gray-700 text-gray-300' 
-                : 'hover:bg-gray-100 text-gray-700'
+            className={`p-2 rounded-lg ${
+              darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
             }`}
           >
-            <X className="w-6 h-6" />
+            <ArrowLeft className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-gray-900'}`} />
           </button>
+          <h1 className={`text-xl font-bold ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            What's New
+          </h1>
+          <div className="w-10"></div>
         </div>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="overflow-y-auto h-[calc(100vh-80px)]">
-        <div className="max-w-4xl mx-auto px-6 py-8 space-y-12">
-          
-          {/* Recent Updates Section */}
+      {/* SCROLLABLE Content */}
+      <div 
+        className="flex-1"
+        style={{
+          height: 'calc(100vh - 70px)',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          WebkitOverflowScrolling: 'touch'
+        }}
+      >
+        <div className="p-4 space-y-6">
+          {/* Recent Updates */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-green-100 rounded-xl">
-                <CheckCircle className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <h2 className={`text-2xl font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Recently Added
-                </h2>
-                <p className={`text-sm ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  These features are live now!
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              Recent Updates
+            </h2>
+            <div className="space-y-3">
               {recentFeatures.map((feature, index) => (
                 <div
                   key={index}
-                  className={`group p-5 rounded-2xl border-l-4 border-green-500 transition-all hover:shadow-lg ${
-                    darkMode 
-                      ? 'bg-gray-800 hover:bg-gray-750' 
-                      : 'bg-white hover:bg-gray-50'
+                  className={`p-4 rounded-xl border-l-4 border-green-500 ${
+                    darkMode ? 'bg-gray-800' : 'bg-green-50'
                   }`}
                 >
-                  <div className="flex items-start gap-3 mb-3">
-                    <span className="text-3xl">{feature.emoji}</span>
-                    <div className="flex-1">
-                      <h3 className={`text-lg font-bold mb-1 ${
-                        darkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {feature.title}
-                      </h3>
-                      <p className={`text-sm leading-relaxed ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {feature.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-semibold">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      Live Now
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Coming Soon Section */}
-          <div>
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-blue-100 rounded-xl">
-                <Clock className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h2 className={`text-2xl font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  Coming Soon
-                </h2>
-                <p className={`text-sm ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Features we're working on
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {upcomingFeatures.map((feature, index) => (
-                <div
-                  key={index}
-                  className={`group p-5 rounded-2xl border-l-4 border-blue-500 transition-all hover:shadow-lg ${
-                    darkMode 
-                      ? 'bg-gray-800 hover:bg-gray-750' 
-                      : 'bg-white hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-start gap-3 mb-3">
-                    <span className="text-3xl">{feature.emoji}</span>
-                    <div className="flex-1">
-                      <h3 className={`text-lg font-bold mb-1 ${
-                        darkMode ? 'text-white' : 'text-gray-900'
-                      }`}>
-                        {feature.title}
-                      </h3>
-                      <p className={`text-sm leading-relaxed ${
-                        darkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {feature.description}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-xs font-semibold">
-                    <Clock className="w-3 h-3" />
-                    In Development
+                  <h3 className={`font-semibold mb-2 ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {feature.title}
+                  </h3>
+                  <p className={`text-sm mb-3 ${
+                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {feature.description}
+                  </p>
+                  <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                    ✨ Live Now
                   </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Feedback CTA Section */}
-          <div className={`relative overflow-hidden p-8 rounded-3xl ${
-            darkMode 
-              ? 'bg-gradient-to-br from-purple-900 to-pink-900' 
-              : 'bg-gradient-to-br from-purple-500 to-pink-500'
+          {/* Coming Soon */}
+          <div>
+            <h2 className={`text-lg font-bold mb-4 flex items-center gap-2 ${
+              darkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              <Clock className="w-5 h-5 text-blue-500" />
+              Coming Soon
+            </h2>
+            <div className="space-y-3">
+              {upcomingFeatures.map((feature, index) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-xl border-l-4 border-blue-500 ${
+                    darkMode ? 'bg-gray-800' : 'bg-blue-50'
+                  }`}
+                >
+                  <h3 className={`font-semibold mb-2 ${
+                    darkMode ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    {feature.title}
+                  </h3>
+                  <p className={`text-sm mb-3 ${
+                    darkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    {feature.description}
+                  </p>
+                  <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                    🚀 Planned
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Feedback CTA */}
+          <div className={`p-6 rounded-xl border-2 border-dashed ${
+            darkMode ? 'border-purple-600 bg-purple-900/20' : 'border-purple-300 bg-purple-50'
           }`}>
-            <div className="relative z-10 text-center">
-              <Sparkles className="w-16 h-16 text-white mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-white mb-3">
+            <div className="text-center">
+              <Sparkles className="w-10 h-10 text-purple-500 mx-auto mb-3" />
+              <h3 className={`text-lg font-bold mb-2 ${
+                darkMode ? 'text-purple-300' : 'text-purple-700'
+              }`}>
                 Have a Feature Idea?
               </h3>
-              <p className="text-white/90 text-lg mb-6 max-w-2xl mx-auto">
-                Your feedback shapes DANGIT's future. Share suggestions, vote on features, and help us build the perfect content organizer!
+              <p className={`text-sm mb-4 ${
+                darkMode ? 'text-purple-400' : 'text-purple-600'
+              }`}>
+                Share your suggestions and vote on features!
               </p>
               <button
                 onClick={() => {
                   onClose();
                   setTimeout(() => onOpenFeedback?.(), 100);
                 }}
-                className="bg-white text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all hover:scale-105 shadow-xl"
+                className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
-                Share Your Ideas
+                💡 Suggest Feature
               </button>
             </div>
-            
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
           </div>
 
-          {/* Version Info */}
-          <div className={`text-center py-8 ${
-            darkMode ? 'text-gray-500' : 'text-gray-400'
-          }`}>
-            <p className="text-sm font-medium mb-1">DANGIT Version 1.0.0</p>
-            <p className="text-xs">Made with ❤️ for productivity enthusiasts</p>
-          </div>
+          {/* Bottom padding for mobile */}
+          <div style={{ height: '40px' }}></div>
         </div>
       </div>
     </div>
