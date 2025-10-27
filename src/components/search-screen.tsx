@@ -24,7 +24,6 @@ interface ContentItem {
   originalUrl?: string;
   image_url?: string;
   content_type?: string;
-  original_content?: string;
   createdAt?: string;
 }
 
@@ -224,10 +223,9 @@ export function SearchScreen({ onShowContentDetail, darkMode = false, userId}: S
           borderColor: categoryColors[item.ai_category] || categoryColors['Other'],
           priority: determinePriority(item.ai_category, item.created_at),
           aiScore: 8.0,
-          originalUrl: item.original_content || null, // URL goes here
+          originalUrl: item.preview_data?.url || null, // ✅
           image_url: item.original_image_url || null, // Image URL here
           content_type: item.content_type || 'text', // Type
-          original_content: item.original_content || null, // Raw content
           created_at: item.created_at // Full timestamp
         }));
         

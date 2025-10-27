@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { scrapeURL, analyzeWithAI } from '@/lib/content-processor'
 
+// Helper function to extract domain - MOVE TO TOP
+function extractDomain(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request) {
   try {
     const { content, contentType, userId } = await request.json()
@@ -21,14 +30,20 @@ export async function POST(request) {
       processedContent = await analyzeWithAI({ title: content, description: content }, 'text')
     }
     
-    // Save to database
+    // Save to database - EGRESS OPTIMIZED ✅
     const { data, error } = await supabase
       .from('saved_items')
       .insert({
         user_id: userId,
         title: processedContent.title,
         content_type: contentType,
-        original_content: content,
+        original_content: null, // ✅ No massive content
+        preview_data: contentType === 'url' ? { // ✅ Lightweight metadata
+          url: typeof content === 'string' ? content : content.url,
+          title: processedContent.title,
+          description: processedContent.summary,
+          domain: extractDomain(typeof content === 'string' ? content : content.url)
+        } : null,
         ai_summary: processedContent.summary,
         ai_category: processedContent.category,
         ai_tags: processedContent.tags,

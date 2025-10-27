@@ -28,8 +28,13 @@ interface ContentDetailViewProps {
     created_at?: string;
     image_url?: string;
     content_type?: string;
-    original_content?: string; // 🆕 Add this - needed for URLs
-    preview_data?: any; // ✅ Added for Instagram data
+    preview_data?: { // ✅ KEEP THIS - efficient metadata
+      url?: string;
+      title?: string;
+      description?: string;
+      domain?: string;
+      favicon?: string;
+    };
     notifications?: {
       enabled: boolean;
       frequency: 'once' | 'daily' | 'weekly';
@@ -46,6 +51,7 @@ interface ContentDetailViewProps {
   onShare?: () => void;
   userId?: string;
 }
+
 
 export function ContentDetailView({ 
   content, 
@@ -98,13 +104,14 @@ export function ContentDetailView({
   const currentType = typeConfig[content.type as keyof typeof typeConfig] || typeConfig.manual;
 
   // ✅ NEW: Check if content is Instagram
-  const isInstagramContent = content.original_content?.includes('instagram.com') || 
+  const isInstagramContent = content.preview_data?.url?.includes('instagram.com') ||
+
                             content.originalUrl?.includes('instagram.com') ||
                             content.preview_data?.url?.includes('instagram.com');
 
   // ✅ NEW: Extract Instagram post ID
   const getInstagramPostId = () => {
-    const url = content.original_content || content.originalUrl || content.preview_data?.url;
+    const url = content.preview_data?.url || content.originalUrl || null
     if (!url) return null;
     
     const postMatch = url.match(/\/(p|reel|reels)\/([A-Za-z0-9_-]+)/);
@@ -175,14 +182,14 @@ const handleInstagramTitleSave = async () => {
   // 🔒 FIXED: Fetch URL preview for URL type content with proper authentication
   useEffect(() => {
     // Check multiple ways a URL might be stored
-    const urlToFetch = content.originalUrl || content.original_content;
+    const urlToFetch = content.originalUrl || content.preview_data?.url; // ✅
     const isUrlContent = content.content_type === 'url' || content.type === 'url';
     
     if (isUrlContent && urlToFetch && !isInstagramContent) { // Don't fetch preview for Instagram
       console.log('🔗 Fetching URL preview for:', urlToFetch);
       fetchUrlPreview(urlToFetch);
     }
-  }, [content.originalUrl, content.original_content, content.content_type, content.type]);
+  }, [content.preview_data?.url, content.content_type, content.type]);;
 
   // 🔒 FIXED: Function to fetch URL preview with proper authentication
   const fetchUrlPreview = async (url: string) => {
@@ -431,7 +438,7 @@ const handleInstagramTitleSave = async () => {
   };
 
   // 🔒 Get the URL for display
-  const displayUrl = content.originalUrl || content.original_content;
+  const displayUrl = content.originalUrl || content.preview_data?.url; // ✅
   const isUrlType = content.content_type === 'url' || content.type === 'url';
 
   return (

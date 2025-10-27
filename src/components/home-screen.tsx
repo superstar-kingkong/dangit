@@ -37,7 +37,6 @@ interface ContentItem {
   originalUrl?: string;
   image_url?: string;
   content_type?: string;
-  original_content?: string;
   created_at?: string;
 }
 
@@ -232,10 +231,10 @@ export function HomeScreen({
           borderColor: getCategoryColor(item.ai_category || 'Other'),
           priority: determinePriority(item.ai_category || 'Other', item.created_at),
           aiScore: 8.0,
-          originalUrl: item.original_content || null,
+          originalUrl: item.preview_data?.url || null,
           image_url: item.original_image_url || null,
           content_type: item.content_type || 'text',
-          original_content: item.original_content || null,
+          preview_data: item.preview_data || null, // ✅ Add this for URL metadata
           created_at: item.created_at
         }));
         

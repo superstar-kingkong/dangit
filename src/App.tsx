@@ -294,7 +294,7 @@ useEffect(() => {
     const transformedContent: ContentItem = {
       ...content,
       id: typeof content.id === 'string' ? content.id : String(content.id), // ✅ Keep as string
-      originalUrl: content.original_content || content.originalUrl,
+      originalUrl: content.preview_data?.url || content.originalUrl || null,
       aiSummary: content.ai_summary || content.description,
       created_at: content.created_at || content.timestamp,
       // FIXED: Proper notification structure with required fields

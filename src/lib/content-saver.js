@@ -103,7 +103,7 @@ export async function saveContent(input, type, userId = 'current-user') {
         user_id: userId,
         title: processedData.title,
         content_type: type,
-        original_content: originalContent,
+        original_content: null, // Backend will handle content limiting
         ai_summary: processedData.summary || 'No summary generated',
         ai_category: processedData.category || 'Other',
         ai_tags: processedData.tags || [],
