@@ -23,16 +23,10 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
   const [features, setFeatures] = useState<any[]>([]);
   const [newFeature, setNewFeature] = useState({ title: '', description: '' });
 
-  // ✅ LOCK BODY SCROLL
   useEffect(() => {
-    const originalScrollY = window.scrollY;
-    document.body.classList.add('modal-open');
-    document.body.style.top = `-${originalScrollY}px`;
-    
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.classList.remove('modal-open');
-      document.body.style.top = '';
-      window.scrollTo(0, originalScrollY);
+      document.body.style.overflow = 'unset';
     };
   }, []);
 
@@ -172,11 +166,25 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
 
   return (
     <div 
-      className={`modal-container ${darkMode ? 'bg-gray-900' : 'bg-white'}`}
-      style={{ backgroundColor: darkMode ? '#111827' : '#ffffff' }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        backgroundColor: darkMode ? '#111827' : '#ffffff',
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh'
+      }}
     >
       {/* Header */}
-      <div className={`modal-header px-4 py-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div style={{
+        padding: '16px',
+        borderBottom: `1px solid ${darkMode ? '#374151' : '#e5e7eb'}`,
+        flexShrink: 0
+      }}>
         <div className="flex items-center justify-between">
           <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             Feedback & Ideas
@@ -214,252 +222,254 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
       </div>
 
       {/* Content */}
-      <div className="modal-content">
-        <div className="px-4 py-6">
-          {/* Feedback Tab */}
-          {activeTab === 'feedback' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Rate Your Experience
-                </h3>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      onClick={() => setRating(star)}
-                      className={`p-2 ${
-                        star <= rating ? 'text-yellow-500' : 'text-gray-300'
-                      }`}
-                    >
-                      <Star className="w-8 h-8 fill-current" />
-                    </button>
-                  ))}
-                </div>
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '16px'
+      }}>
+        {/* Feedback Tab */}
+        {activeTab === 'feedback' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Rate Your Experience
+              </h3>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRating(star)}
+                    className={`p-2 ${
+                      star <= rating ? 'text-yellow-500' : 'text-gray-300'
+                    }`}
+                  >
+                    <Star className="w-8 h-8 fill-current" />
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <div>
-                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Category
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {feedbackCategories.map((category) => (
-                    <button
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`p-3 rounded-xl text-left ${
-                        selectedCategory === category.id
-                          ? 'bg-indigo-500 text-white'
-                          : darkMode
-                            ? 'bg-gray-800 hover:bg-gray-700 text-white'
-                            : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
-                      }`}
-                    >
-                      <div className="text-sm font-medium">{category.label}</div>
-                    </button>
-                  ))}
-                </div>
+            <div>
+              <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Category
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {feedbackCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.id)}
+                    className={`p-3 rounded-xl text-left ${
+                      selectedCategory === category.id
+                        ? 'bg-indigo-500 text-white'
+                        : darkMode
+                          ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                          : 'bg-gray-50 hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="text-sm font-medium">{category.label}</div>
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <div>
-                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Tell us more
-                </h3>
-                <textarea
-                  value={feedbackMessage}
-                  onChange={(e) => setFeedbackMessage(e.target.value)}
-                  placeholder="What do you think about DANGIT? Any suggestions?"
-                  className={`w-full h-24 p-3 rounded-lg border-2 ${
-                    darkMode
-                      ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-                  required
-                />
-              </div>
+            <div>
+              <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Tell us more
+              </h3>
+              <textarea
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                placeholder="What do you think about DANGIT? Any suggestions?"
+                className={`w-full h-24 p-3 rounded-lg border-2 ${
+                  darkMode
+                    ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+                required
+              />
+            </div>
 
+            <button
+              onClick={submitFeedback}
+              disabled={isSubmitting || !rating || !feedbackMessage.trim()}
+              className={`w-full py-3 rounded-lg font-semibold ${
+                isSubmitting || !rating || !feedbackMessage.trim()
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+              }`}
+            >
+              {isSubmitting ? 'Sending...' : 'Send Feedback'}
+            </button>
+          </div>
+        )}
+
+        {/* Bug Report Tab */}
+        {activeTab === 'bug' && (
+          <div className="space-y-6">
+            <div className={`p-4 rounded-xl border-2 border-dashed border-red-300 ${
+              darkMode ? 'bg-red-900/20' : 'bg-red-50'
+            }`}>
+              <h3 className={`font-semibold mb-3 ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
+                Report a Bug
+              </h3>
+              <input
+                value={bugReport.title}
+                onChange={(e) => setBugReport({...bugReport, title: e.target.value})}
+                placeholder="Bug title (e.g., App crashes when saving images)"
+                className={`w-full p-3 rounded-lg border mb-3 ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+                required
+              />
+              <textarea
+                value={bugReport.description}
+                onChange={(e) => setBugReport({...bugReport, description: e.target.value})}
+                placeholder="Describe what happened..."
+                className={`w-full h-20 p-3 rounded-lg border mb-3 ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+                required
+              />
+              <textarea
+                value={bugReport.steps}
+                onChange={(e) => setBugReport({...bugReport, steps: e.target.value})}
+                placeholder="Steps to reproduce (optional)"
+                className={`w-full h-16 p-3 rounded-lg border mb-3 ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+              />
               <button
-                onClick={submitFeedback}
-                disabled={isSubmitting || !rating || !feedbackMessage.trim()}
-                className={`w-full py-3 rounded-lg font-semibold ${
-                  isSubmitting || !rating || !feedbackMessage.trim()
+                onClick={submitBugReport}
+                disabled={isSubmitting || !bugReport.title.trim() || !bugReport.description.trim()}
+                className={`w-full py-2 rounded-lg font-medium ${
+                  isSubmitting || !bugReport.title.trim() || !bugReport.description.trim()
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                    : 'bg-red-500 hover:bg-red-600 text-white'
                 }`}
               >
-                {isSubmitting ? 'Sending...' : 'Send Feedback'}
+                {isSubmitting ? 'Submitting...' : 'Report Bug'}
               </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Bug Report Tab */}
-          {activeTab === 'bug' && (
-            <div className="space-y-6">
-              <div className={`p-4 rounded-xl border-2 border-dashed border-red-300 ${
-                darkMode ? 'bg-red-900/20' : 'bg-red-50'
-              }`}>
-                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-red-300' : 'text-red-700'}`}>
-                  Report a Bug
-                </h3>
-                <input
-                  value={bugReport.title}
-                  onChange={(e) => setBugReport({...bugReport, title: e.target.value})}
-                  placeholder="Bug title (e.g., App crashes when saving images)"
-                  className={`w-full p-3 rounded-lg border mb-3 ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-                  required
-                />
-                <textarea
-                  value={bugReport.description}
-                  onChange={(e) => setBugReport({...bugReport, description: e.target.value})}
-                  placeholder="Describe what happened..."
-                  className={`w-full h-20 p-3 rounded-lg border mb-3 ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-                  required
-                />
-                <textarea
-                  value={bugReport.steps}
-                  onChange={(e) => setBugReport({...bugReport, steps: e.target.value})}
-                  placeholder="Steps to reproduce (optional)"
-                  className={`w-full h-16 p-3 rounded-lg border mb-3 ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-                />
-                <button
-                  onClick={submitBugReport}
-                  disabled={isSubmitting || !bugReport.title.trim() || !bugReport.description.trim()}
-                  className={`w-full py-2 rounded-lg font-medium ${
-                    isSubmitting || !bugReport.title.trim() || !bugReport.description.trim()
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-red-500 hover:bg-red-600 text-white'
-                  }`}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Report Bug'}
-                </button>
-              </div>
+        {/* Feature Ideas Tab */}
+        {activeTab === 'features' && (
+          <div className="space-y-6">
+            <div className={`p-4 rounded-xl border-2 border-dashed ${
+              darkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'
+            }`}>
+              <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Suggest a New Feature
+              </h3>
+              <input
+                value={newFeature.title}
+                onChange={(e) => setNewFeature({...newFeature, title: e.target.value})}
+                placeholder="Feature title (e.g., Dark mode, Voice notes)"
+                className={`w-full p-3 rounded-lg border mb-3 ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+              <textarea
+                value={newFeature.description}
+                onChange={(e) => setNewFeature({...newFeature, description: e.target.value})}
+                placeholder="Describe your idea..."
+                className={`w-full h-20 p-3 rounded-lg border mb-3 ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
+                }`}
+              />
+              <button
+                onClick={submitFeature}
+                disabled={isSubmitting || !newFeature.title.trim()}
+                className={`w-full py-2 rounded-lg font-medium ${
+                  isSubmitting || !newFeature.title.trim()
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {isSubmitting ? 'Submitting...' : 'Suggest Feature'}
+              </button>
             </div>
-          )}
 
-          {/* Feature Ideas Tab */}
-          {activeTab === 'features' && (
-            <div className="space-y-6">
-              <div className={`p-4 rounded-xl border-2 border-dashed ${
-                darkMode ? 'border-gray-600 bg-gray-800/50' : 'border-gray-300 bg-gray-50'
-              }`}>
-                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Suggest a New Feature
-                </h3>
-                <input
-                  value={newFeature.title}
-                  onChange={(e) => setNewFeature({...newFeature, title: e.target.value})}
-                  placeholder="Feature title (e.g., Dark mode, Voice notes)"
-                  className={`w-full p-3 rounded-lg border mb-3 ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-                />
-                <textarea
-                  value={newFeature.description}
-                  onChange={(e) => setNewFeature({...newFeature, description: e.target.value})}
-                  placeholder="Describe your idea..."
-                  className={`w-full h-20 p-3 rounded-lg border mb-3 ${
-                    darkMode
-                      ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                      : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500'
-                  }`}
-                />
-                <button
-                  onClick={submitFeature}
-                  disabled={isSubmitting || !newFeature.title.trim()}
-                  className={`w-full py-2 rounded-lg font-medium ${
-                    isSubmitting || !newFeature.title.trim()
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-500 hover:bg-green-600 text-white'
-                  }`}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Suggest Feature'}
-                </button>
-              </div>
-
-              <div>
-                <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Vote on Feature Ideas
-                </h3>
-                <div className="space-y-3">
-                  {features.map((feature) => (
-                    <div
-                      key={feature.id}
-                      className={`p-4 rounded-xl border ${
-                        darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                            {feature.feature_title}
-                          </h4>
-                          {feature.feature_description && (
-                            <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {feature.feature_description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-4 mt-2">
-                            <span className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                              {feature.votes_count} votes
-                            </span>
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              feature.status === 'completed' 
-                                ? 'bg-green-100 text-green-800'
-                                : feature.status === 'in_development'
-                                  ? 'bg-blue-100 text-blue-800' 
-                                  : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {feature.status === 'completed' && 'Done'}
-                              {feature.status === 'in_development' && 'Building'}
-                              {feature.status === 'planned' && 'Planned'}
-                              {feature.status === 'suggested' && 'Suggested'}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1 ml-3">
-                          <button
-                            onClick={() => voteFeature(feature.id, 'upvote')}
-                            className={`p-2 rounded-lg ${
-                              darkMode 
-                                ? 'hover:bg-gray-700 text-green-400' 
-                                : 'hover:bg-gray-100 text-green-600'
-                            }`}
-                          >
-                            <ThumbsUp className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => voteFeature(feature.id, 'downvote')}
-                            className={`p-2 rounded-lg ${
-                              darkMode 
-                                ? 'hover:bg-gray-700 text-red-400' 
-                                : 'hover:bg-gray-100 text-red-600'
-                            }`}
-                          >
-                            <ThumbsDown className="w-4 h-4" />
-                          </button>
+            <div>
+              <h3 className={`font-semibold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Vote on Feature Ideas
+              </h3>
+              <div className="space-y-3">
+                {features.map((feature) => (
+                  <div
+                    key={feature.id}
+                    className={`p-4 rounded-xl border ${
+                      darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {feature.feature_title}
+                        </h4>
+                        {feature.feature_description && (
+                          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                            {feature.feature_description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2">
+                          <span className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                            {feature.votes_count} votes
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            feature.status === 'completed' 
+                              ? 'bg-green-100 text-green-800'
+                              : feature.status === 'in_development'
+                                ? 'bg-blue-100 text-blue-800' 
+                                : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {feature.status === 'completed' && 'Done'}
+                            {feature.status === 'in_development' && 'Building'}
+                            {feature.status === 'planned' && 'Planned'}
+                            {feature.status === 'suggested' && 'Suggested'}
+                          </span>
                         </div>
                       </div>
+                      <div className="flex flex-col gap-1 ml-3">
+                        <button
+                          onClick={() => voteFeature(feature.id, 'upvote')}
+                          className={`p-2 rounded-lg ${
+                            darkMode 
+                              ? 'hover:bg-gray-700 text-green-400' 
+                              : 'hover:bg-gray-100 text-green-600'
+                          }`}
+                        >
+                          <ThumbsUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => voteFeature(feature.id, 'downvote')}
+                          className={`p-2 rounded-lg ${
+                            darkMode 
+                              ? 'hover:bg-gray-700 text-red-400' 
+                              : 'hover:bg-gray-100 text-red-600'
+                          }`}
+                        >
+                          <ThumbsDown className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
