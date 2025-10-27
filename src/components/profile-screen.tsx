@@ -2,10 +2,14 @@ import { API_URL } from '../config';
 import { supabase } from '../lib/supabase'; // 🔒 Import your existing supabase client
 import React, { useState, useEffect } from 'react';
 import { 
-  User, Settings, HelpCircle, Shield, Bell, Trash2, LogOut, BarChart3, 
+  User, Settings, HelpCircle, Shield, Trash2, LogOut, BarChart3, 
   Target, Clock, CheckCircle, TrendingUp, Award, Edit,
-  ChevronRight, Download, Share2, Eye, Moon, RefreshCw
+  ChevronRight, Download, Share2, Eye, Moon, RefreshCw, MessageCircle
 } from 'lucide-react';
+import { FeedbackSystem } from './FeedbackSystem';
+import { HelpScreen } from './HelpScreen';
+import { WhatsNewScreen } from './WhatsNewScreen';
+import { PrivacyScreen } from './PrivacyScreen';
 
 interface ProfileScreenProps {
   darkMode: boolean;
@@ -31,7 +35,6 @@ interface SwitchMenuItem {
   hasSwitch: true;
   value: boolean;
   setter: (value: boolean) => void;
-  description?: string;
 }
 
 interface ActionMenuItem {
@@ -74,7 +77,6 @@ export function ProfileScreen({
   onSignOut,
   userProfile
 }: ProfileScreenProps) {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [stats, setStats] = useState({
     totalItems: 0,
     completedItems: 0,
@@ -84,6 +86,12 @@ export function ProfileScreen({
   });
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState(0);
+  
+  // ✅ NEW: Modal states
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
   // Calculate real streak from user activity
   const calculateStreak = (items: any[]) => {
@@ -141,7 +149,6 @@ export function ProfileScreen({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
         }
-        // Note: Removed userId from query - comes from token now
       });
       
       if (statsResponse.ok) {
@@ -151,7 +158,6 @@ export function ProfileScreen({
         }
       } else if (statsResponse.status === 401) {
         console.error('Session expired in profile stats');
-        // Handle auth error appropriately
       }
       
       // Get all items to calculate streak with authentication
@@ -161,7 +167,6 @@ export function ProfileScreen({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}` // 🔒 Add auth token
         }
-        // Note: Removed userId from query - comes from token now
       });
       
       if (itemsResponse.ok) {
@@ -172,7 +177,6 @@ export function ProfileScreen({
         }
       } else if (itemsResponse.status === 401) {
         console.error('Session expired while loading items for streak');
-        // Handle auth error appropriately
       }
       
     } catch (error) {
@@ -223,7 +227,7 @@ export function ProfileScreen({
     }
   };
 
-  // FIXED: Properly typed menu sections
+  // ✅ UPDATED: Menu sections with feedback button and removed notifications
   const menuSections: MenuSection[] = [
     {
       title: 'Preferences',
@@ -234,18 +238,16 @@ export function ProfileScreen({
           color: darkMode ? 'text-indigo-400' : 'text-indigo-600', 
           hasSwitch: true, 
           value: darkMode, 
-          setter: onDarkModeToggle,
-          description: 'Easier on your eyes'
-        } as SwitchMenuItem,
-        { 
-          icon: Bell, 
-          label: 'Notifications', 
-          color: darkMode ? 'text-purple-400' : 'text-purple-600', 
-          hasSwitch: true, 
-          value: notificationsEnabled, 
-          setter: setNotificationsEnabled,
-          description: 'Get reminders'
+          setter: onDarkModeToggle
         } as SwitchMenuItem
+      ]
+    },
+    {
+      title: 'Feedback & Support',
+      items: [
+        { icon: MessageCircle, label: 'Give Feedback & Vote Features', color: darkMode ? 'text-pink-400' : 'text-pink-600', action: 'feedback' } as ActionMenuItem,
+        { icon: HelpCircle, label: 'Help & Support', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'help' } as ActionMenuItem,
+        { icon: Eye, label: 'What\'s New', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'updates' } as ActionMenuItem
       ]
     },
     {
@@ -255,13 +257,6 @@ export function ProfileScreen({
         { icon: Shield, label: 'Privacy & Security', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'privacy' } as ActionMenuItem,
         { icon: Download, label: 'Export Data', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'export' } as ActionMenuItem,
         { icon: Share2, label: 'Share App', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'share' } as ActionMenuItem
-      ]
-    },
-    {
-      title: 'Support',
-      items: [
-        { icon: HelpCircle, label: 'Help & Support', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'help' } as ActionMenuItem,
-        { icon: Eye, label: 'What\'s New', color: darkMode ? 'text-gray-300' : 'text-gray-700', action: 'updates' } as ActionMenuItem
       ]
     },
     {
@@ -275,6 +270,18 @@ export function ProfileScreen({
 
   const handleAction = (action: string) => {
     switch (action) {
+      case 'feedback':
+        setShowFeedback(true);
+        break;
+      case 'help':
+        setShowHelp(true);
+        break;
+      case 'updates':
+        setShowWhatsNew(true);
+        break;
+      case 'privacy':
+        setShowPrivacy(true);
+        break;
       case 'edit':
         onEditProfile();
         break;
@@ -283,9 +290,6 @@ export function ProfileScreen({
         break;
       case 'clear':
         handleClearData();
-        break;
-      case 'privacy':
-        alert('Privacy settings would open here');
         break;
       case 'export':
         alert('Data export would start here');
@@ -300,12 +304,6 @@ export function ProfileScreen({
         } else {
           alert('Share functionality would open here');
         }
-        break;
-      case 'help':
-        alert('Help center would open here');
-        break;
-      case 'updates':
-        alert('What\'s new would open here');
         break;
     }
   };
@@ -322,8 +320,8 @@ export function ProfileScreen({
   return (
     <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       
-      {/* FIXED: Removed h-screen and added proper scrolling container */}
-      <div className="overflow-y-auto" style={{ height: 'calc(100vh - 80px)' }}>
+      {/* ✅ FIXED: Proper scrolling container with reduced bottom padding */}
+      <div className="overflow-y-auto pb-20"> {/* Reduced from excessive padding */}
         
         {/* Header with User Info */}
         <div className="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 px-6 pt-8 pb-8">
@@ -574,11 +572,6 @@ export function ProfileScreen({
                             <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                               {item.label}
                             </div>
-                            {item.description && (
-                              <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {item.description}
-                              </div>
-                            )}
                           </div>
                         </div>
                         <Switch 
@@ -603,7 +596,9 @@ export function ProfileScreen({
                           <div className={`p-2.5 rounded-xl ${
                             item.color === 'text-red-500' 
                               ? 'bg-red-50' 
-                              : darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                              : item.action === 'feedback'
+                                ? 'bg-pink-50'
+                                : darkMode ? 'bg-gray-700' : 'bg-gray-100'
                           }`}>
                             <Icon className={`w-5 h-5 ${item.color}`} />
                           </div>
@@ -621,8 +616,8 @@ export function ProfileScreen({
           ))}
         </div>
 
-        {/* Footer */}
-        <div className="px-6 pb-8 text-center">
+        {/* ✅ FIXED: Reduced footer padding */}
+        <div className="px-6 pb-6 text-center">
           <div className={`rounded-2xl p-6 shadow-sm ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="text-3xl font-black mb-2">
               <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">DANG</span>
@@ -637,6 +632,36 @@ export function ProfileScreen({
           </div>
         </div>
       </div>
+
+      {/* ✅ NEW: Modal screens */}
+      {showFeedback && (
+        <FeedbackSystem 
+          userId={userProfile.email} 
+          darkMode={darkMode}
+          onClose={() => setShowFeedback(false)}
+        />
+      )}
+
+      {showHelp && (
+        <HelpScreen 
+          darkMode={darkMode}
+          onClose={() => setShowHelp(false)}
+        />
+      )}
+
+      {showWhatsNew && (
+        <WhatsNewScreen 
+          darkMode={darkMode}
+          onClose={() => setShowWhatsNew(false)}
+        />
+      )}
+
+      {showPrivacy && (
+        <PrivacyScreen 
+          darkMode={darkMode}
+          onClose={() => setShowPrivacy(false)}
+        />
+      )}
     </div>
   );
 }
