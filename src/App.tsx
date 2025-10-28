@@ -465,6 +465,7 @@ useEffect(() => {
                 <div className="animate-in fade-in-0 duration-300">
                   <HomeScreen 
                     onShowContentDetail={handleShowContentDetail}
+                    onNavigate={handleNavigate}
                     darkMode={darkMode}
                     userId={currentUser?.email}
                   />

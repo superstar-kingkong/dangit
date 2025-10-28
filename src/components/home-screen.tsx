@@ -13,17 +13,146 @@ import {
   Download,
   Share,
   MoreVertical,
+  Camera,
+  Link,
+  FileText,
 } from "lucide-react";
+
+// OnboardingEmptyState Component
+const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type: string) => void, darkMode: boolean }) => {
+  return (
+    <div className={`min-h-[60vh] flex flex-col items-center justify-center p-8 ${
+      darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 to-purple-50'
+    }`}>
+      <div className="text-center max-w-md">
+        {/* Welcome Message */}
+        <div className="mb-8">
+          <Sparkles className="w-16 h-16 mx-auto mb-4 text-indigo-500" />
+          <h2 className={`text-3xl font-bold mb-3 ${
+            darkMode ? 'text-white' : 'text-gray-900'
+          }`}>
+            Welcome to DANGIT!
+          </h2>
+          <p className={`text-lg ${
+            darkMode ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            Never lose your saved content again
+          </p>
+        </div>
+
+        {/* Quick Start Actions */}
+        <div className="space-y-3 mb-8">
+          <p className={`text-sm font-semibold uppercase tracking-wide mb-4 ${
+            darkMode ? 'text-gray-500' : 'text-gray-500'
+          }`}>
+            Choose what to save:
+          </p>
+          
+          <button
+            onClick={() => onAddContent('image')}
+            className={`w-full p-4 rounded-xl border-2 border-dashed transition-all hover:scale-105 ${
+              darkMode 
+                ? 'border-pink-500 bg-pink-900/20 hover:bg-pink-900/30' 
+                : 'border-pink-500 bg-pink-50 hover:bg-pink-100'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-pink-500 rounded-xl">
+                <Camera className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h3 className={`font-bold ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Save a Screenshot
+                </h3>
+                <p className={`text-sm ${
+                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Recipes, memes, notes - anything visual
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onAddContent('url')}
+            className={`w-full p-4 rounded-xl border-2 border-dashed transition-all hover:scale-105 ${
+              darkMode 
+                ? 'border-purple-500 bg-purple-900/20 hover:bg-purple-900/30' 
+                : 'border-purple-500 bg-purple-50 hover:bg-purple-100'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-500 rounded-xl">
+                <Link className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h3 className={`font-bold ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Save an Instagram Reel
+                </h3>
+                <p className={`text-sm ${
+                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Never lose that recipe or workout video
+                </p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onAddContent('text')}
+            className={`w-full p-4 rounded-xl border-2 border-dashed transition-all hover:scale-105 ${
+              darkMode 
+                ? 'border-blue-500 bg-blue-900/20 hover:bg-blue-900/30' 
+                : 'border-blue-500 bg-blue-50 hover:bg-blue-100'
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-500 rounded-xl">
+                <FileText className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left flex-1">
+                <h3 className={`font-bold ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  Write a Quick Note
+                </h3>
+                <p className={`text-sm ${
+                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Ideas, reminders, to-do lists
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Feature Highlights */}
+        <div className={`text-sm space-y-2 ${
+          darkMode ? 'text-gray-500' : 'text-gray-500'
+        }`}>
+          <p>✨ AI organizes everything automatically</p>
+          <p>🔍 Smart search finds what you need</p>
+          <p>📱 Works on any device</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface HomeScreenProps {
   onShowContentDetail: (content: any) => void;
   darkMode?: boolean;
   currentTime?: Date;
   userId?: string;
+  onNavigate?: (screen: 'home' | 'add' | 'search' | 'profile') => void; // ✅ ADD: Navigation handler
 }
 
 interface ContentItem {
-  id: string; // ✅ Changed to string for UUID
+  id: string;
   type: string;
   title: string;
   description: string;
@@ -98,7 +227,8 @@ export function HomeScreen({
   onShowContentDetail,
   darkMode = false,
   currentTime: externalCurrentTime,
-  userId
+  userId,
+  onNavigate // ✅ ADD: Accept navigation handler
 }: HomeScreenProps) {
   const [showNotificationBanner, setShowNotificationBanner] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,6 +240,16 @@ export function HomeScreen({
   const [refreshing, setRefreshing] = useState(false);
   
   const currentTime = externalCurrentTime || new Date();
+
+  // ✅ ADD: Handle onboarding navigation
+  const handleAddContent = (type: string) => {
+    if (onNavigate) {
+      onNavigate('add');
+      // Optionally, you can pass the pre-selected type to your add screen
+      // You might want to store this in a global state or pass it through navigation
+      console.log('Pre-selected content type:', type);
+    }
+  };
 
   // UPDATED: Unified Category color mapping (consistent across all screens)
   const getCategoryColor = (category: string): string => {
@@ -220,7 +360,7 @@ export function HomeScreen({
       
       if (result.data && Array.isArray(result.data)) {
         const transformedItems: ContentItem[] = result.data.map((item: any) => ({
-          id: String(item.id), // ✅ Convert to string (handles both UUID and numbers)
+          id: String(item.id),
           type: item.content_type || 'text',
           title: item.title || 'Untitled',
           description: item.ai_summary || 'No description available',
@@ -234,7 +374,7 @@ export function HomeScreen({
           originalUrl: item.preview_data?.url || null,
           image_url: item.original_image_url || null,
           content_type: item.content_type || 'text',
-          preview_data: item.preview_data || null, // ✅ Add this for URL metadata
+          preview_data: item.preview_data || null,
           created_at: item.created_at
         }));
         
@@ -338,7 +478,7 @@ export function HomeScreen({
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          itemId: itemId, // ✅ Send as string (UUID)
+          itemId: itemId,
           completed: newCompletedState
         })
       });
@@ -469,7 +609,6 @@ export function HomeScreen({
 
   return (
     <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      {/* REST OF YOUR UI CODE - KEEPING EXACTLY AS IS */}
       <div className="overflow-y-auto h-screen">
         <div className={`relative overflow-hidden ${
           darkMode
@@ -568,9 +707,18 @@ export function HomeScreen({
         </div>
 
         <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
-          {/* ✅ ADD: Smart PWA Install Banner */}
+          {/* PWA Install Banner */}
           <PWAInstallBanner darkMode={darkMode} />
 
+          {/* ✅ ADD: Show OnboardingEmptyState for users with 0 items */}
+          {contentItems.length === 0 && (
+            <OnboardingEmptyState 
+              onAddContent={handleAddContent}
+              darkMode={darkMode}
+            />
+          )}
+
+          {/* Progress Stats - Only show if user has items */}
           {stats.total > 0 && (
             <div className={`${
               darkMode
@@ -603,45 +751,48 @@ export function HomeScreen({
             </div>
           )}
 
-          <div className="space-y-4">
-            {filteredAndSortedItems.length === 0 ? (
-              <div className="text-center py-12">
-                <div className={`w-16 h-16 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                  <Sparkles className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+          {/* Content Items - Only show if user has items */}
+          {contentItems.length > 0 && (
+            <div className="space-y-4">
+              {filteredAndSortedItems.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className={`w-16 h-16 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                    <Sparkles className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  </div>
+                  <h3 className={`${darkMode ? 'text-white' : 'text-slate-900'} font-semibold mb-2`}>
+                    {searchQuery ? "No items found" : stats.pending === 0 ? "All done! 🎉" : "No pending items"}
+                  </h3>
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-slate-500'} text-sm`}>
+                    {searchQuery 
+                      ? 'Try adjusting your search terms' 
+                      : stats.pending === 0
+                        ? 'Great job! All your items are completed'
+                        : 'Add some content to get started'
+                    }
+                  </p>
                 </div>
-                <h3 className={`${darkMode ? 'text-white' : 'text-slate-900'} font-semibold mb-2`}>
-                  {searchQuery ? "No items found" : stats.pending === 0 ? "All done! 🎉" : "No pending items"}
-                </h3>
-                <p className={`${darkMode ? 'text-gray-400' : 'text-slate-500'} text-sm`}>
-                  {searchQuery 
-                    ? 'Try adjusting your search terms' 
-                    : stats.pending === 0
-                      ? 'Great job! All your items are completed'
-                      : 'Add some content to get started'
-                  }
-                </p>
-              </div>
-            ) : (
-              filteredAndSortedItems.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="animate-in slide-in-from-bottom-4 fade-in-0"
-                  style={{ 
-                    animationDelay: `${index * 50}ms`,
-                    animationDuration: '400ms',
-                    animationFillMode: 'both'
-                  }}
-                >
-                  <ContentCard
-                    content={item}
-                    onClick={onShowContentDetail}
-                    onToggleComplete={handleToggleComplete}
-                    darkMode={darkMode}
-                  />
-                </div>
-              ))
-            )}
-          </div>
+              ) : (
+                filteredAndSortedItems.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="animate-in slide-in-from-bottom-4 fade-in-0"
+                    style={{ 
+                      animationDelay: `${index * 50}ms`,
+                      animationDuration: '400ms',
+                      animationFillMode: 'both'
+                    }}
+                  >
+                    <ContentCard
+                      content={item}
+                      onClick={onShowContentDetail}
+                      onToggleComplete={handleToggleComplete}
+                      darkMode={darkMode}
+                    />
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
