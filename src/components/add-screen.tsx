@@ -1,6 +1,6 @@
 import { API_URL } from '../config';
-import { supabase } from '../lib/supabase'; // 🔧 Use your existing supabase client
-import React, { useState, useRef } from 'react';
+import { supabase } from '../lib/supabase';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles, Instagram } from 'lucide-react';
 
 interface AddContentScreenProps {
@@ -14,7 +14,7 @@ export function AddContentScreen({
   onClose,
   darkMode = false
 }: AddContentScreenProps) {
-  const [activeTab, setActiveTab] = useState<'url' | 'screenshot' | 'voice' | 'manual'>('url');
+  const [activeTab, setActiveTab] = useState<'url' | 'screenshot' | 'voice' | 'manual' | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [url, setUrl] = useState('');
   const [manualTitle, setManualTitle] = useState('');
@@ -24,7 +24,10 @@ export function AddContentScreen({
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
   
-  // ✅ NEW: Instagram title prompt state
+  // ✅ NEW: Clipboard hint state
+  const [clipboardHint, setClipboardHint] = useState(false);
+  
+  // ✅ Instagram title prompt state
   const [showTitlePrompt, setShowTitlePrompt] = useState(false);
   const [customTitle, setCustomTitle] = useState('');
   const [pendingInstagramUrl, setPendingInstagramUrl] = useState('');
@@ -37,6 +40,55 @@ export function AddContentScreen({
     { id: 'manual', label: 'Note', icon: FileText },
     { id: 'voice', label: 'Voice', icon: Mic }
   ];
+
+  // ✅ NEW: URL validation helper
+  const isValidURL = (string: string): boolean => {
+    try {
+      const url = new URL(string);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      try {
+        new URL('https://' + string);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  };
+
+  // ✅ NEW: Auto-detect clipboard when URL tab is clicked
+  const handleUrlTabClick = async () => {
+    setActiveTab('url');
+    setErrorMessage('');
+    setAnalysisResult(null);
+    setShowTitlePrompt(false);
+    setCustomTitle('');
+    setPendingInstagramUrl('');
+    
+    try {
+      const text = await navigator.clipboard.readText();
+      
+      if (text && isValidURL(text)) {
+        setUrl(text);
+        setClipboardHint(true);
+        
+        setTimeout(() => setClipboardHint(false), 3000);
+      }
+    } catch (err) {
+      console.log('Clipboard access denied or unavailable');
+    }
+  };
+
+  // ✅ NEW: Auto-open file picker when screenshot tab is clicked
+  const handleScreenshotTabClick = () => {
+    setActiveTab('screenshot');
+    setErrorMessage('');
+    setAnalysisResult(null);
+    
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 150);
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -62,7 +114,6 @@ export function AddContentScreen({
     });
   };
 
-  // 🔒 Function to get auth token using your existing supabase client
   const getAuthToken = async (): Promise<string | null> => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -86,33 +137,29 @@ export function AddContentScreen({
     }
   };
 
-  // ✅ NEW: Function to check if URL is Instagram
   const isInstagramUrl = (url: string): boolean => {
     return url.includes('instagram.com') || url.includes('instagr.am');
   };
 
-  // ✅ NEW: Modified handleSave with Instagram detection
   const handleSave = async (customInstagramTitle?: string) => {
     if (isProcessing || !hasContent() || analysisResult !== null) {
       return;
     }
 
-    // ✅ Check for Instagram URL and show title prompt
     if (activeTab === 'url' && url.trim() && isInstagramUrl(url.trim()) && !customInstagramTitle) {
       setPendingInstagramUrl(url.trim());
       setShowTitlePrompt(true);
-      return; // Don't proceed with save yet
+      return;
     }
 
     setIsProcessing(true);
     setErrorMessage('');
 
     try {
-      // 🔒 Get authentication token
       const authToken = await getAuthToken();
       if (!authToken) {
         setIsProcessing(false);
-        return; // Error message already set in getAuthToken
+        return;
       }
 
       let content = '';
@@ -156,23 +203,20 @@ export function AddContentScreen({
           return;
       }
 
-      // 🔒 SECURE: Send request with authentication token
       const response = await fetch(`${API_URL}/api/process-content`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}` // 🔒 Add auth token
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           content,
           contentType
-          // 🔒 Removed userId - now comes from authenticated token
         })
       });
 
       const result = await response.json();
 
-      // 🔒 Handle authentication errors
       if (response.status === 401) {
         setErrorMessage('Session expired. Please sign in again.');
         setIsProcessing(false);
@@ -180,7 +224,6 @@ export function AddContentScreen({
       }
 
       if (response.ok && result.success) {
-        // ✅ If we have a custom Instagram title, update it
         if (customInstagramTitle && isInstagramUrl(pendingInstagramUrl || url)) {
           try {
             const updateResponse = await fetch(`${API_URL}/api/update-title`, {
@@ -202,7 +245,6 @@ export function AddContentScreen({
             }
           } catch (error) {
             console.warn('Error updating Instagram title:', error);
-            // Don't fail the whole operation for this
           }
         }
 
@@ -213,7 +255,6 @@ export function AddContentScreen({
           tags: result.data.ai_tags,
         });
         
-        // Reset Instagram-specific state
         setPendingInstagramUrl('');
         setCustomTitle('');
         
@@ -227,7 +268,6 @@ export function AddContentScreen({
     } catch (error) {
       console.error('Error saving:', error);
       
-      // 🔒 Better error handling for different scenarios
       if (error instanceof Error) {
         if (error.message.includes('Failed to fetch')) {
           setErrorMessage('Network error. Please check your connection and try again.');
@@ -256,7 +296,7 @@ export function AddContentScreen({
   return (
     <div className={`h-screen flex flex-col overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
 
-      {/* ✅ NEW: Instagram Title Prompt Modal */}
+      {/* Instagram Title Prompt Modal */}
       {showTitlePrompt && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className={`rounded-2xl p-6 max-w-md w-full animate-in zoom-in-95 fade-in-0 ${
@@ -365,36 +405,72 @@ export function AddContentScreen({
           </button>
         </div>
 
-        {/* Tabs - 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id as any);
-                  setErrorMessage('');
-                  setAnalysisResult(null);
-                  // Reset Instagram state when switching tabs
-                  setShowTitlePrompt(false);
-                  setCustomTitle('');
-                  setPendingInstagramUrl('');
-                }}
-                className={`flex items-center justify-center gap-2 py-4 rounded-xl transition-all ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
-                    : darkMode
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <Icon className="w-5 h-5" strokeWidth={2.5} />
-                <span className="text-sm font-bold">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {/* ✅ MODIFIED: Tab Selection - Only show if no tab selected */}
+        {!activeTab ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleUrlTabClick}
+              className="flex items-center justify-center gap-2 py-4 rounded-xl transition-all bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg hover:scale-105"
+            >
+              <Link className="w-5 h-5" strokeWidth={2.5} />
+              <span className="text-sm font-bold">Link</span>
+            </button>
+            
+            <button
+              onClick={handleScreenshotTabClick}
+              className="flex items-center justify-center gap-2 py-4 rounded-xl transition-all bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:scale-105"
+            >
+              <Camera className="w-5 h-5" strokeWidth={2.5} />
+              <span className="text-sm font-bold">Image</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                setActiveTab('manual');
+                setErrorMessage('');
+                setAnalysisResult(null);
+              }}
+              className="flex items-center justify-center gap-2 py-4 rounded-xl transition-all bg-gradient-to-r from-pink-600 to-orange-600 text-white shadow-lg hover:scale-105"
+            >
+              <FileText className="w-5 h-5" strokeWidth={2.5} />
+              <span className="text-sm font-bold">Note</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                setActiveTab('voice');
+                setErrorMessage('');
+                setAnalysisResult(null);
+              }}
+              className="flex items-center justify-center gap-2 py-4 rounded-xl transition-all bg-gradient-to-r from-orange-600 to-yellow-600 text-white shadow-lg hover:scale-105"
+            >
+              <Mic className="w-5 h-5" strokeWidth={2.5} />
+              <span className="text-sm font-bold">Voice</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => {
+              setActiveTab(null);
+              setUrl('');
+              setManualTitle('');
+              setManualContent('');
+              setSelectedFile(null);
+              setPreviewUrl(null);
+              setErrorMessage('');
+              setAnalysisResult(null);
+              setClipboardHint(false);
+              setShowTitlePrompt(false);
+              setCustomTitle('');
+              setPendingInstagramUrl('');
+            }}
+            className={`text-sm font-bold flex items-center gap-1 transition-colors ${
+              darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            ← Back to options
+          </button>
+        )}
       </div>
 
       {/* Scrollable Content Area */}
@@ -403,6 +479,18 @@ export function AddContentScreen({
         {/* URL Tab */}
         {activeTab === 'url' && (
           <div className="space-y-6">
+            {/* ✅ NEW: Clipboard hint */}
+            {clipboardHint && (
+              <div className={`border-2 rounded-xl p-3 flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
+                darkMode 
+                  ? 'bg-green-900/20 border-green-700 text-green-300' 
+                  : 'bg-green-50 border-green-300 text-green-800'
+              }`}>
+                <Check className="w-5 h-5 flex-shrink-0" />
+                <span className="text-sm font-semibold">Found a link in your clipboard!</span>
+              </div>
+            )}
+
             <div>
               <label className={`block mb-2 font-bold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
                 Paste any link
@@ -423,7 +511,6 @@ export function AddContentScreen({
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                   Save articles, videos, tweets, or any webpage
                 </p>
-                {/* ✅ Instagram indicator */}
                 {url.trim() && isInstagramUrl(url.trim()) && (
                   <div className="flex items-center gap-1 text-pink-500">
                     <Instagram className="w-4 h-4" />
@@ -431,6 +518,12 @@ export function AddContentScreen({
                   </div>
                 )}
               </div>
+              {/* ✅ NEW: URL validation warning */}
+              {url.trim() && !isValidURL(url.trim()) && (
+                <p className={`text-sm mt-2 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
+                  This doesn't look like a valid URL. Add https:// if missing.
+                </p>
+              )}
             </div>
 
             {analysisResult && (
@@ -563,6 +656,7 @@ export function AddContentScreen({
                     ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
                     : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
                 }`}
+                autoFocus
               />
             </div>
             
@@ -627,43 +721,45 @@ export function AddContentScreen({
       </div>
 
       {/* FIXED BOTTOM BUTTON */}
-      <div className={`absolute bottom-20 left-0 right-0 px-6 pb-4 z-50 ${
-        darkMode 
-          ? 'bg-gradient-to-t from-gray-900 via-gray-900 to-transparent' 
-          : 'bg-gradient-to-t from-white via-white to-transparent'
-      } pt-8`}>
-        <button
-          type="button"
-          onClick={() => handleSave()}
-          disabled={isProcessing || !hasContent() || analysisResult !== null}
-          className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-xl ${
-            isProcessing || !hasContent() || analysisResult !== null
-              ? darkMode 
-                ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white active:scale-[0.98]'
-          }`}
-        >
-          {isProcessing ? (
-            <>
-              <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
-              <span>🔒 Saving securely...</span>
-            </>
-          ) : analysisResult ? (
-            <>
-              <Check className="w-6 h-6" strokeWidth={3} />
-              <span>Saved!</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-6 h-6" strokeWidth={2.5} />
-              <span>
-                {url.trim() && isInstagramUrl(url.trim()) ? 'Save Instagram Reel' : 'Save to DANGIT'}
-              </span>
-            </>
-          )}
-        </button>
-      </div>
+      {activeTab && (
+        <div className={`absolute bottom-20 left-0 right-0 px-6 pb-4 z-50 ${
+          darkMode 
+            ? 'bg-gradient-to-t from-gray-900 via-gray-900 to-transparent' 
+            : 'bg-gradient-to-t from-white via-white to-transparent'
+        } pt-8`}>
+          <button
+            type="button"
+            onClick={() => handleSave()}
+            disabled={isProcessing || !hasContent() || analysisResult !== null}
+            className={`w-full h-16 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-200 shadow-xl ${
+              isProcessing || !hasContent() || analysisResult !== null
+                ? darkMode 
+                  ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white active:scale-[0.98]'
+            }`}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" strokeWidth={2.5} />
+                <span>🔒 Saving securely...</span>
+              </>
+            ) : analysisResult ? (
+              <>
+                <Check className="w-6 h-6" strokeWidth={3} />
+                <span>Saved!</span>
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-6 h-6" strokeWidth={2.5} />
+                <span>
+                  {url.trim() && isInstagramUrl(url.trim()) ? 'Save Instagram Reel' : 'Save to DANGIT'}
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
