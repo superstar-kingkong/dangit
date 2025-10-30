@@ -1,7 +1,7 @@
 import { API_URL } from '../config';
 import { supabase } from '../lib/supabase';
 import React, { useState, useRef } from 'react';
-import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles, Instagram, Globe, Image as ImageIcon } from 'lucide-react';
+import { Camera, Link, Mic, FileText, Upload, Loader2, X, Check, Sparkles, Instagram } from 'lucide-react';
 import InstagramSaveModal from './InstagramSaveModal';
 
 interface AddContentScreenProps {
@@ -24,48 +24,21 @@ export function AddContentScreen({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
-  
-  // Clipboard hint state
   const [clipboardHint, setClipboardHint] = useState(false);
   
-  // ✅ NEW: Instagram modal state
+  // Instagram modal state
   const [showInstagramModal, setShowInstagramModal] = useState(false);
   const [instagramUrl, setInstagramUrl] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tabs = [
-    { 
-      id: 'url', 
-      label: 'Link', 
-      icon: Link,
-      gradient: 'from-blue-500 via-indigo-500 to-purple-500',
-      description: 'Save websites & articles'
-    },
-    { 
-      id: 'screenshot', 
-      label: 'Image', 
-      icon: Camera,
-      gradient: 'from-purple-500 via-pink-500 to-rose-500',
-      description: 'Upload screenshots'
-    },
-    { 
-      id: 'manual', 
-      label: 'Note', 
-      icon: FileText,
-      gradient: 'from-rose-500 via-orange-500 to-amber-500',
-      description: 'Write quick notes'
-    },
-    { 
-      id: 'voice', 
-      label: 'Voice', 
-      icon: Mic,
-      gradient: 'from-amber-500 via-yellow-500 to-lime-500',
-      description: 'Record audio (soon)'
-    }
+    { id: 'url', label: 'Link', icon: Link },
+    { id: 'screenshot', label: 'Image', icon: Camera },
+    { id: 'manual', label: 'Note', icon: FileText },
+    { id: 'voice', label: 'Voice', icon: Mic }
   ];
 
-  // URL validation helper
   const isValidURL = (string: string): boolean => {
     try {
       const url = new URL(string);
@@ -80,7 +53,6 @@ export function AddContentScreen({
     }
   };
 
-  // Auto-detect clipboard when URL tab is clicked
   const handleUrlTabClick = async () => {
     setActiveTab('url');
     setErrorMessage('');
@@ -88,11 +60,9 @@ export function AddContentScreen({
     
     try {
       const text = await navigator.clipboard.readText();
-      
       if (text && isValidURL(text)) {
         setUrl(text);
         setClipboardHint(true);
-        
         setTimeout(() => setClipboardHint(false), 3000);
       }
     } catch (err) {
@@ -100,12 +70,10 @@ export function AddContentScreen({
     }
   };
 
-  // Auto-open file picker when screenshot tab is clicked
   const handleScreenshotTabClick = () => {
     setActiveTab('screenshot');
     setErrorMessage('');
     setAnalysisResult(null);
-    
     setTimeout(() => {
       fileInputRef.current?.click();
     }, 150);
@@ -117,7 +85,6 @@ export function AddContentScreen({
       setSelectedFile(file);
       setErrorMessage('');
       setAnalysisResult(null);
-      
       const reader = new FileReader();
       reader.onload = (e) => setPreviewUrl(e.target?.result as string);
       reader.readAsDataURL(file);
@@ -138,18 +105,15 @@ export function AddContentScreen({
   const getAuthToken = async (): Promise<string | null> => {
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
-      
       if (error) {
         console.error('Error getting session:', error);
         setErrorMessage('Authentication error. Please sign in again.');
         return null;
       }
-      
       if (!session?.access_token) {
         setErrorMessage('Please sign in to save content.');
         return null;
       }
-      
       return session.access_token;
     } catch (error) {
       console.error('Error getting auth token:', error);
@@ -167,7 +131,7 @@ export function AddContentScreen({
       return;
     }
 
-    // Check for Instagram and show modal
+    // Instagram modal logic
     if (activeTab === 'url' && url.trim() && isInstagramUrl(url.trim()) && !customInstagramTitle) {
       setInstagramUrl(url.trim());
       setShowInstagramModal(true);
@@ -246,7 +210,6 @@ export function AddContentScreen({
       }
 
       if (response.ok && result.success) {
-        // Update title for Instagram if custom title provided
         if (customInstagramTitle && isInstagramUrl(url)) {
           try {
             const updateResponse = await fetch(`${API_URL}/api/update-title`, {
@@ -285,7 +248,6 @@ export function AddContentScreen({
 
     } catch (error) {
       console.error('Error saving:', error);
-      
       if (error instanceof Error) {
         if (error.message.includes('Failed to fetch')) {
           setErrorMessage('Network error. Please check your connection and try again.');
@@ -314,7 +276,7 @@ export function AddContentScreen({
   return (
     <div className={`h-screen flex flex-col overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
 
-      {/* ✅ Instagram Save Modal */}
+      {/* Instagram Save Modal */}
       {showInstagramModal && (
         <InstagramSaveModal
           instagramUrl={instagramUrl}
@@ -364,77 +326,62 @@ export function AddContentScreen({
           </button>
         </div>
 
-        {/* Tab Selection */}
-{!activeTab ? (
-  <div className="grid grid-cols-2 gap-3">
-    {tabs.map((tab) => {
-      const Icon = tab.icon;
-      
-      return (
-        <button
-          key={tab.id}
-          onClick={() => {
-            if (tab.id === 'url') handleUrlTabClick();
-            else if (tab.id === 'screenshot') handleScreenshotTabClick();
-            else if (tab.id === 'manual') {
-              setActiveTab('manual');
-              setErrorMessage('');
-              setAnalysisResult(null);
-            } else if (tab.id === 'voice') {
-              setActiveTab('voice');
-              setErrorMessage('');
-              setAnalysisResult(null);
-            }
-          }}
-          className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 group hover:scale-105 ${
-            darkMode ? 'bg-gray-800/50' : 'bg-white'
-          } shadow-lg hover:shadow-xl`}
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/g%3E%3C/svg%3E")`
-          }}
-        >
-          {/* Gradient background */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${tab.gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
-          
-          {/* Content */}
-          <div className="relative z-10 flex flex-col items-center text-center">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-              <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
-            </div>
-            <h3 className="text-lg font-bold text-white mb-1">
-              {tab.label}
-            </h3>
-            <p className="text-xs text-white/80 font-medium">
-              {tab.description}
-            </p>
+        {/* Tab Selection - SIMPLE & CLEAN */}
+        {!activeTab ? (
+          <div className="grid grid-cols-2 gap-2">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    if (tab.id === 'url') handleUrlTabClick();
+                    else if (tab.id === 'screenshot') handleScreenshotTabClick();
+                    else if (tab.id === 'manual') {
+                      setActiveTab('manual');
+                      setErrorMessage('');
+                      setAnalysisResult(null);
+                    } else if (tab.id === 'voice') {
+                      setActiveTab('voice');
+                      setErrorMessage('');
+                      setAnalysisResult(null);
+                    }
+                  }}
+                  className={`flex items-center justify-center gap-2 py-4 rounded-xl transition-all ${
+                    darkMode
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                  } text-white shadow-lg hover:shadow-xl hover:scale-105`}
+                >
+                  <Icon className="w-5 h-5" strokeWidth={2.5} />
+                  <span className="text-sm font-bold">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
-        </button>
-      );
-    })}
-  </div>
-) : (
-  <button
-    onClick={() => {
-      setActiveTab(null);
-      setUrl('');
-      setManualTitle('');
-      setManualContent('');
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      setErrorMessage('');
-      setAnalysisResult(null);
-      setClipboardHint(false);
-      setShowInstagramModal(false);
-      setInstagramUrl('');
-    }}
-    className={`text-sm font-bold flex items-center gap-1 transition-colors ${
-      darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-    }`}
-  >
-    ← Back to options
-  </button>
-)}
-
+        ) : (
+          <button
+            onClick={() => {
+              setActiveTab(null);
+              setUrl('');
+              setManualTitle('');
+              setManualContent('');
+              setSelectedFile(null);
+              setPreviewUrl(null);
+              setErrorMessage('');
+              setAnalysisResult(null);
+              setClipboardHint(false);
+              setShowInstagramModal(false);
+              setInstagramUrl('');
+            }}
+            className={`text-sm font-bold flex items-center gap-1 transition-colors ${
+              darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            ← Back to options
+          </button>
+        )}
       </div>
 
       {/* Scrollable Content Area */}
@@ -443,9 +390,8 @@ export function AddContentScreen({
         {/* URL Tab */}
         {activeTab === 'url' && (
           <div className="space-y-4">
-            {/* Clipboard hint */}
             {clipboardHint && (
-              <div className={`border-2 rounded-xl p-3 flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${
+              <div className={`border-2 rounded-xl p-3 flex items-center gap-2 animate-in fade-in ${
                 darkMode 
                   ? 'bg-green-900/20 border-green-700 text-green-300' 
                   : 'bg-green-50 border-green-300 text-green-800'
@@ -455,81 +401,51 @@ export function AddContentScreen({
               </div>
             )}
 
-            <div className={`rounded-2xl p-5 ${
-              darkMode ? 'bg-gray-800/50' : 'bg-gradient-to-br from-blue-50 to-indigo-50'
-            }`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md">
-                  <Globe className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Paste Website URL
-                  </h3>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-blue-600'}`}>
-                    Articles, videos, or any webpage
-                  </p>
-                </div>
-              </div>
-              
+            <div>
+              <label className={`block mb-2 font-bold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                Paste any link
+              </label>
               <input
                 type="url"
-                placeholder="https://example.com/article"
+                placeholder="https://example.com"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 className={`w-full px-4 py-4 rounded-xl border-2 focus:outline-none transition-all text-base ${
                   darkMode
-                    ? 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
-                    : 'bg-white border-blue-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
                 }`}
                 autoFocus
               />
-              
-              <div className="flex items-center justify-between mt-3">
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  AI will analyze and categorize it
+              <div className="flex items-center justify-between mt-2">
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Save articles, videos, tweets, or any webpage
                 </p>
                 {url.trim() && isInstagramUrl(url.trim()) && (
-                  <div className="flex items-center gap-1.5 text-pink-500 bg-pink-50 px-2.5 py-1 rounded-full">
-                    <Instagram className="w-3.5 h-3.5" />
-                    <span className="text-xs font-bold">Instagram</span>
+                  <div className="flex items-center gap-1 text-pink-500">
+                    <Instagram className="w-4 h-4" />
+                    <span className="text-xs font-medium">Instagram</span>
                   </div>
                 )}
               </div>
-
               {url.trim() && !isValidURL(url.trim()) && (
-                <p className={`text-xs mt-3 px-3 py-2 rounded-lg ${
-                  darkMode ? 'bg-orange-900/20 text-orange-400' : 'bg-orange-50 text-orange-600'
-                }`}>
+                <p className={`text-sm mt-2 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`}>
                   ⚠️ This doesn't look like a valid URL. Add https:// if missing.
                 </p>
               )}
             </div>
 
             {analysisResult && (
-              <div className={`border-2 rounded-2xl p-5 space-y-3 animate-in fade-in slide-in-from-bottom-4 ${
+              <div className={`border-2 rounded-2xl p-5 space-y-3 animate-in fade-in ${
                 darkMode 
                   ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700' 
                   : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
               }`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
-                    <Check className="w-7 h-7 text-white" strokeWidth={3} />
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-white" strokeWidth={3} />
                   </div>
-                  <div>
-                    <span className={`font-black text-xl ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
-                    <p className={`text-xs ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Content analyzed & organized</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className={`rounded-xl p-3 ${darkMode ? 'bg-gray-800/60' : 'bg-white/60'}`}>
-                    <span className={`text-xs font-bold uppercase tracking-wide ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Title</span>
-                    <p className={`font-semibold mt-1 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{analysisResult.title}</p>
-                  </div>
-                  <div className={`rounded-xl p-3 ${darkMode ? 'bg-gray-800/60' : 'bg-white/60'}`}>
-                    <span className={`text-xs font-bold uppercase tracking-wide ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Category</span>
-                    <p className={`font-bold mt-1 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>{analysisResult.category}</p>
-                  </div>
+                  <span className={`font-black text-lg ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
                 </div>
               </div>
             )}
@@ -549,110 +465,73 @@ export function AddContentScreen({
             
             {selectedFile ? (
               <div className="space-y-4">
-                <div className={`rounded-2xl p-5 ${
-                  darkMode ? 'bg-gray-800/50' : 'bg-gradient-to-br from-purple-50 to-pink-50'
-                }`}>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-md">
-                      <ImageIcon className="w-5 h-5 text-white" />
+                <div className={`relative rounded-2xl overflow-hidden border-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                  {previewUrl && (
+                    <img 
+                      src={previewUrl} 
+                      alt="Preview" 
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setPreviewUrl(null);
+                      setAnalysisResult(null);
+                    }}
+                    className="absolute top-3 right-3 p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors shadow-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className={`rounded-xl p-4 ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      darkMode ? 'bg-indigo-900/50' : 'bg-indigo-100'
+                    }`}>
+                      <Camera className={`w-6 h-6 ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`} />
                     </div>
-                    <div>
-                      <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        Image Preview
-                      </h3>
-                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-purple-600'}`}>
-                        AI will extract & analyze text
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className={`relative rounded-xl overflow-hidden ${darkMode ? 'bg-gray-900/50' : 'bg-white'} border-2 ${darkMode ? 'border-gray-700' : 'border-purple-200'}`}>
-                    {previewUrl && (
-                      <img 
-                        src={previewUrl} 
-                        alt="Preview" 
-                        className="w-full h-56 object-cover"
-                      />
-                    )}
-                    <button
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setPreviewUrl(null);
-                        setAnalysisResult(null);
-                      }}
-                      className="absolute top-3 right-3 p-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors shadow-lg"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                  
-                  <div className={`rounded-xl p-4 mt-4 ${darkMode ? 'bg-gray-900/50' : 'bg-white'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                        darkMode ? 'bg-purple-900/50' : 'bg-purple-100'
-                      }`}>
-                        <Camera className={`w-6 h-6 ${darkMode ? 'text-purple-400' : 'text-purple-600'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className={`font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedFile.name}</div>
-                        <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{(selectedFile.size / 1024).toFixed(1)} KB</div>
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`font-semibold truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>{selectedFile.name}</div>
+                      <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{(selectedFile.size / 1024).toFixed(1)} KB</div>
                     </div>
                   </div>
                 </div>
 
                 {analysisResult && (
-                  <div className={`border-2 rounded-2xl p-5 space-y-3 ${
+                  <div className={`border-2 rounded-2xl p-5 animate-in fade-in ${
                     darkMode 
                       ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700' 
                       : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
                   }`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
-                        <Check className="w-7 h-7 text-white" strokeWidth={3} />
+                    <div className="flex items-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                        <Check className="w-6 h-6 text-white" strokeWidth={3} />
                       </div>
-                      <div>
-                        <span className={`font-black text-xl ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
-                        <p className={`text-xs ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Image analyzed successfully</p>
-                      </div>
+                      <span className={`font-black text-lg ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
                     </div>
                   </div>
                 )}
               </div>
             ) : (
-              <div className={`rounded-2xl p-5 ${
-                darkMode ? 'bg-gray-800/50' : 'bg-gradient-to-br from-purple-50 to-pink-50'
-              }`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-md">
-                    <ImageIcon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                      Upload Image
-                    </h3>
-                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-purple-600'}`}>
-                      Screenshots or photos
-                    </p>
-                  </div>
-                </div>
-
+              <div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className={`w-full border-2 border-dashed rounded-2xl p-12 text-center transition-all group ${
                     darkMode
-                      ? 'border-gray-700 hover:border-purple-500 hover:bg-gray-900/50'
-                      : 'border-purple-300 hover:border-purple-500 hover:bg-purple-100/50'
+                      ? 'border-gray-700 hover:border-indigo-500 hover:bg-gray-800/50'
+                      : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50'
                   }`}
                 >
                   <Upload className={`w-16 h-16 mx-auto mb-4 transition-colors ${
-                    darkMode ? 'text-gray-600 group-hover:text-purple-400' : 'text-purple-400 group-hover:text-purple-500'
+                    darkMode ? 'text-gray-600 group-hover:text-indigo-500' : 'text-gray-400 group-hover:text-indigo-500'
                   }`} />
                   <p className={`font-bold text-lg mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     Choose an image
                   </p>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    PNG, JPG up to 10MB
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Screenshots, photos, or any image
                   </p>
                 </button>
               </div>
@@ -663,82 +542,59 @@ export function AddContentScreen({
         {/* Manual Tab */}
         {activeTab === 'manual' && (
           <div className="space-y-4">
-            <div className={`rounded-2xl p-5 ${
-              darkMode ? 'bg-gray-800/50' : 'bg-gradient-to-br from-rose-50 to-orange-50'
-            }`}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2.5 bg-gradient-to-br from-rose-500 to-orange-500 rounded-xl shadow-md">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    Quick Note
-                  </h3>
-                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-orange-600'}`}>
-                    Jot down ideas & thoughts
-                  </p>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className={`block mb-2 font-semibold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                    Title (Optional)
-                  </label>
-                  <input
-                    placeholder="Give it a catchy title..."
-                    value={manualTitle}
-                    onChange={(e) => setManualTitle(e.target.value)}
-                    className={`w-full px-4 py-3.5 rounded-xl border-2 focus:outline-none transition-all text-base ${
-                      darkMode
-                        ? 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-orange-500'
-                        : 'bg-white border-orange-200 text-gray-900 placeholder-gray-400 focus:border-orange-500'
-                    }`}
-                    autoFocus
-                  />
-                </div>
-                
-                <div>
-                  <label className={`block mb-2 font-semibold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                    Your Note
-                  </label>
-                  <textarea
-                    placeholder="Write anything... ideas, thoughts, reminders, todos..."
-                    value={manualContent}
-                    onChange={(e) => setManualContent(e.target.value)}
-                    rows={8}
-                    className={`w-full px-4 py-4 rounded-xl border-2 focus:outline-none resize-none transition-all text-base leading-relaxed ${
-                      darkMode
-                        ? 'bg-gray-900/50 border-gray-700 text-white placeholder-gray-500 focus:border-orange-500'
-                        : 'bg-white border-orange-200 text-gray-900 placeholder-gray-400 focus:border-orange-500'
-                    }`}
-                  />
-                  <div className="flex justify-between items-center mt-2">
-                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      ✨ AI will organize & categorize this
-                    </p>
-                    <span className={`text-xs font-semibold ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      {manualContent.length} chars
-                    </span>
-                  </div>
-                </div>
+            <div>
+              <label className={`block mb-2 font-bold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                Title (Optional)
+              </label>
+              <input
+                placeholder="Give it a title..."
+                value={manualTitle}
+                onChange={(e) => setManualTitle(e.target.value)}
+                className={`w-full px-4 py-4 rounded-xl border-2 focus:outline-none transition-all text-base ${
+                  darkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
+                }`}
+                autoFocus
+              />
+            </div>
+            
+            <div>
+              <label className={`block mb-2 font-bold text-sm ${darkMode ? 'text-gray-200' : 'text-gray-900'}`}>
+                Your note
+              </label>
+              <textarea
+                placeholder="Write anything... ideas, thoughts, reminders"
+                value={manualContent}
+                onChange={(e) => setManualContent(e.target.value)}
+                rows={8}
+                className={`w-full px-4 py-4 rounded-xl border-2 focus:outline-none resize-none transition-all text-base leading-relaxed ${
+                  darkMode
+                    ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-indigo-500'
+                    : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400 focus:border-indigo-500'
+                }`}
+              />
+              <div className="flex justify-between items-center mt-2">
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  AI will organize this for you
+                </p>
+                <span className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {manualContent.length} characters
+                </span>
               </div>
             </div>
 
             {analysisResult && (
-              <div className={`border-2 rounded-2xl p-5 space-y-3 ${
+              <div className={`border-2 rounded-2xl p-5 animate-in fade-in ${
                 darkMode 
                   ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700' 
                   : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
               }`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
-                    <Check className="w-7 h-7 text-white" strokeWidth={3} />
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-6 h-6 text-white" strokeWidth={3} />
                   </div>
-                  <div>
-                    <span className={`font-black text-xl ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
-                    <p className={`text-xs ${darkMode ? 'text-green-300' : 'text-green-700'}`}>Note saved & organized</p>
-                  </div>
+                  <span className={`font-black text-lg ${darkMode ? 'text-green-400' : 'text-green-900'}`}>Saved!</span>
                 </div>
               </div>
             )}
@@ -747,22 +603,17 @@ export function AddContentScreen({
 
         {/* Voice Tab */}
         {activeTab === 'voice' && (
-          <div className={`rounded-2xl p-8 text-center ${
-            darkMode ? 'bg-gray-800/50' : 'bg-gradient-to-br from-amber-50 to-yellow-50'
-          }`}>
+          <div className="text-center py-16">
             <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
-              darkMode ? 'bg-gradient-to-br from-amber-900/30 to-yellow-900/30' : 'bg-gradient-to-br from-amber-100 to-yellow-100'
+              darkMode ? 'bg-orange-900/30' : 'bg-orange-100'
             }`}>
-              <Mic className={`w-12 h-12 ${darkMode ? 'text-amber-400' : 'text-amber-600'}`} />
+              <Mic className={`w-12 h-12 ${darkMode ? 'text-orange-400' : 'text-orange-500'}`} />
             </div>
             <h3 className={`font-black mb-2 text-2xl ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               Voice Notes
             </h3>
-            <p className={`text-base mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Coming Soon! 🎙️
-            </p>
-            <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-              Record voice memos and let AI transcribe & organize them automatically
+            <p className={`text-lg ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Coming soon!
             </p>
           </div>
         )}
@@ -784,7 +635,7 @@ export function AddContentScreen({
                 ? darkMode 
                   ? 'bg-gray-800 text-gray-600 cursor-not-allowed'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white active:scale-[0.98]'
+                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white active:scale-[0.98]'
             }`}
           >
             {isProcessing ? (
@@ -801,7 +652,7 @@ export function AddContentScreen({
               <>
                 <Sparkles className="w-6 h-6" strokeWidth={2.5} />
                 <span>
-                  {url.trim() && isInstagramUrl(url.trim()) ? 'Save Instagram Post' : 'Save with AI Magic'}
+                  {url.trim() && isInstagramUrl(url.trim()) ? 'Save Instagram Post' : 'Save to DANGIT'}
                 </span>
               </>
             )}
