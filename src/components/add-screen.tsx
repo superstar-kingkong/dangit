@@ -365,75 +365,76 @@ export function AddContentScreen({
         </div>
 
         {/* Tab Selection */}
-        {!activeTab ? (
-          <div className="grid grid-cols-2 gap-3">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    if (tab.id === 'url') handleUrlTabClick();
-                    else if (tab.id === 'screenshot') handleScreenshotTabClick();
-                    else if (tab.id === 'manual') {
-                      setActiveTab('manual');
-                      setErrorMessage('');
-                      setAnalysisResult(null);
-                    } else if (tab.id === 'voice') {
-                      setActiveTab('voice');
-                      setErrorMessage('');
-                      setAnalysisResult(null);
-                    }
-                  }}
-                  className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 group hover:scale-105 ${
-                    darkMode ? 'bg-gray-800/50' : 'bg-white'
-                  } shadow-lg hover:shadow-xl`}
-                >
-                  {/* Gradient background */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${tab.gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
-                  
-                  {/* Pattern overlay */}
-                  <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"10\" cy=\"10\" r=\"2\"/%3E%3C/g%3E%3C/svg%3E')] opacity-30" />
-                  
-                  {/* Content */}
-                  <div className="relative z-10 flex flex-col items-center text-center">
-                    <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                      <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
-                    </div>
-                    <h3 className="text-lg font-bold text-white mb-1">
-                      {tab.label}
-                    </h3>
-                    <p className="text-xs text-white/80 font-medium">
-                      {tab.description}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <button
-            onClick={() => {
-              setActiveTab(null);
-              setUrl('');
-              setManualTitle('');
-              setManualContent('');
-              setSelectedFile(null);
-              setPreviewUrl(null);
+{!activeTab ? (
+  <div className="grid grid-cols-2 gap-3">
+    {tabs.map((tab) => {
+      const Icon = tab.icon;
+      
+      return (
+        <button
+          key={tab.id}
+          onClick={() => {
+            if (tab.id === 'url') handleUrlTabClick();
+            else if (tab.id === 'screenshot') handleScreenshotTabClick();
+            else if (tab.id === 'manual') {
+              setActiveTab('manual');
               setErrorMessage('');
               setAnalysisResult(null);
-              setClipboardHint(false);
-              setShowInstagramModal(false);
-              setInstagramUrl('');
-            }}
-            className={`text-sm font-bold flex items-center gap-1 transition-colors ${
-              darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            ← Back to options
-          </button>
-        )}
+            } else if (tab.id === 'voice') {
+              setActiveTab('voice');
+              setErrorMessage('');
+              setAnalysisResult(null);
+            }
+          }}
+          className={`relative overflow-hidden rounded-2xl p-5 transition-all duration-300 group hover:scale-105 ${
+            darkMode ? 'bg-gray-800/50' : 'bg-white'
+          } shadow-lg hover:shadow-xl`}
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='10' cy='10' r='2'/%3E%3C/g%3E%3C/svg%3E")`
+          }}
+        >
+          {/* Gradient background */}
+          <div className={`absolute inset-0 bg-gradient-to-br ${tab.gradient} opacity-90 group-hover:opacity-100 transition-opacity`} />
+          
+          {/* Content */}
+          <div className="relative z-10 flex flex-col items-center text-center">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <Icon className="w-7 h-7 text-white" strokeWidth={2.5} />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-1">
+              {tab.label}
+            </h3>
+            <p className="text-xs text-white/80 font-medium">
+              {tab.description}
+            </p>
+          </div>
+        </button>
+      );
+    })}
+  </div>
+) : (
+  <button
+    onClick={() => {
+      setActiveTab(null);
+      setUrl('');
+      setManualTitle('');
+      setManualContent('');
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      setErrorMessage('');
+      setAnalysisResult(null);
+      setClipboardHint(false);
+      setShowInstagramModal(false);
+      setInstagramUrl('');
+    }}
+    className={`text-sm font-bold flex items-center gap-1 transition-colors ${
+      darkMode ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'
+    }`}
+  >
+    ← Back to options
+  </button>
+)}
+
       </div>
 
       {/* Scrollable Content Area */}
