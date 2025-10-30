@@ -12,7 +12,7 @@ interface ShareScreenProps {
 
 export default function ShareScreen({ user, onClose, onContentSaved, darkMode }: ShareScreenProps) {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState('Looking for shared content...');
 
   useEffect(() => {
     handleShare();
@@ -20,16 +20,42 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
 
   const handleShare = async () => {
     try {
-      // Get shared content from URL params
+      // Check if we came from share target
       const urlParams = new URLSearchParams(window.location.search);
-      const title = urlParams.get('title');
-      const text = urlParams.get('text');
-      const url = urlParams.get('url');
+      const fromShareTarget = urlParams.get('from') === 'share-target';
+      
+      let sharedContent = null;
+      let sharedUrl = '';
+      let sharedText = '';
+      let sharedTitle = '';
 
-      // Also check sessionStorage (set by App.tsx)
+      if (fromShareTarget) {
+        // Read from service worker cache
+        console.log('📥 Reading from service worker cache...');
+        const cache = await caches.open('dangit-v1');
+        
+        const dataResponse = await cache.match('/share-data');
+        if (dataResponse) {
+          const data = await dataResponse.json();
+          sharedUrl = data.url || '';
+          sharedText = data.text || '';
+          sharedTitle = data.title || '';
+          console.log('✅ Got shared data:', data);
+          
+          // Clean up cache
+          await cache.delete('/share-data');
+        }
+      } else {
+        // Fallback: Read from URL params (old method)
+        sharedTitle = urlParams.get('title') || '';
+        sharedText = urlParams.get('text') || '';
+        sharedUrl = urlParams.get('url') || '';
+      }
+
+      // Also check sessionStorage
       const storedContent = sessionStorage.getItem('dangit-shared-content');
       
-      console.log('📥 Received share:', { title, text, url, storedContent });
+      console.log('📥 Share data:', { sharedTitle, sharedText, sharedUrl, storedContent });
 
       // Check if user is logged in
       if (!user || !user.email) {
@@ -37,25 +63,25 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
         setMessage('Please sign in to save content');
         setTimeout(() => {
           sessionStorage.removeItem('dangit-shared-content');
-          onClose();
+          window.location.href = '/';
         }, 2000);
         return;
       }
 
       // Determine what was shared
-      let contentToSave = url || storedContent || text || title;
+      let contentToSave = sharedUrl || storedContent || sharedText || sharedTitle;
       let contentType = 'text';
 
-      if (url || storedContent?.startsWith('http')) {
+      if (sharedUrl || storedContent?.startsWith('http')) {
         contentType = 'url';
-        contentToSave = url || storedContent;
+        contentToSave = sharedUrl || storedContent;
       }
 
       if (!contentToSave) {
         setStatus('error');
-        setMessage('No content received');
+        setMessage('No content received. Please try sharing again.');
         setTimeout(() => {
-          onClose();
+          window.location.href = '/';
         }, 2000);
         return;
       }
@@ -64,7 +90,7 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
       const isInstagram = contentToSave.includes('instagram.com') || 
                          contentToSave.includes('instagr.am');
 
-      setMessage(isInstagram ? '📸 Saving Instagram post...' : `Saving ${contentType}...`);
+      setMessage(isInstagram ? '📸 Saving Instagram post...' : `✨ Saving ${contentType}...`);
 
       // Save content
       const response = await fetch('https://dangit-backend.onrender.com/api/process-content-v2', {
@@ -81,13 +107,13 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
 
       if (result.success) {
         setStatus('success');
-        setMessage(isInstagram ? '✅ Instagram post saved!' : '✅ Content saved!');
+        setMessage(isInstagram ? '✅ Instagram post saved to DANGIT!' : '✅ Content saved!');
         
         // Clean up
         sessionStorage.removeItem('dangit-shared-content');
         
         // Clear URL params
-        window.history.replaceState({}, '', window.location.pathname);
+        window.history.replaceState({}, '', '/');
         
         // Notify parent and redirect
         setTimeout(() => {
@@ -99,13 +125,13 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
       }
 
     } catch (error) {
-      console.error('Share error:', error);
+      console.error('❌ Share error:', error);
       setStatus('error');
-      setMessage('❌ Failed to save. Please try again.');
+      setMessage('Failed to save. Please try the copy-paste method instead.');
       setTimeout(() => {
         sessionStorage.removeItem('dangit-shared-content');
-        onClose();
-      }, 2000);
+        window.location.href = '/';
+      }, 3000);
     }
   };
 
@@ -158,15 +184,27 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
         {/* Manual close button for errors */}
         {status === 'error' && (
           <button
-            onClick={onClose}
-            className={`mt-4 px-6 py-2 rounded-lg font-medium ${
+            onClick={() => window.location.href = '/'}
+            className={`mt-4 px-6 py-2 rounded-lg font-medium transition-colors ${
               darkMode 
                 ? 'bg-gray-700 hover:bg-gray-600 text-white' 
                 : 'bg-gray-200 hover:bg-gray-300 text-gray-800'
             }`}
           >
-            Go Back
+            Go Back Home
           </button>
+        )}
+
+        {/* Debug info (remove in production) */}
+        {import.meta.env.DEV && (
+          <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs text-left">
+            <strong>Debug:</strong>
+            <pre>{JSON.stringify({ 
+              hasUser: !!user,
+              pathname: window.location.pathname,
+              search: window.location.search
+            }, null, 2)}</pre>
+          </div>
         )}
       </div>
     </div>
