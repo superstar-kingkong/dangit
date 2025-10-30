@@ -733,47 +733,49 @@ const handleInstagramTitleSave = async () => {
             </div>
           )}
 
-          {/* 🆕 Screenshot Preview Section */}
-          {content.image_url && content.content_type === 'image' && (
-            <div className={`rounded-2xl border overflow-hidden shadow-lg ${
-              darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <div className={`px-5 py-3 border-b flex items-center gap-2 ${
-                darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50'
-              }`}>
-                <Image className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
-                <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                  Screenshot
-                </h3>
-              </div>
-              <div className="relative">
-                {imageLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                  </div>
-                )}
-                {imageError ? (
-                  <div className="flex flex-col items-center justify-center py-12 px-4">
-                    <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-                    <p className={`text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Failed to load image
-                    </p>
-                  </div>
-                ) : (
-                  <img
-                    src={content.image_url}
-                    alt={content.title}
-                    className="w-full h-auto"
-                    onLoad={() => setImageLoading(false)}
-                    onError={() => {
-                      setImageLoading(false);
-                      setImageError(true);
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-          )}
+          {/* 🆕 Screenshot Preview Section - IMPROVED */}
+{content.image_url && content.content_type === 'image' && (
+  <div className={`rounded-2xl border overflow-hidden shadow-lg ${
+    darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+  }`}>
+    <div className={`px-5 py-3 border-b flex items-center gap-2 ${
+      darkMode ? 'border-gray-700 bg-gray-800/50' : 'border-gray-100 bg-gray-50'
+    }`}>
+      <Image className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+      <h3 className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+        Screenshot
+      </h3>
+    </div>
+    <div className={`p-4 ${darkMode ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
+      <div className="relative w-full">
+        {imageLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          </div>
+        )}
+        {imageError ? (
+          <div className="flex flex-col items-center justify-center py-8 px-4">
+            <AlertCircle className="w-10 h-10 text-red-500 mb-2" />
+            <p className={`text-sm text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Failed to load image
+            </p>
+          </div>
+        ) : (
+          <img
+            src={content.image_url}
+            alt={content.title}
+            className="w-full h-auto max-h-96 object-cover rounded-lg shadow-md"
+            onLoad={() => setImageLoading(false)}
+            onError={() => {
+              setImageLoading(false);
+              setImageError(true);
+            }}
+          />
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
           {/* 🔒 FIXED: URL Preview Section - Only for non-Instagram URLs */}
           {isUrlType && displayUrl && !isInstagramContent && (

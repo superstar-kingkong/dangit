@@ -24,10 +24,10 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
       const urlParams = new URLSearchParams(window.location.search);
       const fromShareTarget = urlParams.get('from') === 'share-target';
       
-      let sharedContent = null;
-      let sharedUrl = '';
-      let sharedText = '';
-      let sharedTitle = '';
+      // ✅ FIXED: Allow null values initially
+      let sharedUrl: string | null = null;
+      let sharedText: string | null = null;
+      let sharedTitle: string | null = null;
 
       if (fromShareTarget) {
         // Read from service worker cache
@@ -37,9 +37,9 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
         const dataResponse = await cache.match('/share-data');
         if (dataResponse) {
           const data = await dataResponse.json();
-          sharedUrl = data.url || '';
-          sharedText = data.text || '';
-          sharedTitle = data.title || '';
+          sharedUrl = data.url || null;
+          sharedText = data.text || null;
+          sharedTitle = data.title || null;
           console.log('✅ Got shared data:', data);
           
           // Clean up cache
@@ -47,9 +47,9 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
         }
       } else {
         // Fallback: Read from URL params (old method)
-        sharedTitle = urlParams.get('title') || '';
-        sharedText = urlParams.get('text') || '';
-        sharedUrl = urlParams.get('url') || '';
+        sharedTitle = urlParams.get('title');
+        sharedText = urlParams.get('text');
+        sharedUrl = urlParams.get('url');
       }
 
       // Also check sessionStorage
@@ -68,13 +68,17 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
         return;
       }
 
-      // Determine what was shared
-      let contentToSave = sharedUrl || storedContent || sharedText || sharedTitle;
-      let contentType = 'text';
+      // ✅ FIXED: Determine what was shared with proper type handling
+      let contentToSave: string = '';
+      let contentType: 'url' | 'text' = 'text';
 
-      if (sharedUrl || storedContent?.startsWith('http')) {
+      // Check for URL content first
+      if (sharedUrl || (storedContent && storedContent.startsWith('http'))) {
         contentType = 'url';
-        contentToSave = sharedUrl || storedContent;
+        contentToSave = sharedUrl || storedContent || '';
+      } else {
+        // Text content
+        contentToSave = storedContent || sharedText || sharedTitle || '';
       }
 
       if (!contentToSave) {
@@ -195,7 +199,7 @@ export default function ShareScreen({ user, onClose, onContentSaved, darkMode }:
           </button>
         )}
 
-        {/* Debug info (remove in production) */}
+        {/* ✅ FIXED: Debug info using Vite environment check */}
         {import.meta.env.DEV && (
           <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded text-xs text-left">
             <strong>Debug:</strong>
