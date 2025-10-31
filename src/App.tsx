@@ -378,7 +378,9 @@ function AppContent() {
             {/* ✅ UPDATED: Content area with desktop padding removed, sidebar margin added */}
             <div className={`h-full pb-20 md:pb-0 md:flex-1 md:overflow-auto transition-all duration-300 ${isTransitioning ? 'opacity-70 scale-98' : 'opacity-100 scale-100'}`}>
               {/* ✅ NEW: Wrapper for desktop sidebar margin */}
-              <div className="md:ml-64">
+              <div className="md:ml-64 md:p-8">
+                <div className="md:max-w-5xl md:mx-auto">
+
                 {currentScreen === 'home' && (
                   <div className="animate-in fade-in-0 duration-300">
                     <HomeScreen 
@@ -542,6 +544,7 @@ function AppContent() {
                 </nav>
               </div>
             )}
+            </div>
 
             {/* ✅ UPDATED: Bottom Navigation - Hidden on desktop */}
             {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
