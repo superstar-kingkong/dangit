@@ -126,7 +126,7 @@ export function PrivacyScreen({ darkMode, onClose }: PrivacyScreenProps) {
           WebkitOverflowScrolling: 'touch'
         }}
       >
-        <div className="p-4 space-y-6">
+        <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-3xl md:mx-auto">
           {/* Security Features */}
           <div>
             <h2 className={`text-lg font-bold mb-4 ${

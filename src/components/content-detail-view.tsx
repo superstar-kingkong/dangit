@@ -825,7 +825,7 @@ const handleInstagramTitleSave = async () => {
                       }}
                     />
                   )}
-                  <div className="p-4">
+                  <div className="p-4 md:p-6 lg:p-8 max-w-4xl md:mx-auto">
                     <h4 className={`font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                       {urlPreview.title || 'No title'}
                     </h4>

@@ -129,7 +129,7 @@ export function PWAInstallBanner({ darkMode = false }: PWAInstallBannerProps) {
         ? 'bg-gradient-to-r from-indigo-900/20 to-purple-900/20 border-indigo-800/50' 
         : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200'
     }`}>
-      <div className="p-4">
+      <div className="p-4 md:p-6 max-w-2xl md:mx-auto">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${

@@ -252,7 +252,7 @@ export function FeedbackSystem({ userId, darkMode = false, onClose }: FeedbackSy
           WebkitOverflowScrolling: 'touch'
         }}
       >
-        <div className="p-4 space-y-6">
+        <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-3xl md:mx-auto">
           {/* Feedback Tab */}
           {activeTab === 'feedback' && (
             <div className="space-y-6">
