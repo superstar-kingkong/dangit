@@ -466,13 +466,14 @@ function AppContent() {
               </aside>
             )}
 
-            {/* Main Content Area */}
+            {/* Main Content Area - WITH UNIVERSAL PADDING */}
             <main className={`
               flex-1 h-full pb-20 md:pb-0
               ${currentScreen !== 'editProfile' && currentScreen !== 'share' ? 'md:ml-64' : ''}
               transition-all duration-300 
               ${isTransitioning ? 'opacity-70' : 'opacity-100'}
               md:overflow-y-auto
+              md:pt-6
             `}>
               {currentScreen === 'home' && (
                 <div className="animate-in fade-in-0 duration-300 w-full">
