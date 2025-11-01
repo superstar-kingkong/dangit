@@ -11,7 +11,6 @@ import { BottomNavigation } from './components/bottom-navigation';
 import { FloatingAddButton } from './components/floating-add-button';
 import ShareScreen from './components/ShareScreen';
 
-// User type for authentication
 interface User {
   id: string;
   name: string;
@@ -315,7 +314,6 @@ function AppContent() {
     setSelectedContent(updatedContent);
   }, []);
 
-  // ✅ UPDATED: Responsive container with desktop support
   const containerClasses = useMemo(() => {
     const baseClasses = "relative min-h-screen overflow-hidden";
     const shadowClasses = "lg:shadow-xl xl:shadow-2xl";
@@ -356,7 +354,6 @@ function AppContent() {
         <div className={`absolute -bottom-8 left-20 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000 ${darkMode ? 'bg-pink-800' : 'bg-pink-300'}`}></div>
       </div>
 
-      {/* ✅ UPDATED: Desktop-responsive container */}
       <div className={`${containerClasses} ${darkMode ? 'bg-gray-900' : 'bg-white'} md:flex md:flex-col md:h-screen`}>
         
         <div className={`absolute inset-0 bg-white z-50 transition-opacity duration-300 pointer-events-none ${isTransitioning ? 'opacity-20' : 'opacity-0'}`} />
@@ -375,101 +372,7 @@ function AppContent() {
 
         {!showOnboarding && !showSignUp && isAuthenticated && currentUser && (
           <>
-            {/* ✅ UPDATED: Content area with desktop padding removed, sidebar margin added */}
-            <div className={`h-full pb-20 md:pb-0 md:flex-1 md:overflow-auto transition-all duration-300 ${isTransitioning ? 'opacity-70 scale-98' : 'opacity-100 scale-100'}`}>
-              {/* ✅ NEW: Wrapper for desktop sidebar margin */}
-              <div className="md:ml-64">
-
-
-                {currentScreen === 'home' && (
-                  <div className="animate-in fade-in-0 duration-300">
-                    <HomeScreen 
-                      onShowContentDetail={handleShowContentDetail}
-                      onNavigate={handleNavigate}
-                      darkMode={darkMode}
-                      userId={currentUser?.email}
-                    />
-                  </div>
-                )}
-                
-                {currentScreen === 'search' && (
-                  <div className="animate-in fade-in-0 duration-300">
-                    <SearchScreen 
-                      onShowContentDetail={handleShowContentDetail}
-                      darkMode={darkMode}
-                      userId={currentUser?.email}
-                    />
-                  </div>
-                )}
-
-                {currentScreen === 'add' && (
-                  <div className="animate-in fade-in-0 duration-300">
-                    <AddContentScreen 
-                      darkMode={darkMode}
-                      userId={currentUser.email}
-                      onClose={() => handleContentSaved()}
-                    />
-                  </div>
-                )}
-                
-                {currentScreen === 'profile' && (
-                  <div className="animate-in fade-in-0 duration-300">
-                    <ProfileScreen 
-                      darkMode={darkMode}
-                      onDarkModeToggle={handleDarkModeToggle}
-                      onEditProfile={handleEditProfile}
-                      userProfile={{
-                        name: currentUser.name,
-                        email: currentUser.email,
-                        bio: `DANGIT user since ${currentUser.joinDate}. Organizing and saving content efficiently.`,
-                        location: 'Unknown',
-                        website: '',
-                        joinDate: currentUser.joinDate,
-                        level: 'Active User'
-                      }}
-                      onSignOut={handleSignOut}
-                    />
-                  </div>
-                )}
-                
-                {currentScreen === 'editProfile' && (
-                  <div className="animate-in fade-in-0 duration-300">
-                    <EditProfileScreen 
-                      onBack={() => setCurrentScreen('profile')}
-                      userProfile={{
-                        name: currentUser.name,
-                        email: currentUser.email,
-                        bio: `DANGIT user since ${currentUser.joinDate}. Organizing and saving content efficiently.`,
-                        location: 'Unknown',
-                        website: '',
-                        joinDate: currentUser.joinDate,
-                        level: 'Active User'
-                      }}
-                      onProfileUpdate={(updatedProfile) => {
-                        handleProfileUpdate({
-                          name: updatedProfile.name,
-                          email: updatedProfile.email
-                        });
-                      }}
-                      darkMode={darkMode}
-                    />
-                  </div>
-                )}
-
-                {currentScreen === 'share' && (
-                  <div className="animate-in fade-in-0 duration-300">
-                    <ShareScreen 
-                      user={currentUser}
-                      onClose={() => handleNavigate('home')}
-                      onContentSaved={handleContentSaved}
-                      darkMode={darkMode}
-                    />
-                  </div>
-                )}
-              </div>
-            
-
-            {/* ✅ NEW: Desktop Sidebar */}
+            {/* Desktop Sidebar */}
             {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
               <div className={`hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-64 ${
                 darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
@@ -544,26 +447,117 @@ function AppContent() {
                 </nav>
               </div>
             )}
+
+            {/* Content Area */}
+            <div className={`h-full pb-20 md:pb-0 md:flex-1 md:overflow-auto md:ml-0 ${
+              currentScreen !== 'editProfile' && currentScreen !== 'share' ? 'md:ml-64' : ''
+            } transition-all duration-300 ${isTransitioning ? 'opacity-70 scale-98' : 'opacity-100 scale-100'}`}>
+              {currentScreen === 'home' && (
+                <div className="animate-in fade-in-0 duration-300">
+                  <HomeScreen 
+                    onShowContentDetail={handleShowContentDetail}
+                    onNavigate={handleNavigate}
+                    darkMode={darkMode}
+                    userId={currentUser?.email}
+                  />
+                </div>
+              )}
+              
+              {currentScreen === 'search' && (
+                <div className="animate-in fade-in-0 duration-300">
+                  <SearchScreen 
+                    onShowContentDetail={handleShowContentDetail}
+                    darkMode={darkMode}
+                    userId={currentUser?.email}
+                  />
+                </div>
+              )}
+
+              {currentScreen === 'add' && (
+                <div className="animate-in fade-in-0 duration-300">
+                  <AddContentScreen 
+                    darkMode={darkMode}
+                    userId={currentUser.email}
+                    onClose={() => handleContentSaved()}
+                  />
+                </div>
+              )}
+              
+              {currentScreen === 'profile' && (
+                <div className="animate-in fade-in-0 duration-300">
+                  <ProfileScreen 
+                    darkMode={darkMode}
+                    onDarkModeToggle={handleDarkModeToggle}
+                    onEditProfile={handleEditProfile}
+                    userProfile={{
+                      name: currentUser.name,
+                      email: currentUser.email,
+                      bio: `DANGIT user since ${currentUser.joinDate}. Organizing and saving content efficiently.`,
+                      location: 'Unknown',
+                      website: '',
+                      joinDate: currentUser.joinDate,
+                      level: 'Active User'
+                    }}
+                    onSignOut={handleSignOut}
+                  />
+                </div>
+              )}
+              
+              {currentScreen === 'editProfile' && (
+                <div className="animate-in fade-in-0 duration-300">
+                  <EditProfileScreen 
+                    onBack={() => setCurrentScreen('profile')}
+                    userProfile={{
+                      name: currentUser.name,
+                      email: currentUser.email,
+                      bio: `DANGIT user since ${currentUser.joinDate}. Organizing and saving content efficiently.`,
+                      location: 'Unknown',
+                      website: '',
+                      joinDate: currentUser.joinDate,
+                      level: 'Active User'
+                    }}
+                    onProfileUpdate={(updatedProfile) => {
+                      handleProfileUpdate({
+                        name: updatedProfile.name,
+                        email: updatedProfile.email
+                      });
+                    }}
+                    darkMode={darkMode}
+                  />
+                </div>
+              )}
+
+              {currentScreen === 'share' && (
+                <div className="animate-in fade-in-0 duration-300">
+                  <ShareScreen 
+                    user={currentUser}
+                    onClose={() => handleNavigate('home')}
+                    onContentSaved={handleContentSaved}
+                    darkMode={darkMode}
+                  />
+                </div>
+              )}
             </div>
 
-                {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
-                  <div className="md:hidden">
-                    <BottomNavigation
-                      currentScreen={
-                        currentScreen === 'home' || 
-                        currentScreen === 'search' || 
-                        currentScreen === 'add' || 
-                        currentScreen === 'profile' 
-                          ? currentScreen 
-                          : 'home'
-                            }
-                            onNavigate={handleNavigate}
-                            darkMode={darkMode}
-                            />
-                          </div>
-                        )}
+            {/* Bottom Navigation - Mobile Only */}
+            {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
+              <div className="md:hidden">
+                <BottomNavigation
+                  currentScreen={
+                    currentScreen === 'home' || 
+                    currentScreen === 'search' || 
+                    currentScreen === 'add' || 
+                    currentScreen === 'profile' 
+                      ? currentScreen 
+                      : 'home'
+                  }
+                  onNavigate={handleNavigate}
+                  darkMode={darkMode}
+                />
+              </div>
+            )}
 
-            {/* ✅ UPDATED: Floating Add Button - Hidden on desktop */}
+            {/* Floating Add Button - Mobile Only */}
             {currentScreen !== 'add' && currentScreen !== 'editProfile' && currentScreen !== 'share' && !showContentDetail && (
               <div className="md:hidden">
                 <FloatingAddButton onClick={() => handleNavigate('add')} />
