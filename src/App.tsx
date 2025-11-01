@@ -314,7 +314,6 @@ function AppContent() {
     setSelectedContent(updatedContent);
   }, []);
 
-  // ✅ UPDATED: Better container classes for desktop
   const containerClasses = useMemo(() => {
     // Desktop: Full width, no constraints
     if (typeof window !== 'undefined' && window.innerWidth >= 768) {
@@ -386,90 +385,11 @@ function AppContent() {
 
         {/* Main App UI */}
         {!showOnboarding && !showSignUp && isAuthenticated && currentUser && (
-          <div className="md:flex md:h-screen w-full">
+          <div className="flex flex-col md:flex-row w-full h-screen md:h-auto">
             
-            {/* Desktop Sidebar */}
-            {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
-              <aside className={`hidden md:flex md:w-64 md:h-screen ${
-                darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
-              } border-r flex-col fixed left-0 top-0 z-40 backdrop-blur-sm`}>
-                
-                {/* Sidebar Header */}
-                <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    <span className={`${darkMode ? "text-indigo-300" : "text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text"}`}>DANG</span>
-                    <span className={`${darkMode ? "text-pink-300" : "text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text"}`}>IT</span>
-                  </h1>
-                  <p className={`text-sm mt-1 truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    {currentUser?.name}
-                  </p>
-                </div>
-
-                {/* Sidebar Navigation */}
-                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                  <button
-                    onClick={() => handleNavigate('home')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      currentScreen === 'home'
-                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
-                        : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                    <span className="font-medium">Home</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleNavigate('search')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      currentScreen === 'search'
-                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
-                        : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <span className="font-medium">Search</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleNavigate('add')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      currentScreen === 'add'
-                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
-                        : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="font-medium">Add Content</span>
-                  </button>
-
-                  <button
-                    onClick={() => handleNavigate('profile')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                      currentScreen === 'profile'
-                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
-                        : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="font-medium">Profile</span>
-                  </button>
-                </nav>
-              </aside>
-            )}
-
-            {/* Main Content Area - WITH UNIVERSAL PADDING */}
+            {/* Main Content Area */}
             <main className={`
-              flex-1 h-full pb-20 md:pb-0
-              ${currentScreen !== 'editProfile' && currentScreen !== 'share' ? 'md:ml-64' : ''}
+              flex-1 pb-20 md:pb-0
               transition-all duration-300 
               ${isTransitioning ? 'opacity-70' : 'opacity-100'}
               md:overflow-y-auto
@@ -562,9 +482,9 @@ function AppContent() {
               )}
             </main>
 
-            {/* Mobile Bottom Navigation */}
+            {/* Bottom Navigation - Show on ALL devices */}
             {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
-              <div className="md:hidden">
+              <div>
                 <BottomNavigation
                   currentScreen={
                     currentScreen === 'home' || 
