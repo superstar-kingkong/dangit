@@ -18,14 +18,12 @@ import {
   FileText,
 } from "lucide-react";
 
-// OnboardingEmptyState Component
 const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type: string) => void, darkMode: boolean }) => {
   return (
     <div className={`min-h-[60vh] flex flex-col items-center justify-center p-8 ${
       darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 to-purple-50'
     }`}>
       <div className="text-center max-w-md">
-        {/* Welcome Message */}
         <div className="mb-8">
           <Sparkles className="w-16 h-16 mx-auto mb-4 text-indigo-500" />
           <h2 className={`text-3xl font-bold mb-3 ${
@@ -40,7 +38,6 @@ const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type:
           </p>
         </div>
 
-        {/* Quick Start Actions */}
         <div className="space-y-3 mb-8">
           <p className={`text-sm font-semibold uppercase tracking-wide mb-4 ${
             darkMode ? 'text-gray-500' : 'text-gray-500'
@@ -54,21 +51,16 @@ const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type:
               darkMode 
                 ? 'border-pink-500 bg-pink-900/20 hover:bg-pink-900/30' 
                 : 'border-pink-500 bg-pink-50 hover:bg-pink-100'
-            }`}
-          >
+            }`}>
             <div className="flex items-center gap-4">
               <div className="p-3 bg-pink-500 rounded-xl">
                 <Camera className="w-6 h-6 text-white" />
               </div>
               <div className="text-left flex-1">
-                <h3 className={`font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+                <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Save a Screenshot
                 </h3>
-                <p className={`text-sm ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Recipes, memes, notes - anything visual
                 </p>
               </div>
@@ -81,21 +73,16 @@ const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type:
               darkMode 
                 ? 'border-purple-500 bg-purple-900/20 hover:bg-purple-900/30' 
                 : 'border-purple-500 bg-purple-50 hover:bg-purple-100'
-            }`}
-          >
+            }`}>
             <div className="flex items-center gap-4">
               <div className="p-3 bg-purple-500 rounded-xl">
                 <Link className="w-6 h-6 text-white" />
               </div>
               <div className="text-left flex-1">
-                <h3 className={`font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+                <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Save an Instagram Reel
                 </h3>
-                <p className={`text-sm ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Never lose that recipe or workout video
                 </p>
               </div>
@@ -108,21 +95,16 @@ const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type:
               darkMode 
                 ? 'border-blue-500 bg-blue-900/20 hover:bg-blue-900/30' 
                 : 'border-blue-500 bg-blue-50 hover:bg-blue-100'
-            }`}
-          >
+            }`}>
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-500 rounded-xl">
                 <FileText className="w-6 h-6 text-white" />
               </div>
               <div className="text-left flex-1">
-                <h3 className={`font-bold ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>
+                <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Write a Quick Note
                 </h3>
-                <p className={`text-sm ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Ideas, reminders, to-do lists
                 </p>
               </div>
@@ -130,10 +112,7 @@ const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type:
           </button>
         </div>
 
-        {/* Feature Highlights */}
-        <div className={`text-sm space-y-2 ${
-          darkMode ? 'text-gray-500' : 'text-gray-500'
-        }`}>
+        <div className={`text-sm space-y-2 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
           <p>✨ AI organizes everything automatically</p>
           <p>🔍 Smart search finds what you need</p>
           <p>📱 Works on any device</p>
@@ -148,7 +127,7 @@ interface HomeScreenProps {
   darkMode?: boolean;
   currentTime?: Date;
   userId?: string;
-  onNavigate?: (screen: 'home' | 'add' | 'search' | 'profile') => void; // ✅ ADD: Navigation handler
+  onNavigate?: (screen: 'home' | 'add' | 'search' | 'profile') => void;
 }
 
 interface ContentItem {
@@ -169,7 +148,6 @@ interface ContentItem {
   created_at?: string;
 }
 
-// ContentCard component
 const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -180,7 +158,7 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
 
   return (
     <div 
-      className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-xl p-4 mb-3 shadow-sm border-l-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+      className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-xl p-4 shadow-sm border-l-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
         content.completed ? 'opacity-60' : ''
       }`} 
       style={{borderLeftColor: content.borderColor}}
@@ -228,7 +206,7 @@ export function HomeScreen({
   darkMode = false,
   currentTime: externalCurrentTime,
   userId,
-  onNavigate // ✅ ADD: Accept navigation handler
+  onNavigate
 }: HomeScreenProps) {
   const [showNotificationBanner, setShowNotificationBanner] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -241,17 +219,13 @@ export function HomeScreen({
   
   const currentTime = externalCurrentTime || new Date();
 
-  // ✅ ADD: Handle onboarding navigation
   const handleAddContent = (type: string) => {
     if (onNavigate) {
       onNavigate('add');
-      // Optionally, you can pass the pre-selected type to your add screen
-      // You might want to store this in a global state or pass it through navigation
       console.log('Pre-selected content type:', type);
     }
   };
 
-  // UPDATED: Unified Category color mapping (consistent across all screens)
   const getCategoryColor = (category: string): string => {
     const colorMap: { [key: string]: string } = {
       'Work': '#2563EB',
@@ -275,7 +249,6 @@ export function HomeScreen({
     return colorMap[category] || '#6B7280';
   };
 
-  // UPDATED: Format timestamp to short format
   const formatTimeAgo = (dateString: string): string => {
     try {
       const now = new Date();
@@ -309,7 +282,6 @@ export function HomeScreen({
     }
   };
 
-  // Determine priority
   const determinePriority = (category: string, createdAt: string): 'high' | 'medium' | 'low' => {
     const highPriorityCategories = ['Work', 'Finance', 'Coupons & Deals'];
     const isRecent = new Date().getTime() - new Date(createdAt).getTime() < 24 * 60 * 60 * 1000;
@@ -320,7 +292,6 @@ export function HomeScreen({
     return 'low';
   };
 
-  // Load content from server
   const loadContentItems = async (showLoader = true) => {
     if (showLoader) setLoading(true);
     setError(null);
@@ -410,14 +381,12 @@ export function HomeScreen({
     }
   };
 
-  // Manual refresh
   const handleRefresh = async () => {
     if (!userId) return;
     setRefreshing(true);
     await loadContentItems(false);
   };
 
-  // Load data on component mount
   useEffect(() => {
     if (userId) {
       loadContentItems();
@@ -427,7 +396,6 @@ export function HomeScreen({
     }
   }, [userId]);
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!loading && userId) {
       const interval = setInterval(() => {
@@ -438,7 +406,6 @@ export function HomeScreen({
     }
   }, [loading, userId]);
 
-  // Expose refresh function globally
   useEffect(() => {
     (window as any).refreshHomeScreen = () => {
       console.log('External refresh triggered for user:', userId);
@@ -450,7 +417,6 @@ export function HomeScreen({
     };
   }, [userId]);
 
-  // ✅ FIXED: Handle completion toggle - accepts string UUID
   const handleToggleComplete = async (itemId: string, newCompletedState: boolean) => {
     if (!userId) return;
 
@@ -517,12 +483,10 @@ export function HomeScreen({
     }
   };
 
-  // Filter to show only UNCOMPLETED items on home screen
   const uncompletedItems = useMemo(() => {
     return contentItems.filter(item => !item.completed);
   }, [contentItems]);
 
-  // Smart filtering and sorting (only on uncompleted items)
   const filteredAndSortedItems = useMemo(() => {
     let filtered = uncompletedItems.filter((item) => {
       const matchesSearch = searchQuery === "" ||
@@ -565,7 +529,6 @@ export function HomeScreen({
 
   const stats = getQuickStats();
 
-  // Show loading state
   if (loading) {
     return (
       <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
@@ -579,7 +542,6 @@ export function HomeScreen({
     );
   }
 
-  // Show error state
   if (error) {
     return (
       <div className={`min-h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
@@ -608,180 +570,180 @@ export function HomeScreen({
   }
 
   return (
-  <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-    <div className="overflow-y-auto h-screen">
-      <div className={`relative overflow-hidden ${
-        darkMode
-          ? "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"
-          : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
-      }`}>
-        <div className="relative px-5 pt-6 pb-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl tracking-tight font-bold">
-                <span className={`${
-                  darkMode 
-                    ? "text-indigo-300 drop-shadow-sm" 
-                    : "text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text"
-                }`}>DANG</span>
-                <span className={`${
-                  darkMode 
-                    ? "text-pink-300 drop-shadow-sm" 
-                    : "text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text"
-                }`}>IT</span>
-              </h1>
-              <p className={`${darkMode ? "text-indigo-200" : "text-slate-600"} mt-1 font-medium`}>
-                {getGreeting()}, ready to organize?
-              </p>
+    <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+      <div className="overflow-y-auto h-screen md:h-auto">
+        <div className={`relative overflow-hidden ${
+          darkMode
+            ? "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"
+            : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
+        }`}>
+          <div className="relative px-5 md:px-8 pt-6 pb-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h1 className="text-3xl tracking-tight font-bold">
+                  <span className={`${
+                    darkMode 
+                      ? "text-indigo-300 drop-shadow-sm" 
+                      : "text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text"
+                  }`}>DANG</span>
+                  <span className={`${
+                    darkMode 
+                      ? "text-pink-300 drop-shadow-sm" 
+                      : "text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text"
+                  }`}>IT</span>
+                </h1>
+                <p className={`${darkMode ? "text-indigo-200" : "text-slate-600"} mt-1 font-medium`}>
+                  {getGreeting()}, ready to organize?
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={handleRefresh}
+                  disabled={refreshing || !userId}
+                  className={`p-2 rounded-xl ${
+                    darkMode 
+                      ? 'bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm' 
+                      : 'bg-white/80 hover:bg-white backdrop-blur-sm'
+                  } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
+                  title="Refresh Securely"
+                >
+                  <RefreshCw className={`w-5 h-5 ${
+                    darkMode ? 'text-indigo-300' : 'text-slate-700'
+                  } ${refreshing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={handleRefresh}
-                disabled={refreshing || !userId}
-                className={`p-2 rounded-xl ${
-                  darkMode 
-                    ? 'bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm' 
-                    : 'bg-white/80 hover:bg-white backdrop-blur-sm'
-                } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
-                title="Refresh Securely"
-              >
-                <RefreshCw className={`w-5 h-5 ${
-                  darkMode ? 'text-indigo-300' : 'text-slate-700'
-                } ${refreshing ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
 
-          <div className="relative mb-4">
-            <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-200 ${
-              isSearchFocused ? 'text-indigo-500 scale-110' : darkMode ? 'text-gray-400' : 'text-slate-400'
-            }`}>
-              <Search className="w-5 h-5" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search your undone content"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className={`w-full ${
-                darkMode
-                  ? "bg-gray-800/80 text-white placeholder-gray-400 backdrop-blur-sm"
-                  : "bg-white/90 text-slate-900 placeholder-slate-500 backdrop-blur-sm"
-              } rounded-2xl pl-12 pr-4 py-4 border-2 transition-all duration-200 shadow-sm ${
-                isSearchFocused
-                  ? "border-indigo-500 shadow-lg"
-                  : darkMode
-                    ? "border-gray-600 hover:border-gray-500 hover:shadow-md"
-                    : "border-gray-200 hover:border-slate-300 hover:shadow-md"
-              }`}
-            />
-          </div>
-
-          <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
-            {[
-              { key: "all", label: "All", icon: null },
-              { key: "recent", label: "Recent", icon: Clock },
-              { key: "important", label: `Priority (${stats.highPriority})`, icon: TrendingUp },
-            ].map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => setSelectedFilter(key as any)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                  selectedFilter === key
-                    ? darkMode
-                      ? "bg-indigo-800/80 text-indigo-200 shadow-sm scale-105 backdrop-blur-sm"
-                      : "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
+            <div className="relative mb-4">
+              <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-200 ${
+                isSearchFocused ? 'text-indigo-500 scale-110' : darkMode ? 'text-gray-400' : 'text-slate-400'
+              }`}>
+                <Search className="w-5 h-5" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search your undone content"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className={`w-full ${
+                  darkMode
+                    ? "bg-gray-800/80 text-white placeholder-gray-400 backdrop-blur-sm"
+                    : "bg-white/90 text-slate-900 placeholder-slate-500 backdrop-blur-sm"
+                } rounded-2xl pl-12 pr-4 py-4 border-2 transition-all duration-200 shadow-sm ${
+                  isSearchFocused
+                    ? "border-indigo-500 shadow-lg"
                     : darkMode
-                      ? "bg-gray-800/60 text-gray-300 hover:bg-gray-700/60 hover:shadow-sm backdrop-blur-sm"
-                      : "bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm backdrop-blur-sm"
+                      ? "border-gray-600 hover:border-gray-500 hover:shadow-md"
+                      : "border-gray-200 hover:border-slate-300 hover:shadow-md"
                 }`}
-              >
-                {Icon && <Icon className="w-4 h-4" />}
-                {label}
-              </button>
-            ))}
+              />
+            </div>
+
+            <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+              {[
+                { key: "all", label: "All", icon: null },
+                { key: "recent", label: "Recent", icon: Clock },
+                { key: "important", label: `Priority (${stats.highPriority})`, icon: TrendingUp },
+              ].map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setSelectedFilter(key as any)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                    selectedFilter === key
+                      ? darkMode
+                        ? "bg-indigo-800/80 text-indigo-200 shadow-sm scale-105 backdrop-blur-sm"
+                        : "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
+                      : darkMode
+                        ? "bg-gray-800/60 text-gray-300 hover:bg-gray-700/60 hover:shadow-sm backdrop-blur-sm"
+                        : "bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm backdrop-blur-sm"
+                  }`}
+                >
+                  {Icon && <Icon className="w-4 h-4" />}
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
-        <PWAInstallBanner darkMode={darkMode} />
+        <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 md:px-8 pt-4 pb-32 md:pb-16`}>
+          <PWAInstallBanner darkMode={darkMode} />
 
-        {contentItems.length === 0 && (
-          <OnboardingEmptyState 
-            onAddContent={handleAddContent}
-            darkMode={darkMode}
-          />
-        )}
+          {contentItems.length === 0 && (
+            <OnboardingEmptyState 
+              onAddContent={handleAddContent}
+              darkMode={darkMode}
+            />
+          )}
 
-        {stats.total > 0 && (
-          <div className={`${
-            darkMode
-              ? "bg-gradient-to-r from-gray-800 to-slate-800 border border-gray-700"
-              : "bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-100"
-          } rounded-2xl p-4 mb-6`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className={`${darkMode ? "text-white" : "text-slate-900"} font-semibold mb-1`}>
-                  Your Progress
-                </h3>
-                <p className={`${darkMode ? "text-gray-300" : "text-slate-600"} text-sm`}>
-                  {stats.completed} of {stats.total} items completed
-                </p>
-              </div>
-              <div className="text-right">
-                <div className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                  {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
+          {stats.total > 0 && (
+            <div className={`${
+              darkMode
+                ? "bg-gradient-to-r from-gray-800 to-slate-800 border border-gray-700"
+                : "bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-100"
+            } rounded-2xl p-4 mb-6`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className={`${darkMode ? "text-white" : "text-slate-900"} font-semibold mb-1`}>
+                    Your Progress
+                  </h3>
+                  <p className={`${darkMode ? "text-gray-300" : "text-slate-600"} text-sm`}>
+                    {stats.completed} of {stats.total} items completed
+                  </p>
                 </div>
-                <div className={`w-16 h-2 ${darkMode ? "bg-gray-700" : "bg-slate-200"} rounded-full mt-1 overflow-hidden`}>
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
-                    style={{
-                      width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%`,
-                    }}
-                  />
+                <div className="text-right">
+                  <div className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                    {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
+                  </div>
+                  <div className={`w-16 h-2 ${darkMode ? "bg-gray-700" : "bg-slate-200"} rounded-full mt-1 overflow-hidden`}>
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%`,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {contentItems.length > 0 && (
-          <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
-            {filteredAndSortedItems.length === 0 ? (
-              <div className="md:col-span-2 lg:col-span-3 text-center py-12">
-                <div className={`w-16 h-16 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                  <Sparkles className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+          {contentItems.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredAndSortedItems.length === 0 ? (
+                <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+                  <div className={`w-16 h-16 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                    <Sparkles className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
+                  </div>
+                  <h3 className={`${darkMode ? 'text-white' : 'text-slate-900'} font-semibold mb-2`}>
+                    {searchQuery ? "No items found" : stats.pending === 0 ? "All done! 🎉" : "No pending items"}
+                  </h3>
+                  <p className={`${darkMode ? 'text-gray-400' : 'text-slate-500'} text-sm`}>
+                    {searchQuery 
+                      ? 'Try adjusting your search terms' 
+                      : stats.pending === 0
+                        ? 'Great job! All your items are completed'
+                        : 'Add some content to get started'
+                    }
+                  </p>
                 </div>
-                <h3 className={`${darkMode ? 'text-white' : 'text-slate-900'} font-semibold mb-2`}>
-                  {searchQuery ? "No items found" : stats.pending === 0 ? "All done! 🎉" : "No pending items"}
-                </h3>
-                <p className={`${darkMode ? 'text-gray-400' : 'text-slate-500'} text-sm`}>
-                  {searchQuery 
-                    ? 'Try adjusting your search terms' 
-                    : stats.pending === 0
-                      ? 'Great job! All your items are completed'
-                      : 'Add some content to get started'
-                  }
-                </p>
-              </div>
-            ) : (
-              filteredAndSortedItems.map((item) => (
-                <ContentCard
-                  key={item.id}
-                  content={item}
-                  onClick={onShowContentDetail}
-                  onToggleComplete={handleToggleComplete}
-                  darkMode={darkMode}
-                />
-              ))
-            )}
-          </div>
-        )}
+              ) : (
+                filteredAndSortedItems.map((item) => (
+                  <ContentCard
+                    key={item.id}
+                    content={item}
+                    onClick={onShowContentDetail}
+                    onToggleComplete={handleToggleComplete}
+                    darkMode={darkMode}
+                  />
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 }
