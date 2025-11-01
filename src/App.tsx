@@ -546,23 +546,22 @@ function AppContent() {
             )}
             </div>
 
-            {/* ✅ UPDATED: Bottom Navigation - Hidden on desktop */}
-            {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
-              <div className="md:hidden">
-                <BottomNavigation
-                  currentScreen={
-                    currentScreen === 'home' || 
-                    currentScreen === 'search' || 
-                    currentScreen === 'add' || 
-                    currentScreen === 'profile' 
-                      ? currentScreen 
-                      : 'home'
-                  }
-                  onNavigate={handleNavigate}
-                  darkMode={darkMode}
-                />
-              </div>
-            )}
+                {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
+                  <div className="md:hidden">
+                    <BottomNavigation
+                      currentScreen={
+                        currentScreen === 'home' || 
+                        currentScreen === 'search' || 
+                        currentScreen === 'add' || 
+                        currentScreen === 'profile' 
+                          ? currentScreen 
+                          : 'home'
+                            }
+                            onNavigate={handleNavigate}
+                            darkMode={darkMode}
+                            />
+                          </div>
+                        )}
 
             {/* ✅ UPDATED: Floating Add Button - Hidden on desktop */}
             {currentScreen !== 'add' && currentScreen !== 'editProfile' && currentScreen !== 'share' && !showContentDetail && (

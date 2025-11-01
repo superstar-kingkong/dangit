@@ -608,193 +608,180 @@ export function HomeScreen({
   }
 
   return (
-    <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      <div className="overflow-y-auto h-screen">
-        <div className={`relative overflow-hidden ${
-          darkMode
-            ? "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"
-            : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
-        }`}>
-          <div className="relative px-5 pt-6 pb-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-3xl tracking-tight font-bold">
-                  <span className={`${
-                    darkMode 
-                      ? "text-indigo-300 drop-shadow-sm" 
-                      : "text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text"
-                  }`}>DANG</span>
-                  <span className={`${
-                    darkMode 
-                      ? "text-pink-300 drop-shadow-sm" 
-                      : "text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text"
-                  }`}>IT</span>
-                </h1>
-                <p className={`${darkMode ? "text-indigo-200" : "text-slate-600"} mt-1 font-medium`}>
-                  {getGreeting()}, ready to organize?
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={handleRefresh}
-                  disabled={refreshing || !userId}
-                  className={`p-2 rounded-xl ${
-                    darkMode 
-                      ? 'bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm' 
-                      : 'bg-white/80 hover:bg-white backdrop-blur-sm'
-                  } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
-                  title="Refresh Securely"
-                >
-                  <RefreshCw className={`w-5 h-5 ${
-                    darkMode ? 'text-indigo-300' : 'text-slate-700'
-                  } ${refreshing ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
+  <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
+    <div className="overflow-y-auto h-screen">
+      <div className={`relative overflow-hidden ${
+        darkMode
+          ? "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"
+          : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
+      }`}>
+        <div className="relative px-5 pt-6 pb-6">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-3xl tracking-tight font-bold">
+                <span className={`${
+                  darkMode 
+                    ? "text-indigo-300 drop-shadow-sm" 
+                    : "text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text"
+                }`}>DANG</span>
+                <span className={`${
+                  darkMode 
+                    ? "text-pink-300 drop-shadow-sm" 
+                    : "text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text"
+                }`}>IT</span>
+              </h1>
+              <p className={`${darkMode ? "text-indigo-200" : "text-slate-600"} mt-1 font-medium`}>
+                {getGreeting()}, ready to organize?
+              </p>
             </div>
-
-            <div className="relative mb-4">
-              <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-200 ${
-                isSearchFocused ? 'text-indigo-500 scale-110' : darkMode ? 'text-gray-400' : 'text-slate-400'
-              }`}>
-                <Search className="w-5 h-5" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search your undone content"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                className={`w-full ${
-                  darkMode
-                    ? "bg-gray-800/80 text-white placeholder-gray-400 backdrop-blur-sm"
-                    : "bg-white/90 text-slate-900 placeholder-slate-500 backdrop-blur-sm"
-                } rounded-2xl pl-12 pr-4 py-4 border-2 transition-all duration-200 shadow-sm ${
-                  isSearchFocused
-                    ? "border-indigo-500 shadow-lg"
-                    : darkMode
-                      ? "border-gray-600 hover:border-gray-500 hover:shadow-md"
-                      : "border-gray-200 hover:border-slate-300 hover:shadow-md"
-                }`}
-              />
-            </div>
-
-            <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
-              {[
-                { key: "all", label: "All", icon: null },
-                { key: "recent", label: "Recent", icon: Clock },
-                { key: "important", label: `Priority (${stats.highPriority})`, icon: TrendingUp },
-              ].map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedFilter(key as any)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
-                    selectedFilter === key
-                      ? darkMode
-                        ? "bg-indigo-800/80 text-indigo-200 shadow-sm scale-105 backdrop-blur-sm"
-                        : "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
-                      : darkMode
-                        ? "bg-gray-800/60 text-gray-300 hover:bg-gray-700/60 hover:shadow-sm backdrop-blur-sm"
-                        : "bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm backdrop-blur-sm"
-                  }`}
-                >
-                  {Icon && <Icon className="w-4 h-4" />}
-                  {label}
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={handleRefresh}
+                disabled={refreshing || !userId}
+                className={`p-2 rounded-xl ${
+                  darkMode 
+                    ? 'bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm' 
+                    : 'bg-white/80 hover:bg-white backdrop-blur-sm'
+                } shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 disabled:opacity-50`}
+                title="Refresh Securely"
+              >
+                <RefreshCw className={`w-5 h-5 ${
+                  darkMode ? 'text-indigo-300' : 'text-slate-700'
+                } ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
             </div>
           </div>
-        </div>
 
-        <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
-          {/* PWA Install Banner */}
-          <PWAInstallBanner darkMode={darkMode} />
-
-          {/* ✅ ADD: Show OnboardingEmptyState for users with 0 items */}
-          {contentItems.length === 0 && (
-            <OnboardingEmptyState 
-              onAddContent={handleAddContent}
-              darkMode={darkMode}
+          <div className="relative mb-4">
+            <div className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-all duration-200 ${
+              isSearchFocused ? 'text-indigo-500 scale-110' : darkMode ? 'text-gray-400' : 'text-slate-400'
+            }`}>
+              <Search className="w-5 h-5" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search your undone content"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              className={`w-full ${
+                darkMode
+                  ? "bg-gray-800/80 text-white placeholder-gray-400 backdrop-blur-sm"
+                  : "bg-white/90 text-slate-900 placeholder-slate-500 backdrop-blur-sm"
+              } rounded-2xl pl-12 pr-4 py-4 border-2 transition-all duration-200 shadow-sm ${
+                isSearchFocused
+                  ? "border-indigo-500 shadow-lg"
+                  : darkMode
+                    ? "border-gray-600 hover:border-gray-500 hover:shadow-md"
+                    : "border-gray-200 hover:border-slate-300 hover:shadow-md"
+              }`}
             />
-          )}
+          </div>
 
-          {/* Progress Stats - Only show if user has items */}
-          {stats.total > 0 && (
-            <div className={`${
-              darkMode
-                ? "bg-gradient-to-r from-gray-800 to-slate-800 border border-gray-700"
-                : "bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-100"
-            } rounded-2xl p-4 mb-6`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className={`${darkMode ? "text-white" : "text-slate-900"} font-semibold mb-1`}>
-                    Your Progress
-                  </h3>
-                  <p className={`${darkMode ? "text-gray-300" : "text-slate-600"} text-sm`}>
-                    {stats.completed} of {stats.total} items completed
-                  </p>
+          <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+            {[
+              { key: "all", label: "All", icon: null },
+              { key: "recent", label: "Recent", icon: Clock },
+              { key: "important", label: `Priority (${stats.highPriority})`, icon: TrendingUp },
+            ].map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setSelectedFilter(key as any)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                  selectedFilter === key
+                    ? darkMode
+                      ? "bg-indigo-800/80 text-indigo-200 shadow-sm scale-105 backdrop-blur-sm"
+                      : "bg-indigo-100 text-indigo-700 shadow-sm scale-105"
+                    : darkMode
+                      ? "bg-gray-800/60 text-gray-300 hover:bg-gray-700/60 hover:shadow-sm backdrop-blur-sm"
+                      : "bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm backdrop-blur-sm"
+                }`}
+              >
+                {Icon && <Icon className="w-4 h-4" />}
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 pt-4 pb-32`}>
+        <PWAInstallBanner darkMode={darkMode} />
+
+        {contentItems.length === 0 && (
+          <OnboardingEmptyState 
+            onAddContent={handleAddContent}
+            darkMode={darkMode}
+          />
+        )}
+
+        {stats.total > 0 && (
+          <div className={`${
+            darkMode
+              ? "bg-gradient-to-r from-gray-800 to-slate-800 border border-gray-700"
+              : "bg-gradient-to-r from-slate-50 to-gray-50 border border-slate-100"
+          } rounded-2xl p-4 mb-6`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className={`${darkMode ? "text-white" : "text-slate-900"} font-semibold mb-1`}>
+                  Your Progress
+                </h3>
+                <p className={`${darkMode ? "text-gray-300" : "text-slate-600"} text-sm`}>
+                  {stats.completed} of {stats.total} items completed
+                </p>
+              </div>
+              <div className="text-right">
+                <div className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
+                  {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
                 </div>
-                <div className="text-right">
-                  <div className={`text-2xl font-bold ${darkMode ? "text-white" : "text-slate-900"}`}>
-                    {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}%
-                  </div>
-                  <div className={`w-16 h-2 ${darkMode ? "bg-gray-700" : "bg-slate-200"} rounded-full mt-1 overflow-hidden`}>
-                    <div
-                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%`,
-                      }}
-                    />
-                  </div>
+                <div className={`w-16 h-2 ${darkMode ? "bg-gray-700" : "bg-slate-200"} rounded-full mt-1 overflow-hidden`}>
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%`,
+                    }}
+                  />
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Content Items - Only show if user has items */}
-          {contentItems.length > 0 && (
-            <div className="space-y-4">
-              {filteredAndSortedItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className={`w-16 h-16 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                    <Sparkles className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
-                  </div>
-                  <h3 className={`${darkMode ? 'text-white' : 'text-slate-900'} font-semibold mb-2`}>
-                    {searchQuery ? "No items found" : stats.pending === 0 ? "All done! 🎉" : "No pending items"}
-                  </h3>
-                  <p className={`${darkMode ? 'text-gray-400' : 'text-slate-500'} text-sm`}>
-                    {searchQuery 
-                      ? 'Try adjusting your search terms' 
-                      : stats.pending === 0
-                        ? 'Great job! All your items are completed'
-                        : 'Add some content to get started'
-                    }
-                  </p>
+        {contentItems.length > 0 && (
+          <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4">
+            {filteredAndSortedItems.length === 0 ? (
+              <div className="md:col-span-2 lg:col-span-3 text-center py-12">
+                <div className={`w-16 h-16 ${darkMode ? 'bg-slate-700' : 'bg-slate-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                  <Sparkles className={`w-8 h-8 ${darkMode ? 'text-slate-500' : 'text-slate-400'}`} />
                 </div>
-              ) : (
-                filteredAndSortedItems.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="animate-in slide-in-from-bottom-4 fade-in-0"
-                    style={{ 
-                      animationDelay: `${index * 50}ms`,
-                      animationDuration: '400ms',
-                      animationFillMode: 'both'
-                    }}
-                  >
-                    <ContentCard
-                      content={item}
-                      onClick={onShowContentDetail}
-                      onToggleComplete={handleToggleComplete}
-                      darkMode={darkMode}
-                    />
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
+                <h3 className={`${darkMode ? 'text-white' : 'text-slate-900'} font-semibold mb-2`}>
+                  {searchQuery ? "No items found" : stats.pending === 0 ? "All done! 🎉" : "No pending items"}
+                </h3>
+                <p className={`${darkMode ? 'text-gray-400' : 'text-slate-500'} text-sm`}>
+                  {searchQuery 
+                    ? 'Try adjusting your search terms' 
+                    : stats.pending === 0
+                      ? 'Great job! All your items are completed'
+                      : 'Add some content to get started'
+                  }
+                </p>
+              </div>
+            ) : (
+              filteredAndSortedItems.map((item) => (
+                <ContentCard
+                  key={item.id}
+                  content={item}
+                  onClick={onShowContentDetail}
+                  onToggleComplete={handleToggleComplete}
+                  darkMode={darkMode}
+                />
+              ))
+            )}
+          </div>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }
