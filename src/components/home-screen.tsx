@@ -158,7 +158,7 @@ const ContentCard = ({ content, onClick, onToggleComplete, darkMode }: any) => {
 
   return (
     <div 
-      className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-xl p-4 shadow-sm border-l-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+      className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white'} rounded-xl p-4 shadow-sm border-l-4 cursor-pointer transition-all duration-200 hover:shadow-md h-full ${
         content.completed ? 'opacity-60' : ''
       }`} 
       style={{borderLeftColor: content.borderColor}}
