@@ -23,7 +23,7 @@ const OnboardingEmptyState = ({ onAddContent, darkMode }: { onAddContent: (type:
     <div className={`min-h-[60vh] flex flex-col items-center justify-center p-8 ${
       darkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 to-purple-50'
     }`}>
-      <div className="text-center max-w-md">
+      <div className="text-center max-w-md mx-auto">
         <div className="mb-8">
           <Sparkles className="w-16 h-16 mx-auto mb-4 text-indigo-500" />
           <h2 className={`text-3xl font-bold mb-3 ${
@@ -570,9 +570,15 @@ export function HomeScreen({
   }
 
   return (
-    <div className={`min-h-screen ${darkMode ? "bg-gray-900" : "bg-gray-50"}`}>
-      <div className="overflow-y-auto h-screen md:h-auto">
-        <div className={`relative overflow-hidden ${
+    <div className={`min-h-screen pb-safe ${
+      darkMode ? 'bg-gray-900' : 'bg-white'
+    } md:bg-transparent`}>
+      
+      {/* Content wrapper with max-width on desktop */}
+      <div className="w-full md:max-w-6xl md:mx-auto md:px-8 md:py-6">
+        
+        {/* Header Section */}
+        <div className={`relative overflow-hidden rounded-t-none md:rounded-2xl ${
           darkMode
             ? "bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900"
             : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
@@ -668,7 +674,11 @@ export function HomeScreen({
           </div>
         </div>
 
-        <div className={`${darkMode ? "bg-gray-900" : "bg-white"} px-5 md:px-8 pt-4 pb-32 md:pb-16`}>
+        {/* Main Content Area */}
+        <div className={`${
+          darkMode ? "bg-gray-900" : "bg-white"
+        } rounded-b-none md:rounded-b-2xl px-5 md:px-8 pt-4 pb-32 md:pb-16`}>
+          
           <PWAInstallBanner darkMode={darkMode} />
 
           {contentItems.length === 0 && (
@@ -710,6 +720,7 @@ export function HomeScreen({
             </div>
           )}
 
+          {/* Cards Grid - responsive columns */}
           {contentItems.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredAndSortedItems.length === 0 ? (

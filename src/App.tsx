@@ -314,17 +314,24 @@ function AppContent() {
     setSelectedContent(updatedContent);
   }, []);
 
+  // ✅ UPDATED: Better container classes for desktop
   const containerClasses = useMemo(() => {
+    // Desktop: Full width, no constraints
+    if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+      return "relative min-h-screen w-full";
+    }
+    
+    // Mobile: Constrained based on screen size
     const baseClasses = "relative min-h-screen overflow-hidden";
     const shadowClasses = "lg:shadow-xl xl:shadow-2xl";
     
     switch (screenSize) {
       case 'small':
-        return `w-full max-w-[340px] md:max-w-full ${baseClasses} ${shadowClasses} mx-auto`;
+        return `w-full max-w-[340px] ${baseClasses} ${shadowClasses} mx-auto`;
       case 'large':
-        return `w-full max-w-[428px] md:max-w-full ${baseClasses} ${shadowClasses} mx-auto`;
+        return `w-full max-w-[428px] ${baseClasses} ${shadowClasses} mx-auto`;
       default:
-        return `w-full max-w-[390px] md:max-w-full ${baseClasses} ${shadowClasses} mx-auto`;
+        return `w-full max-w-[390px] ${baseClasses} ${shadowClasses} mx-auto`;
     }
   }, [screenSize]);
 
@@ -344,20 +351,27 @@ function AppContent() {
   }
 
   return (
-    <div className={`w-full min-h-screen relative overflow-hidden ${darkMode 
+    <div className={`w-full min-h-screen relative ${darkMode 
       ? 'bg-gradient-to-br from-gray-900 via-slate-900 to-gray-800' 
       : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100'
     }`}>
-      <div className="absolute inset-0 opacity-30">
+      
+      {/* Background blobs - more subtle on desktop */}
+      <div className="absolute inset-0 opacity-20 md:opacity-5 pointer-events-none">
         <div className={`absolute top-0 -left-4 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob ${darkMode ? 'bg-purple-800' : 'bg-purple-300'}`}></div>
         <div className={`absolute top-0 -right-4 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000 ${darkMode ? 'bg-yellow-800' : 'bg-yellow-300'}`}></div>
         <div className={`absolute -bottom-8 left-20 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000 ${darkMode ? 'bg-pink-800' : 'bg-pink-300'}`}></div>
       </div>
 
-      <div className={`${containerClasses} ${darkMode ? 'bg-gray-900' : 'bg-white'} md:flex md:flex-col md:h-screen`}>
+      {/* Main container - full width on desktop */}
+      <div className={`${containerClasses} ${
+        darkMode ? 'md:bg-transparent' : 'md:bg-transparent'
+      } bg-white`}>
         
+        {/* Transition overlay */}
         <div className={`absolute inset-0 bg-white z-50 transition-opacity duration-300 pointer-events-none ${isTransitioning ? 'opacity-20' : 'opacity-0'}`} />
         
+        {/* Onboarding/Signup screens */}
         {showOnboarding && (
           <div className={`transition-all duration-500 ${isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
             <Onboarding onComplete={handleCompleteOnboarding} />
@@ -370,30 +384,34 @@ function AppContent() {
           </div>
         )}
 
+        {/* Main App UI */}
         {!showOnboarding && !showSignUp && isAuthenticated && currentUser && (
-          <>
+          <div className="md:flex md:h-screen w-full">
+            
             {/* Desktop Sidebar */}
             {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
-              <div className={`hidden md:flex md:fixed md:left-0 md:top-0 md:h-screen md:w-64 ${
-                darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-              } border-r flex-col z-40`}>
+              <aside className={`hidden md:flex md:w-64 md:h-screen ${
+                darkMode ? 'bg-gray-800/95 border-gray-700' : 'bg-white/95 border-gray-200'
+              } border-r flex-col fixed left-0 top-0 z-40 backdrop-blur-sm`}>
                 
+                {/* Sidebar Header */}
                 <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
                   <h1 className="text-2xl font-bold tracking-tight">
                     <span className={`${darkMode ? "text-indigo-300" : "text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text"}`}>DANG</span>
                     <span className={`${darkMode ? "text-pink-300" : "text-transparent bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text"}`}>IT</span>
                   </h1>
-                  <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <p className={`text-sm mt-1 truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     {currentUser?.name}
                   </p>
                 </div>
 
-                <nav className="flex-1 p-4 space-y-2">
+                {/* Sidebar Navigation */}
+                <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
                   <button
                     onClick={() => handleNavigate('home')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                       currentScreen === 'home'
-                        ? darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'
+                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
                         : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -407,7 +425,7 @@ function AppContent() {
                     onClick={() => handleNavigate('search')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                       currentScreen === 'search'
-                        ? darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'
+                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
                         : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -421,7 +439,7 @@ function AppContent() {
                     onClick={() => handleNavigate('add')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                       currentScreen === 'add'
-                        ? darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'
+                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
                         : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -435,7 +453,7 @@ function AppContent() {
                     onClick={() => handleNavigate('profile')}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
                       currentScreen === 'profile'
-                        ? darkMode ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'
+                        ? darkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-100 text-indigo-700'
                         : darkMode ? 'text-gray-300 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'
                     }`}
                   >
@@ -445,15 +463,19 @@ function AppContent() {
                     <span className="font-medium">Profile</span>
                   </button>
                 </nav>
-              </div>
+              </aside>
             )}
 
-            {/* Content Area */}
-            <div className={`h-full pb-20 md:pb-0 md:flex-1 md:overflow-auto md:ml-0 ${
-              currentScreen !== 'editProfile' && currentScreen !== 'share' ? 'md:ml-64' : ''
-            } transition-all duration-300 ${isTransitioning ? 'opacity-70 scale-98' : 'opacity-100 scale-100'}`}>
+            {/* Main Content Area */}
+            <main className={`
+              flex-1 h-full pb-20 md:pb-0
+              ${currentScreen !== 'editProfile' && currentScreen !== 'share' ? 'md:ml-64' : ''}
+              transition-all duration-300 
+              ${isTransitioning ? 'opacity-70' : 'opacity-100'}
+              md:overflow-y-auto
+            `}>
               {currentScreen === 'home' && (
-                <div className="animate-in fade-in-0 duration-300">
+                <div className="animate-in fade-in-0 duration-300 w-full">
                   <HomeScreen 
                     onShowContentDetail={handleShowContentDetail}
                     onNavigate={handleNavigate}
@@ -464,7 +486,7 @@ function AppContent() {
               )}
               
               {currentScreen === 'search' && (
-                <div className="animate-in fade-in-0 duration-300">
+                <div className="animate-in fade-in-0 duration-300 w-full">
                   <SearchScreen 
                     onShowContentDetail={handleShowContentDetail}
                     darkMode={darkMode}
@@ -474,7 +496,7 @@ function AppContent() {
               )}
 
               {currentScreen === 'add' && (
-                <div className="animate-in fade-in-0 duration-300">
+                <div className="animate-in fade-in-0 duration-300 w-full">
                   <AddContentScreen 
                     darkMode={darkMode}
                     userId={currentUser.email}
@@ -484,7 +506,7 @@ function AppContent() {
               )}
               
               {currentScreen === 'profile' && (
-                <div className="animate-in fade-in-0 duration-300">
+                <div className="animate-in fade-in-0 duration-300 w-full">
                   <ProfileScreen 
                     darkMode={darkMode}
                     onDarkModeToggle={handleDarkModeToggle}
@@ -504,7 +526,7 @@ function AppContent() {
               )}
               
               {currentScreen === 'editProfile' && (
-                <div className="animate-in fade-in-0 duration-300">
+                <div className="animate-in fade-in-0 duration-300 w-full">
                   <EditProfileScreen 
                     onBack={() => setCurrentScreen('profile')}
                     userProfile={{
@@ -528,7 +550,7 @@ function AppContent() {
               )}
 
               {currentScreen === 'share' && (
-                <div className="animate-in fade-in-0 duration-300">
+                <div className="animate-in fade-in-0 duration-300 w-full">
                   <ShareScreen 
                     user={currentUser}
                     onClose={() => handleNavigate('home')}
@@ -537,9 +559,9 @@ function AppContent() {
                   />
                 </div>
               )}
-            </div>
+            </main>
 
-            {/* Bottom Navigation - Mobile Only */}
+            {/* Mobile Bottom Navigation */}
             {currentScreen !== 'editProfile' && currentScreen !== 'share' && (
               <div className="md:hidden">
                 <BottomNavigation
@@ -563,12 +585,13 @@ function AppContent() {
                 <FloatingAddButton onClick={() => handleNavigate('add')} />
               </div>
             )}
-          </>
+          </div>
         )}
 
+        {/* Content Detail Modal */}
         {showContentDetail && selectedContent && (
           <>
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-40 animate-in fade-in-0 duration-300" />
+            <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 animate-in fade-in-0 duration-300" />
             <div className="animate-in slide-in-from-bottom-4 fade-in-0 duration-500">
               <ContentDetailView
                 content={selectedContent}
@@ -581,8 +604,9 @@ function AppContent() {
           </>
         )}
 
+        {/* Debug Info */}
         {currentUser && process.env.NODE_ENV === 'development' && (
-          <div className="fixed bottom-24 left-4 bg-black text-white text-xs p-2 rounded opacity-50 z-30">
+          <div className="fixed bottom-24 md:bottom-4 left-4 bg-black text-white text-xs p-2 rounded opacity-50 z-30">
             User: {currentUser.name} ({currentUser.email})
           </div>
         )}
